@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Allow: /assets/
+Allow: /platforms/
+Allow: /qa/
+Allow: /wiki/
+Allow: /guides/
+Allow: /compare/
+Allow: /about/
+Allow: /legal/
+
+Disallow: /admin/
+Disallow: /.git/
+Disallow: /node_modules/
+Disallow: /*.json$
+Disallow: /*.sql$
+
+Crawl-delay: 1
+
+Sitemap: https://example.com/sitemap.xml

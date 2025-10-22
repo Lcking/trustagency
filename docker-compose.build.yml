@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trustagency-web
+    ports:
+      - "80:80"
+      # Alternative port mapping if 80 is in use:
+      # - "8080:80"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      # Volume for nginx logs (optional)
+      - ./nginx/logs:/var/log/nginx:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/robots.txt"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - trustagency-net
+    labels:
+      - "description=Trustagency static site"
+      - "version=1.0"
+
+networks:
+  trustagency-net:
+    driver: bridge

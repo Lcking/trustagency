@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0">
+    
+    <!-- Main Pages -->
+    <url>
+        <loc>https://example.com/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    
+    <!-- Platforms -->
+    <url>
+        <loc>https://example.com/platforms/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <url>
+        <loc>https://example.com/platforms/alpha-leverage/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>bi-weekly</changefreq>
+        <priority>0.85</priority>
+    </url>
+    
+    <url>
+        <loc>https://example.com/platforms/beta-margin/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>bi-weekly</changefreq>
+        <priority>0.85</priority>
+    </url>
+    
+    <url>
+        <loc>https://example.com/platforms/gamma-trader/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>bi-weekly</changefreq>
+        <priority>0.85</priority>
+    </url>
+    
+    <!-- Comparison -->
+    <url>
+        <loc>https://example.com/compare/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.85</priority>
+    </url>
+    
+    <!-- FAQ -->
+    <url>
+        <loc>https://example.com/qa/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- Wiki Index -->
+    <url>
+        <loc>https://example.com/wiki/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- Wiki Articles -->
+    <url>
+        <loc>https://example.com/wiki/what-is-leverage/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.75</priority>
+    </url>
+    
+    <url>
+        <loc>https://example.com/wiki/margin-call/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.75</priority>
+    </url>
+    
+    <url>
+        <loc>https://example.com/wiki/risk-metrics/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.75</priority>
+    </url>
+    
+    <!-- Guides Index -->
+    <url>
+        <loc>https://example.com/guides/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- Guides Articles -->
+    <url>
+        <loc>https://example.com/guides/quick-start/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.75</priority>
+    </url>
+    
+    <url>
+        <loc>https://example.com/guides/open-account/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.75</priority>
+    </url>
+    
+    <url>
+        <loc>https://example.com/guides/risk-settings/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.75</priority>
+    </url>
+    
+    <!-- Supporting Pages -->
+    <url>
+        <loc>https://example.com/about/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://example.com/legal/</loc>
+        <lastmod>2025-10-21</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    
+</urlset>
