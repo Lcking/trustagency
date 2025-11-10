@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiptap 编辑器测试</title>
+    <!-- Tiptap 默认样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/tiptap-default-styles@1.0.0/style.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        
+        .editor-container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 300px;
+            margin: 20px 0;
+            background: white;
+        }
+        
+        .editor-toolbar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .editor-toolbar button {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .editor-toolbar button:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+        
+        .status {
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 4px;
+            background: #f0f0f0;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tiptap 编辑器测试</h1>
+    
+    <div id="diagnostics" class="status"></div>
+    
+    <h2>编辑器</h2>
+    <div id="toolbar" class="editor-toolbar"></div>
+    <div id="editor" class="editor-container"></div>
+    
+    <div id="content" style="margin-top: 20px; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+        <h3>编辑器内容 (HTML):</h3>
+        <pre id="contentDisplay"></pre>
+    </div>
+
+    <!-- Tiptap CDN 库 -->
+    <script src="https://unpkg.com/@tiptap/core@2.0.0"></script>
+    <script src="https://unpkg.com/@tiptap/pm@2.0.0"></script>
+    <script src="https://unpkg.com/@tiptap/starter-kit@2.0.0"></script>
+    <script src="https://unpkg.com/@tiptap/extension-image@2.0.0"></script>
+    <script src="https://unpkg.com/@tiptap/extension-link@2.0.0"></script>
+
+    <script>
+        // 诊断函数
+        function runDiagnostics() {
+            const diag = {
+                '@tiptap/core': !!window['@tiptap/core'],
+                '@tiptap/starter-kit': !!window['@tiptap/starter-kit'],
+                '@tiptap/extension-image': !!window['@tiptap/extension-image'],
+                '@tiptap/extension-link': !!window['@tiptap/extension-link'],
+            };
+            
+            const allLoaded = Object.values(diag).every(v => v);
+            const diagDiv = document.getElementById('diagnostics');
+            
+            if (allLoaded && window['@tiptap/core'] && window['@tiptap/core'].Editor) {
+                diagDiv.className = 'status success';
+                diagDiv.innerHTML = '✅ 所有 Tiptap 库已正确加载！<br/>可以初始化编辑器。';
+                initEditor();
+            } else {
+                diagDiv.className = 'status error';
+                let html = '❌ Tiptap 库加载失败:<br/>';
+                for (const [key, loaded] of Object.entries(diag)) {
+                    html += `${loaded ? '✅' : '❌'} ${key}<br/>`;
+                }
+                diagDiv.innerHTML = html;
+                console.error('诊断结果:', diag);
+            }
+        }
+
+        // 编辑器初始化
+        function initEditor() {
+            const container = document.getElementById('editor');
+            const TiptapCore = window['@tiptap/core'];
+            
+            try {
+                const editor = new TiptapCore.Editor({
+                    element: container,
+                    extensions: [
+                        window['@tiptap/starter-kit'],
+                        window['@tiptap/extension-image'],
+                        window['@tiptap/extension-link'],
+                    ].filter(Boolean),
+                    content: '<p>开始在这里编辑...</p>',
+                    onUpdate: ({ editor }) => {
+                        const html = editor.getHTML();
+                        document.getElementById('contentDisplay').textContent = html;
+                    }
+                });
+                
+                // 创建工具栏
+                const toolbar = document.getElementById('toolbar');
+                toolbar.innerHTML = `
+                    <button onclick="applyCommand('toggleBold')">粗体 (B)</button>
+                    <button onclick="applyCommand('toggleItalic')">斜体 (I)</button>
+                    <button onclick="applyCommand('toggleStrike')">删除线 (S)</button>
+                    <button onclick="applyCommand('toggleBulletList')">无序列表</button>
+                    <button onclick="applyCommand('toggleOrderedList')">有序列表</button>
+                    <button onclick="applyCommand('setHeading', {level: 1})">H1</button>
+                    <button onclick="applyCommand('setHeading', {level: 2})">H2</button>
+                    <button onclick="applyCommand('toggleBlockquote')">引用</button>
+                    <button onclick="applyCommand('undo')">撤销</button>
+                    <button onclick="applyCommand('redo')">重做</button>
+                `;
+                
+                // 保存编辑器实例到全局
+                window.editor = editor;
+                
+                console.log('✅ 编辑器初始化成功！');
+                
+                // 初始化显示内容
+                document.getElementById('contentDisplay').textContent = editor.getHTML();
+                
+            } catch (error) {
+                console.error('编辑器初始化失败:', error);
+                container.innerHTML = `<p style="color: red;">编辑器初始化失败: ${error.message}</p>`;
+            }
+        }
+
+        // 执行编辑器命令
+        function applyCommand(command, options = {}) {
+            if (!window.editor) return;
+            
+            try {
+                if (command === 'undo') {
+                    window.editor.chain().focus().undo().run();
+                } else if (command === 'redo') {
+                    window.editor.chain().focus().redo().run();
+                } else {
+                    window.editor.chain().focus()[command](options).run();
+                }
+            } catch (error) {
+                console.error(`命令 ${command} 执行失败:`, error);
+            }
+        }
+
+        // 页面加载完毕后运行诊断
+        window.addEventListener('load', function() {
+            setTimeout(runDiagnostics, 500);
+        });
+    </script>
+</body>
+</html>

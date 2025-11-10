@@ -1,0 +1,30 @@
+{
+  "name": "trustagency-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-End tests for TrustAgency using Playwright",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:auth": "playwright test tests/e2e/auth.spec.js",
+    "test:platforms": "playwright test tests/e2e/platforms.spec.js",
+    "test:articles": "playwright test tests/e2e/articles.spec.js",
+    "test:errors": "playwright test tests/e2e/error-scenarios.spec.js",
+    "test:performance": "playwright test tests/e2e/performance.spec.js",
+    "test:security": "playwright test tests/e2e/security.spec.js",
+    "report": "playwright show-report"
+  },
+  "keywords": [
+    "e2e",
+    "testing",
+    "playwright",
+    "trustagency"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.1"
+  }
+}

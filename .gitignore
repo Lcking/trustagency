@@ -1,0 +1,85 @@
+# ==================== 环境和配置 ====================
+.env
+.env.local
+.env.*.local
+.env.prod
+.env.production
+
+# ==================== 数据库 ====================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# ==================== Python ====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ==================== IDE ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.sublime-project
+.sublime-workspace
+
+# ==================== 依赖 ====================
+node_modules/
+package-lock.json
+yarn.lock
+
+# ==================== 测试覆盖 ====================
+.coverage
+.pytest_cache/
+htmlcov/
+
+# ==================== 日志 ====================
+*.log
+logs/
+
+# ==================== 临时文件 ====================
+*.tmp
+*.temp
+.tmp/
+
+# ==================== Celery ====================
+celerybeat-schedule
+celerybeat.pid
+
+# ==================== Docker ====================
+.dockerignore
+
+# ==================== 操作系统 ====================
+Thumbs.db
+.DS_Store
+
+# ==================== Agent 工作文档 ====================
+# 所有 MD 文档已整理至 kanban/agentwork/ 目录
+# kanban/ 目录包含：
+#   - kanban/board.md: Kanban 看板
+#   - kanban/issues/: 问题跟踪
+#   - kanban/agentwork/: AI 助手工作总结、分析和文档
+

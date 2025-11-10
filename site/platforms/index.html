@@ -149,107 +149,59 @@
                 </div>
             </section>
 
-            <!-- Platforms Grid -->
-            <section aria-labelledby="platforms-title">
-                <h2 id="platforms-title" class="sr-only">平台列表</h2>
-                <div class="row g-4 mb-5">
-                    <!-- Platform 1: Alpha Leverage -->
-                    <div class="col-md-6 col-lg-4">
-                        <article class="card h-100 shadow-sm hover-lift" aria-label="Alpha Leverage 平台">
-                            <div class="card-header bg-primary text-white">
-                                <h3 class="card-title h5 mb-0">Alpha Leverage</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <span class="badge bg-success me-2">⭐ 推荐</span>
-                                    <span class="badge bg-info">成立于 2018</span>
-                                </div>
-                                <p class="card-text text-muted">
-                                    高杠杆、低费率的专业交易平台，提供完善的风险管理工具和24/7客户支持。
-                                </p>
-                                <ul class="list-unstyled small mb-3">
-                                    <li class="mb-2">
-                                        <strong>最高杠杆:</strong> <span class="badge bg-light text-dark">1:100</span>
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>费率范围:</strong> <span class="badge bg-light text-dark">0.05% - 0.15%</span>
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>安全评级:</strong> <span class="text-success fw-bold">A+</span>
-                                    </li>
-                                </ul>
-                            </div>
-                            <div class="card-footer bg-light">
-                                <a href="/platforms/alpha-leverage/" class="btn btn-primary btn-sm w-100">查看详情</a>
-                            </div>
-                        </article>
-                    </div>
+            <!-- Error Message Container -->
+            <div id="error-message"></div>
 
-                    <!-- Platform 2: Beta Margin -->
-                    <div class="col-md-6 col-lg-4">
-                        <article class="card h-100 shadow-sm hover-lift" aria-label="Beta Margin 平台">
-                            <div class="card-header bg-info text-white">
-                                <h3 class="card-title h5 mb-0">Beta Margin</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <span class="badge bg-success me-2">⭐ 推荐</span>
-                                    <span class="badge bg-info">成立于 2019</span>
-                                </div>
-                                <p class="card-text text-muted">
-                                    风险管理工具完善的保证金交易平台，特别适合风险厌恶型投资者。
-                                </p>
-                                <ul class="list-unstyled small mb-3">
-                                    <li class="mb-2">
-                                        <strong>最高杠杆:</strong> <span class="badge bg-light text-dark">1:50</span>
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>费率范围:</strong> <span class="badge bg-light text-dark">0.10% - 0.20%</span>
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>安全评级:</strong> <span class="text-success fw-bold">A</span>
-                                    </li>
-                                </ul>
-                            </div>
-                            <div class="card-footer bg-light">
-                                <a href="/platforms/beta-margin/" class="btn btn-info btn-sm w-100">查看详情</a>
-                            </div>
-                        </article>
+            <!-- Filter Controls -->
+            <section class="mb-4 p-3 bg-light rounded" aria-labelledby="filter-title">
+                <h2 id="filter-title" class="h6 mb-3">筛选和排序</h2>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="platform-search" class="form-label">搜索平台</label>
+                        <input type="search" class="form-control" id="platform-search" placeholder="输入平台名称...">
                     </div>
-
-                    <!-- Platform 3: Gamma Trader -->
-                    <div class="col-md-6 col-lg-4">
-                        <article class="card h-100 shadow-sm hover-lift" aria-label="Gamma Trader 平台">
-                            <div class="card-header bg-success text-white">
-                                <h3 class="card-title h5 mb-0">Gamma Trader</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <span class="badge bg-warning text-dark me-2">⭐ 新手友好</span>
-                                    <span class="badge bg-info">成立于 2020</span>
-                                </div>
-                                <p class="card-text text-muted">
-                                    新手友好、教育资源丰富的平台，配有详细的交易指南和视频教程。
-                                </p>
-                                <ul class="list-unstyled small mb-3">
-                                    <li class="mb-2">
-                                        <strong>最高杠杆:</strong> <span class="badge bg-light text-dark">1:75</span>
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>费率范围:</strong> <span class="badge bg-light text-dark">0.08% - 0.18%</span>
-                                    </li>
-                                    <li class="mb-2">
-                                        <strong>安全评级:</strong> <span class="text-success fw-bold">B+</span>
-                                    </li>
-                                </ul>
-                            </div>
-                            <div class="card-footer bg-light">
-                                <a href="/platforms/gamma-trader/" class="btn btn-success btn-sm w-100">查看详情</a>
-                            </div>
-                        </article>
+                    <div class="col-md-2">
+                        <label for="filter-leverage-min" class="form-label">最小杠杆</label>
+                        <input type="number" class="form-control" id="filter-leverage-min" data-filter="min-leverage" placeholder="如 50">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="filter-leverage-max" class="form-label">最大杠杆</label>
+                        <input type="number" class="form-control" id="filter-leverage-max" data-filter="max-leverage" placeholder="如 100">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="sort-by" class="form-label">排序方式</label>
+                        <select class="form-select" id="sort-by">
+                            <option value="ranking">推荐排序</option>
+                            <option value="rating">评分最高</option>
+                            <option value="leverage">杠杆最高</option>
+                            <option value="fee">费率最低</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-secondary w-100" id="clear-filters">清除筛选</button>
                     </div>
                 </div>
             </section>
+
+            <!-- Pagination Info -->
+            <div class="mb-3 text-muted small">
+                <span id="pagination-info">加载中...</span>
+            </div>
+
+            <!-- Platforms Grid -->
+            <section aria-labelledby="platforms-title">
+                <h2 id="platforms-title" class="sr-only">平台列表</h2>
+                <div class="row g-4 mb-5" id="platforms-container">
+                    <!-- Platforms loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Pagination Controls -->
+            <nav aria-label="页面导航" class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                <button class="btn btn-outline-primary" id="pagination-prev">← 上一页</button>
+                <span class="text-muted" id="pagination-info">加载中...</span>
+                <button class="btn btn-outline-primary" id="pagination-next">下一页 →</button>
+            </nav>
 
             <!-- Additional Info -->
             <section class="mt-5 pt-4 border-top" aria-labelledby="additional-info-title">
@@ -341,6 +293,12 @@
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    
+    <!-- API Client -->
+    <script src="/assets/js/api-client.js"></script>
+    
+    <!-- Platform Manager -->
+    <script src="/assets/js/platform-manager.js"></script>
     
     <!-- Main Script -->
     <script src="/assets/js/main.js" defer></script>

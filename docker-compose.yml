@@ -1,0 +1,182 @@
+version: '3.8'
+
+services:
+  # ===== Frontend (Nginx) =====
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trustagency-frontend
+    ports:
+      - "80:80"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+      - ./nginx/logs:/var/log/nginx:rw
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/robots.txt"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - trustagency-net
+    labels:
+      - "app=trustagency"
+      - "component=frontend"
+      - "version=1.0"
+
+  # ===== FastAPI Backend =====
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trustagency-backend
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://trustagency:trustagency@db:5432/trustagency
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - PYTHONUNBUFFERED=1
+      - DEBUG=True
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - trustagency-net
+    labels:
+      - "app=trustagency"
+      - "component=backend"
+      - "version=1.0"
+
+  # ===== PostgreSQL Database =====
+  db:
+    image: postgres:15-alpine
+    container_name: trustagency-db
+    environment:
+      - POSTGRES_USER=trustagency
+      - POSTGRES_PASSWORD=trustagency
+      - POSTGRES_DB=trustagency
+      - TZ=Asia/Shanghai
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustagency"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - trustagency-net
+    labels:
+      - "app=trustagency"
+      - "component=database"
+      - "version=15"
+
+  # ===== Redis Cache & Task Broker =====
+  redis:
+    image: redis:7-alpine
+    container_name: trustagency-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - trustagency-net
+    command: redis-server --appendonly yes --appendfsync everysec
+    labels:
+      - "app=trustagency"
+      - "component=cache"
+      - "version=7"
+
+  # ===== Celery Worker (Background Tasks) =====
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trustagency-celery-worker
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      - DATABASE_URL=postgresql://trustagency:trustagency@db:5432/trustagency
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - db
+      - redis
+      - backend
+    volumes:
+      - ./backend:/app:rw
+    restart: unless-stopped
+    networks:
+      - trustagency-net
+    labels:
+      - "app=trustagency"
+      - "component=worker"
+
+  # ===== Celery Beat (Scheduled Tasks) =====
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trustagency-celery-beat
+    command: celery -A app.celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://trustagency:trustagency@db:5432/trustagency
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - db
+      - redis
+      - backend
+    volumes:
+      - ./backend:/app:rw
+    restart: unless-stopped
+    networks:
+      - trustagency-net
+    labels:
+      - "app=trustagency"
+      - "component=scheduler"
+
+# ===== Volumes =====
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ===== Networks =====
+networks:
+  trustagency-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-trustagency

@@ -1,0 +1,185 @@
+version: '3.8'
+
+# 生产环境 Docker Compose 配置
+# 使用方法：docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+# 注意：所有敏感信息应该通过 .env.prod 文件提供
+
+services:
+  # ===== FastAPI Backend - Production =====
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - ENVIRONMENT=production
+    container_name: trustagency-backend-prod
+    image: trustagency-backend:latest
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=False
+      - DATABASE_URL=postgresql://trustagency:${DB_PASSWORD}@db:5432/trustagency
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=${SECRET_KEY}
+      - BACKEND_DIR=/app
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/logs:/app/logs:rw
+    restart: always
+    networks:
+      - trustagency-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/admin/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # ===== Celery Worker - Production =====
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - ENVIRONMENT=production
+    container_name: trustagency-celery-worker-prod
+    image: trustagency-backend:latest
+    command: celery -A app.celery_tasks worker --loglevel=info --concurrency=4
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=False
+      - DATABASE_URL=postgresql://trustagency:${DB_PASSWORD}@db:5432/trustagency
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=${SECRET_KEY}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - db
+      - redis
+      - backend
+    volumes:
+      - ./backend/logs:/app/logs:rw
+    restart: always
+    networks:
+      - trustagency-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # ===== Celery Beat - Production =====
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - ENVIRONMENT=production
+    container_name: trustagency-celery-beat-prod
+    image: trustagency-backend:latest
+    command: celery -A app.celery_tasks beat --loglevel=info
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=False
+      - DATABASE_URL=postgresql://trustagency:${DB_PASSWORD}@db:5432/trustagency
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=${SECRET_KEY}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - db
+      - redis
+      - backend
+    volumes:
+      - ./backend/logs:/app/logs:rw
+    restart: always
+    networks:
+      - trustagency-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # ===== PostgreSQL Database - Production =====
+  db:
+    image: postgres:15-alpine
+    container_name: trustagency-db-prod
+    environment:
+      - POSTGRES_USER=trustagency
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=trustagency
+      - POSTGRES_INITDB_ARGS=-c max_connections=100 -c shared_buffers=256MB
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - trustagency-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustagency"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
+
+  # ===== Redis Cache - Production =====
+  redis:
+    image: redis:7-alpine
+    container_name: trustagency-redis-prod
+    volumes:
+      - redis_data:/data
+    restart: always
+    networks:
+      - trustagency-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command: redis-server --appendonly yes --appendfsync everysec
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  trustagency-net:
+    driver: bridge
+
