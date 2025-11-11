@@ -11,6 +11,12 @@
     h1{margin-top:0;font-size:28px}
     .meta{font-size:12px;color:#666;margin-bottom:16px}
     .content img{max-width:100%;height:auto;display:block;margin:16px auto}
+    /* 支持data-align属性的图片对齐样式 */
+    img[data-align='left']{text-align:left;float:left;margin-right:16px;margin-bottom:8px}
+    img[data-align='center']{text-align:center;display:block;margin:16px auto}
+    img[data-align='right']{text-align:right;float:right;margin-left:16px;margin-bottom:8px}
+    /* 支持data-width属性的图片宽度设置 */
+    img[data-width]{max-width:calc(var(--img-width) * 1%);height:auto}
     .badge{display:inline-block;background:#0d6efd;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin-right:4px}
     .summary-box{margin:18px 0;padding:14px 18px;background:#f6f8fa;border-left:4px solid #27ae60;border-radius:6px;color:#3a3f45;font-size:15px;line-height:1.7}
     footer{margin-top:40px;font-size:12px;color:#999;text-align:center}
@@ -25,69 +31,87 @@
   <footer>© 2025 TrustAgency</footer>
   <script>
     const API_URL = location.origin.replace(/\/$/,'');
+    let embeddedArticleData = window.__ARTICLE_DATA__ || null;
+    
     async function loadArticle() {
-      const urlParams = new URLSearchParams(location.search);
-      const id = urlParams.get('id');
-      if(!id){
-        document.getElementById('articleContainer').textContent='缺少文章ID';
-        return;
-      }
-      try {
-        const resp = await fetch(`${API_URL}/api/articles/${id}`);
-        if(!resp.ok){
-          document.getElementById('articleContainer').textContent='文章不存在';
+      let data = null;
+      
+      if (embeddedArticleData) {
+        data = embeddedArticleData;
+      } else {
+        const urlParams = new URLSearchParams(location.search);
+        const id = urlParams.get('id');
+        if(!id){
+          document.getElementById('articleContainer').textContent='缺少文章ID';
           return;
         }
-        const data = await resp.json();
-        // 提炼纯文本摘要和首图
-        const temp = document.createElement('div');
-        temp.innerHTML = data.content || '';
-        const plainText = temp.textContent ? temp.textContent.replace(/\s+/g,' ').trim() : '';
-        const autoSummary = plainText ? plainText.slice(0, 160) + (plainText.length > 160 ? '…' : '') : '';
-        const summaryText = (data.summary && data.summary.trim()) || autoSummary;
-        const firstImage = temp.querySelector('img')?.getAttribute('src') || null;
-        const container = document.getElementById('articleContainer');
-        container.innerHTML = `
-          <h1>${data.title}</h1>
-          <div class="meta">
-            <span class="badge">栏目 ${data.section_name || '未分类'}</span>
-            ${data.category_name ? `<span class="badge">分类 ${data.category_name}</span>`: (data.category ? `<span class="badge">分类 ${data.category}</span>` : '')}
-            ${data.is_published ? '<span class="badge" style="background:#198754">已发布</span>' : '<span class="badge" style="background:#ffc107;color:#000">草稿</span>'}
-            <span>浏览 ${data.view_count}</span>
-            <span style="margin-left:8px">创建时间 ${new Date(data.created_at).toLocaleString('zh-CN')}</span>
-          </div>
-          ${summaryText ? `<div class="summary-box"><strong>摘要：</strong>${summaryText}</div>` : ''}
-          <article class="content">${data.content}</article>
-          ${data.is_published && data.slug ? `<p style="margin-top:24px;font-size:13px;color:#666;">公开链接：<a href="/article/${data.slug}" target="_blank" rel="noopener">/article/${data.slug}</a></p>` : ''}
-        `;
-        // 生成结构化数据 (Article)
-        const ld = {
-          '@context':'https://schema.org',
-          '@type':'Article',
-          'headline': data.title,
-          'description': summaryText || undefined,
-          'articleBody': plainText || undefined,
-          'articleSection': data.category_name || data.category || '',
-          'datePublished': data.published_at || data.created_at,
-          'dateModified': data.published_at || data.created_at,
-          'author': { '@type':'Person','name': 'Admin' },
-          'publisher': { '@type':'Organization','name':'TrustAgency' },
-          'inLanguage':'zh-CN',
-          'mainEntityOfPage': `${API_URL}/static/article_view.html?id=${data.id}`,
-          'image': firstImage ? [firstImage] : undefined,
-          'wordCount': plainText ? plainText.split(/\s+/).filter(Boolean).length : undefined,
-          'isAccessibleForFree': true
-        };
-        // 移除undefined字段以清洁JSON-LD
-        Object.keys(ld).forEach(key => ld[key] === undefined && delete ld[key]);
-        const script = document.createElement('script');
-        script.type='application/ld+json';
-        script.textContent=JSON.stringify(ld, null, 2);
-        document.head.appendChild(script);
-      } catch (e) {
-        document.getElementById('articleContainer').textContent='加载失败: '+e.message;
+        try {
+          const resp = await fetch(`${API_URL}/api/articles/${id}`);
+          if(!resp.ok){
+            document.getElementById('articleContainer').textContent='文章不存在';
+            return;
+          }
+          data = await resp.json();
+        } catch(err) {
+          document.getElementById('articleContainer').textContent='加载失败: ' + err.message;
+          return;
+        }
       }
+      
+      renderArticle(data);
     }
+    
+    function renderArticle(data) {
+      const temp = document.createElement('div');
+      temp.innerHTML = data.content || '';
+      const plainText = temp.textContent ? temp.textContent.replace(/\s+/g,' ').trim() : '';
+      const autoSummary = plainText ? plainText.slice(0, 160) + (plainText.length > 160 ? '…' : '') : '';
+      const summaryText = (data.summary && data.summary.trim()) || autoSummary;
+      const firstImage = temp.querySelector('img')?.getAttribute('src') || null;
+      const container = document.getElementById('articleContainer');
+      
+      let html = `
+        <h1>${data.title}</h1>
+        <div class="meta">
+          <span class="badge">栏目 ${data.section_name || '未分类'}</span>
+          ${data.category_name ? `<span class="badge">分类 ${data.category_name}</span>`: (data.category ? `<span class="badge">分类 ${data.category}</span>` : '')}
+          ${data.is_published ? '<span class="badge" style="background:#198754">已发布</span>' : '<span class="badge" style="background:#ffc107;color:#000">草稿</span>'}
+          <span>浏览 ${data.view_count}</span>
+          <span style="margin-left:8px">创建时间 ${new Date(data.created_at).toLocaleString('zh-CN')}</span>
+        </div>
+        ${summaryText ? `<div class="summary-box"><strong>摘要：</strong>${summaryText}</div>` : ''}
+        <article class="content">${data.content}</article>
+        ${data.is_published && data.slug ? `<p style="margin-top:24px;font-size:13px;color:#666;">公开链接：<a href="/article/${data.slug}" target="_blank" rel="noopener">/article/${data.slug}</a></p>` : ''}
+      `;
+      
+      container.innerHTML = html;
+      
+      // 生成结构化数据 (Article)
+      const ld = {
+        '@context':'https://schema.org',
+        '@type':'Article',
+        'headline': data.title,
+        'description': summaryText || undefined,
+        'articleBody': plainText || undefined,
+        'articleSection': data.category_name || data.category || '',
+        'datePublished': data.published_at || data.created_at,
+        'dateModified': data.published_at || data.created_at,
+        'author': { '@type':'Person','name': 'Admin' },
+        'publisher': { '@type':'Organization','name':'TrustAgency' },
+        'inLanguage':'zh-CN',
+        'mainEntityOfPage': data.slug ? `/article/${data.slug}` : `${API_URL}/static/article_view.html?id=${data.id}`,
+        'image': firstImage ? [firstImage] : undefined,
+        'wordCount': plainText ? plainText.split(/\s+/).filter(Boolean).length : undefined,
+        'isAccessibleForFree': true
+      };
+      
+      Object.keys(ld).forEach(key => ld[key] === undefined && delete ld[key]);
+      const script = document.createElement('script');
+      script.type='application/ld+json';
+      script.textContent=JSON.stringify(ld, null, 2);
+      document.head.appendChild(script);
+    }
+    
     loadArticle();
   </script>
 </body>

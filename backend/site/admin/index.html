@@ -782,6 +782,44 @@
             height: auto;
             border-radius: 4px;
             margin: 0.5em 0;
+            cursor: pointer;
+        }
+
+        /* 支持data-align属性的图片对齐样式 */
+        .ProseMirror img[data-align='left'] {
+            float: left;
+            margin-right: 16px;
+            margin-bottom: 8px;
+        }
+
+        .ProseMirror img[data-align='center'] {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 8px;
+        }
+
+        .ProseMirror img[data-align='right'] {
+            float: right;
+            margin-left: 16px;
+            margin-bottom: 8px;
+        }
+
+        /* 支持data-width属性的图片宽度设置 */
+        .ProseMirror img[data-width='80'] {
+            max-width: 80%;
+        }
+
+        .ProseMirror img[data-width='60'] {
+            max-width: 60%;
+        }
+
+        .ProseMirror img[data-width='40'] {
+            max-width: 40%;
+        }
+
+        .ProseMirror img[data-width='100'] {
+            max-width: 100%;
         }
 
         .ProseMirror a {
@@ -3154,7 +3192,8 @@
                 // 参考官方 CDN 示例: extensions: [StarterKit]
                 const extensions = [
                     StarterKit,
-                    // 图片：提供 setImage 命令，并默认限制宽度适配容器
+                    // 图片：提供 setImage 命令，支持对齐属性和宽度设置
+                    // 根据Tiptap官方文档，使用data-align属性存储对齐方式
                     ImageExt.configure({
                         inline: false,
                         selectable: true,
@@ -3162,6 +3201,7 @@
                         allowBase64: true,
                         HTMLAttributes: {
                             style: 'max-width:100%;height:auto;display:block;',
+                            class: 'editor-image',
                         },
                     }),
                     // 链接：提供 setLink/toggleLink 命令
@@ -3176,11 +3216,18 @@
                     }),
                 ];
                 
+                // 修复：确保初始内容正确处理（避免null/undefined导致的丢失）
+                let editorContent = initialContent;
+                if (!editorContent || editorContent.trim() === '') {
+                    editorContent = '<p>开始编辑文章内容...</p>';
+                }
+                console.log('📝 编辑器内容长度:', editorContent.length, '字符');
+                
                 // 创建编辑器实例
                 articleEditor = new Editor({
                     element: container,
                     extensions: extensions,
-                    content: initialContent || '<p>开始编辑文章内容...</p>',
+                    content: editorContent,
                 });
                 
                 console.log('✅ 编辑器初始化成功');
@@ -3397,49 +3444,20 @@
         }
 
         // 图片对齐
+        // 修复：使用data-align属性存储对齐方式（遵循Tiptap 2.4.0官方文档推荐）
         function alignImage(pos) {
             if (!ensureImageSelected()) return;
-            const styleMap = {
-                'left': 'text-align:left;',
-                'center': 'text-align:center;',
-                'right': 'text-align:right;'
-            };
-            const alignStyle = styleMap[pos] || 'text-align:center;';
-            
-            const { $from } = articleEditor.state.selection;
-            const node = articleEditor.state.doc.nodeAt($from.before($from.depth));
-            
-            if (node && node.type.name === 'image') {
-                const currentAttrs = { ...node.attrs };
-                const newStyle = alignStyle + (currentAttrs.style || '').replace(/text-align:\w+;?/g, '');
-                currentAttrs.style = newStyle.trim();
-                
-                const tr = articleEditor.state.tr;
-                tr.setNodeMarkup($from.before($from.depth), null, currentAttrs);
-                articleEditor.view.dispatch(tr);
-            }
+            articleEditor.chain().focus().updateAttributes('image', { 'data-align': pos }).run();
         }
 
         // 设置图片宽度（百分比）
+        // 修复：使用data-width属性而不是修改style
         function setImageWidth() {
             if (!ensureImageSelected()) return;
             const val = prompt('输入图片宽度(1-100)%：', '80');
             const n = parseInt(val, 10);
             if (!n || n < 1 || n > 100) return;
-            
-            const { $from } = articleEditor.state.selection;
-            const node = articleEditor.state.doc.nodeAt($from.before($from.depth));
-            
-            if (node && node.type.name === 'image') {
-                const currentAttrs = { ...node.attrs };
-                let newStyle = (currentAttrs.style || '').replace(/width:\d+%?;?/g, '');
-                newStyle = `width:${n}%;${newStyle}`;
-                currentAttrs.style = newStyle.trim();
-                
-                const tr = articleEditor.state.tr;
-                tr.setNodeMarkup($from.before($from.depth), null, currentAttrs);
-                articleEditor.view.dispatch(tr);
-            }
+            articleEditor.chain().focus().updateAttributes('image', { 'data-width': n }).run();
         }
 
         // 删除当前选中的图片
