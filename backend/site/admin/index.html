@@ -706,6 +706,8 @@
             outline: none;
             min-height: 280px;
             padding: 10px;
+            overflow: hidden;
+            display: flow-root;
         }
 
         .ProseMirror h1 {
@@ -788,6 +790,7 @@
         /* 支持data-align属性的图片对齐样式 */
         .ProseMirror img[data-align='left'] {
             float: left;
+            max-width: 45%;
             margin-right: 16px;
             margin-bottom: 8px;
         }
@@ -797,10 +800,12 @@
             margin-left: auto;
             margin-right: auto;
             margin-bottom: 8px;
+            max-width: 100%;
         }
 
         .ProseMirror img[data-align='right'] {
             float: right;
+            max-width: 45%;
             margin-left: 16px;
             margin-bottom: 8px;
         }
