@@ -2486,7 +2486,7 @@
                     }
                     document.getElementById('articlePlatform').value = data.platform_id || '';
                     document.getElementById('articleSummary').value = data.summary || '';
-                    // 初始化编辑器并加载内容
+                    // 🔥 修复：确保等待编辑器初始化完成后再显示内容
                     await initArticleEditor(data.content || '');
                     document.getElementById('articlePublished').checked = data.is_published;
                     document.getElementById('articleFeatured').checked = data.is_featured;
@@ -3199,8 +3199,30 @@
                 const extensions = [
                     StarterKit,
                     // 图片：提供 setImage 命令，支持对齐属性和宽度设置
-                    // 根据Tiptap官方文档，使用data-align属性存储对齐方式
-                    ImageExt.configure({
+                    // 修复：配置Image扩展以保留data-align和data-width属性
+                    ImageExt.extend({
+                        addAttributes() {
+                            return {
+                                ...this.parent?.(),
+                                'data-align': {
+                                    default: null,
+                                    parseHTML: element => element.getAttribute('data-align'),
+                                    renderHTML: attributes => {
+                                        if (!attributes['data-align']) return {};
+                                        return { 'data-align': attributes['data-align'] };
+                                    },
+                                },
+                                'data-width': {
+                                    default: null,
+                                    parseHTML: element => element.getAttribute('data-width'),
+                                    renderHTML: attributes => {
+                                        if (!attributes['data-width']) return {};
+                                        return { 'data-width': attributes['data-width'] };
+                                    },
+                                },
+                            };
+                        },
+                    }).configure({
                         inline: false,
                         selectable: true,
                         draggable: true,
