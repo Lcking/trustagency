@@ -3413,24 +3413,42 @@
                 console.warn('setImage 命令不可用：Image 扩展可能未注册');
                 return;
             }
+            
             // 提供两种选择：上传文件或输入URL
             const choice = prompt('选择方式:\n1 = 上传本地文件\n2 = 输入图片URL\n\n请输入 1 或 2:');
             
             if (choice === '1') {
-                // 上传文件 - 使用可靠的方法
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.style.display = 'none';
+                // 上传文件 - 使用预先创建的隐藏input元素
+                console.log('📁 用户选择上传本地文件');
                 
-                input.onchange = async (e) => {
-                    const file = e.target.files[0];
+                // 获取隐藏的文件输入元素
+                let input = document.getElementById('imageFileInput');
+                
+                if (!input) {
+                    // 如果不存在，创建一个
+                    input = document.createElement('input');
+                    input.type = 'file';
+                    input.id = 'imageFileInput';
+                    input.accept = 'image/*';
+                    input.style.display = 'none';
+                    document.body.appendChild(input);
+                    console.log('⚠️ 文件输入元素不存在，已创建新的');
+                }
+                
+                // 清除之前的事件处理器
+                const newInput = input.cloneNode(true);
+                input.parentNode.replaceChild(newInput, input);
+                input = newInput;
+                
+                // 定义文件选择处理器
+                async function handleFileSelect(e) {
+                    const file = e.target.files?.[0];
                     if (!file) {
-                        console.log('❌ 未选择文件');
+                        console.log('❌ 用户取消了文件选择');
                         return;
                     }
                     
-                    console.log('📤 开始上传文件:', file.name);
+                    console.log('📤 开始上传文件:', file.name, '大小:', file.size, 'bytes');
                     
                     try {
                         // 上传文件
@@ -3451,7 +3469,7 @@
                             const data = await response.json();
                             console.log('✅ 图片上传成功:', data.url);
                             
-                            // 插入图片到编辑器 - 直接用 style 属性
+                            // 插入图片到编辑器
                             if (articleEditor) {
                                 articleEditor.chain().focus().setImage({ 
                                     src: data.url,
@@ -3459,25 +3477,26 @@
                                 }).run();
                                 console.log('✅ 图片已插入编辑器');
                             }
-                            alert('图片上传成功！');
+                            alert('✅ 图片上传成功！');
                         } else {
                             const error = await response.json();
                             console.error('❌ 上传失败:', error);
-                            alert('上传失败: ' + error.detail);
+                            alert('❌ 上传失败: ' + (error.detail || error.message || '未知错误'));
                         }
                     } catch (error) {
                         console.error('❌ 上传错误:', error);
-                        alert('上传错误: ' + error.message);
-                    } finally {
-                        // 清理
-                        document.body.removeChild(input);
+                        alert('❌ 上传错误: ' + error.message);
                     }
-                };
+                }
                 
-                // 重要：将input添加到DOM，然后触发click
-                document.body.appendChild(input);
-                console.log('📁 文件选择对话框已打开');
+                // 注册事件处理器
+                input.addEventListener('change', handleFileSelect, { once: true });
+                console.log('📁 文件选择器事件处理器已注册');
+                
+                // 触发文件选择对话框
                 input.click();
+                console.log('📁 点击文件选择对话框');
+                
             } else if (choice === '2') {
                 // 输入URL
                 const url = prompt('输入图片URL:');
@@ -3501,28 +3520,30 @@
         }
 
         // 图片对齐
-        // 修复：使用style属性直接控制图片对齐，更稳定
+        // 修复：使用style属性直接控制图片对齐
         function alignImage(pos) {
             if (!ensureImageSelected()) return;
             
-            let floatStyle = 'none';
-            let marginStyle = '0';
+            let styleStr = '';
             
             if (pos === 'left') {
-                floatStyle = 'left';
-                marginStyle = '0 15px 10px 0';
+                // 左对齐：浮动到左边，右边有间距，文字环绕
+                styleStr = 'float: left; margin: 0 15px 10px 0; width: 45%; height: auto; display: block; max-width: 100%;';
             } else if (pos === 'right') {
-                floatStyle = 'right';
-                marginStyle = '0 0 10px 15px';
+                // 右对齐：浮动到右边，左边有间距，文字环绕
+                styleStr = 'float: right; margin: 0 0 10px 15px; width: 45%; height: auto; display: block; max-width: 100%;';
+            } else if (pos === 'center') {
+                // 中间对齐：不浮动，用margin自动居中
+                styleStr = 'float: none; margin: 10px auto; display: block; width: auto; height: auto; max-width: 100%;';
             }
             
-            const styleStr = `float: ${floatStyle}; margin: ${marginStyle}; width: 45%; height: auto; display: block; max-width: 100%;`;
-            
-            articleEditor.chain()
-                .focus()
-                .updateAttributes('image', { style: styleStr })
-                .run();
-            console.log('✅ 设置图片对齐为:', pos);
+            if (styleStr) {
+                articleEditor.chain()
+                    .focus()
+                    .updateAttributes('image', { style: styleStr })
+                    .run();
+                console.log('✅ 设置图片对齐为:', pos, '，样式:', styleStr);
+            }
         }
 
         // 设置图片宽度（百分比）
@@ -3635,5 +3656,8 @@
             setTimeout(() => TiptapDiagnostics.check(), 1000);
         });
     </script>
+    
+    <!-- 隐藏的文件上传输入 -->
+    <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
 </body>
 </html>
