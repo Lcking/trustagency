@@ -3520,21 +3520,33 @@
         }
 
         // 图片对齐
-        // 修复：使用style属性直接控制图片对齐
+        // 修复：使用style属性直接控制图片对齐，保留现有的宽度设置
         function alignImage(pos) {
             if (!ensureImageSelected()) return;
+            
+            // 获取当前的style属性，保留现有的宽度设置
+            const currentNode = articleEditor.state.selection.$anchor.nodeAfter || articleEditor.state.selection.$anchor.nodeBefore;
+            let currentStyle = currentNode?.attrs?.style || '';
+            
+            // 提取现有的宽度值（如果有）
+            const widthMatch = currentStyle.match(/width:\s*(\d+%)/);
+            const currentWidth = widthMatch ? widthMatch[1] : null;
             
             let styleStr = '';
             
             if (pos === 'left') {
                 // 左对齐：浮动到左边，右边有间距，文字环绕
-                styleStr = 'float: left; margin: 0 15px 10px 0; width: 45%; height: auto; display: block; max-width: 100%;';
+                const width = currentWidth || '45%';
+                styleStr = `float: left; margin: 0 15px 10px 0; width: ${width}; height: auto; display: block; max-width: 100%;`;
             } else if (pos === 'right') {
                 // 右对齐：浮动到右边，左边有间距，文字环绕
-                styleStr = 'float: right; margin: 0 0 10px 15px; width: 45%; height: auto; display: block; max-width: 100%;';
+                const width = currentWidth || '45%';
+                styleStr = `float: right; margin: 0 0 10px 15px; width: ${width}; height: auto; display: block; max-width: 100%;`;
             } else if (pos === 'center') {
                 // 中间对齐：不浮动，用margin自动居中
-                styleStr = 'float: none; margin: 10px auto; display: block; width: auto; height: auto; max-width: 100%;';
+                // 如果有现有宽度，保留它；否则使用100%
+                const width = currentWidth || '100%';
+                styleStr = `float: none; margin: 10px auto; display: block; width: ${width}; height: auto; max-width: 100%;`;
             }
             
             if (styleStr) {
