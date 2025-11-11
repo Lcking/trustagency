@@ -3204,25 +3204,25 @@
                 const extensions = [
                     StarterKit,
                     // 图片：提供 setImage 命令，支持对齐属性和宽度设置
-                    // 修复：配置Image扩展以保留data-align和data-width属性
+                    // 修复：配置Image扩展以正确保留data-align和data-width属性
                     ImageExt.extend({
                         addAttributes() {
                             return {
                                 ...this.parent?.(),
-                                'data-align': {
+                                dataAlign: {
                                     default: null,
                                     parseHTML: element => element.getAttribute('data-align'),
                                     renderHTML: attributes => {
-                                        if (!attributes['data-align']) return {};
-                                        return { 'data-align': attributes['data-align'] };
+                                        if (!attributes.dataAlign) return {};
+                                        return { 'data-align': attributes.dataAlign };
                                     },
                                 },
-                                'data-width': {
+                                dataWidth: {
                                     default: null,
                                     parseHTML: element => element.getAttribute('data-width'),
                                     renderHTML: attributes => {
-                                        if (!attributes['data-width']) return {};
-                                        return { 'data-width': attributes['data-width'] };
+                                        if (!attributes.dataWidth) return {};
+                                        return { 'data-width': attributes.dataWidth };
                                     },
                                 },
                             };
@@ -3447,12 +3447,12 @@
                         
                         if (response.ok) {
                             const data = await response.json();
-                            // 插入图片到编辑器 - 使用data-align和data-width属性
+                            // 插入图片到编辑器 - 使用dataAlign和dataWidth属性（驼峰式）
                             if (articleEditor) {
                                 articleEditor.chain().focus().setImage({ 
                                     src: data.url,
-                                    'data-align': 'center',
-                                    'data-width': '100',
+                                    'dataAlign': 'center',
+                                    'dataWidth': '100',
                                     style: 'max-width:100%;height:auto;display:block;'
                                 }).run();
                             }
@@ -3473,8 +3473,8 @@
                 if (url && articleEditor) {
                     articleEditor.chain().focus().setImage({ 
                         src: url,
-                        'data-align': 'center',
-                        'data-width': '100',
+                        'dataAlign': 'center',
+                        'dataWidth': '100',
                         style: 'max-width:100%;height:auto;display:block;'
                     }).run();
                 }
@@ -3491,20 +3491,29 @@
         }
 
         // 图片对齐
-        // 修复：使用data-align属性存储对齐方式（遵循Tiptap 2.4.0官方文档推荐）
+        // 修复：使用dataAlign属性（驼峰式）对应HTML中的data-align
         function alignImage(pos) {
             if (!ensureImageSelected()) return;
-            articleEditor.chain().focus().updateAttributes('image', { 'data-align': pos }).run();
+            articleEditor.chain().focus().updateAttributes('image', { 'dataAlign': pos }).run();
+            console.log('✅ 设置图片对齐为:', pos);
         }
 
         // 设置图片宽度（百分比）
-        // 修复：使用data-width属性而不是修改style
+        // 修复：使用dataWidth属性（驼峰式）对应HTML中的data-width
         function setImageWidth() {
             if (!ensureImageSelected()) return;
             const val = prompt('输入图片宽度(1-100)%：', '80');
             const n = parseInt(val, 10);
-            if (!n || n < 1 || n > 100) return;
-            articleEditor.chain().focus().updateAttributes('image', { 'data-width': n }).run();
+            if (!n || n < 1 || n > 100) {
+                alert('请输入1-100之间的数字');
+                return;
+            }
+            // 修复：使用dataWidth属性，Tiptap会自动转换为data-width HTML属性
+            articleEditor.chain()
+                .focus()
+                .updateAttributes('image', { 'dataWidth': String(n) })
+                .run();
+            console.log('✅ 设置图片宽度为:', n + '%');
         }
 
         // 删除当前选中的图片
