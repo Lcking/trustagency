@@ -3406,17 +3406,17 @@
             };
             const alignStyle = styleMap[pos] || 'text-align:center;';
             
-            // 获取当前图片元素属性
             const { $from } = articleEditor.state.selection;
-            const pos_node = $from.before($from.depth);
-            const node = articleEditor.state.doc.nodeAt(pos_node);
+            const node = articleEditor.state.doc.nodeAt($from.before($from.depth));
             
             if (node && node.type.name === 'image') {
-                const currentAttrs = node.attrs;
+                const currentAttrs = { ...node.attrs };
                 const newStyle = alignStyle + (currentAttrs.style || '').replace(/text-align:\w+;?/g, '');
-                articleEditor.commands.updateAttributes('image', { 
-                    style: newStyle.trim() 
-                });
+                currentAttrs.style = newStyle.trim();
+                
+                const tr = articleEditor.state.tr;
+                tr.setNodeMarkup($from.before($from.depth), null, currentAttrs);
+                articleEditor.view.dispatch(tr);
             }
         }
 
@@ -3427,19 +3427,18 @@
             const n = parseInt(val, 10);
             if (!n || n < 1 || n > 100) return;
             
-            // 获取当前图片元素属性
             const { $from } = articleEditor.state.selection;
-            const pos_node = $from.before($from.depth);
-            const node = articleEditor.state.doc.nodeAt(pos_node);
+            const node = articleEditor.state.doc.nodeAt($from.before($from.depth));
             
             if (node && node.type.name === 'image') {
-                const currentAttrs = node.attrs;
-                // 保留现有样式，只更新宽度
+                const currentAttrs = { ...node.attrs };
                 let newStyle = (currentAttrs.style || '').replace(/width:\d+%?;?/g, '');
                 newStyle = `width:${n}%;${newStyle}`;
-                articleEditor.commands.updateAttributes('image', { 
-                    style: newStyle.trim() 
-                });
+                currentAttrs.style = newStyle.trim();
+                
+                const tr = articleEditor.state.tr;
+                tr.setNodeMarkup($from.before($from.depth), null, currentAttrs);
+                articleEditor.view.dispatch(tr);
             }
         }
 
