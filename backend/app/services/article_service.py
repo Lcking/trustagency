@@ -88,7 +88,7 @@ class ArticleService:
         Returns:
             文章对象或 None
         """
-        article = db.query(Article).filter(Article.id == article_id).first()
+        article = db.query(Article).options(joinedload(Article.section)).filter(Article.id == article_id).first()
         
         # 增加浏览量
         if article:
@@ -133,7 +133,7 @@ class ArticleService:
         Returns:
             (文章列表, 总数) 元组
         """
-        query = db.query(Article).options(joinedload(Article.category_obj))
+        query = db.query(Article).options(joinedload(Article.category_obj), joinedload(Article.section))
 
         # 应用搜索过滤
         if search:

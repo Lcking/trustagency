@@ -3,6 +3,7 @@
 提供文章的 CRUD 端点、发布、搜索、分类等功能
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import AdminUser, Article, Section
@@ -15,6 +16,7 @@ from app.schemas.article import (
     ArticleListResponse,
 )
 from typing import Optional
+import os
 
 router = APIRouter(prefix="/api/articles", tags=["articles"])
 

@@ -2,11 +2,14 @@
 FastAPI 应用主文件
 """
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pathlib import Path
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
 
 # 加载环境变量
 load_dotenv()
@@ -94,6 +97,7 @@ if static_path.exists():
 # 🔥 导入所有数据库模型，确保 SQLAlchemy 可以识别所有表
 # 这必须在路由导入之前进行，以便 init_db() 可以创建所有表
 from app.models import AdminUser, Platform, Section, Category, Article, AIGenerationTask, AIConfig
+from app.database import get_db
 
 # 导入路由
 from app.routes import auth, platforms, articles, tasks, sections, categories, ai_configs, upload
@@ -264,6 +268,35 @@ async def health_check():
         "status": "ok",
         "message": "TrustAgency Backend is running"
     }
+
+# 公开文章预览路由 - /article/:slug
+@app.get("/article/{slug}")
+async def view_article(slug: str, db: Session = Depends(get_db)):
+    """
+    公开文章查看页面
+    返回HTML页面，而不是JSON API
+    """
+    from sqlalchemy.orm import joinedload
+    
+    # 查询已发布的文章
+    article = db.query(Article).options(joinedload(Article.section)).filter(
+        and_(Article.slug == slug, Article.is_published == True)
+    ).first()
+    
+    if not article:
+        raise HTTPException(status_code=404, detail=f"文章 '{slug}' 不存在或未发布")
+    
+    # 增加浏览量
+    article.view_count = (article.view_count or 0) + 1
+    db.add(article)
+    db.commit()
+    
+    # 返回预览页面
+    article_view_html = BACKEND_DIR / "static" / "article_view.html"
+    if article_view_html.exists():
+        return FileResponse(article_view_html)
+    else:
+        raise HTTPException(status_code=500, detail="文章预览页面不存在")
 
 # 根路由
 @app.get("/")

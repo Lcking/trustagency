@@ -6,6 +6,15 @@ from typing import Optional
 from datetime import datetime
 
 
+class SectionSchema(BaseModel):
+    """栏目 Schema - 用于嵌入"""
+    id: int
+    name: str
+    
+    class Config:
+        from_attributes = True
+
+
 class ArticleBase(BaseModel):
     """文章基础 Schema"""
     title: str
@@ -45,6 +54,8 @@ class ArticleResponse(ArticleBase):
     id: int
     slug: str
     section_id: int  # 新增
+    section: Optional[SectionSchema] = None  # 新增: 栏目对象
+    section_name: Optional[str] = None  # 新增: 栏目名称
     author_id: int
     is_published: bool
     view_count: int
@@ -60,6 +71,17 @@ class ArticleResponse(ArticleBase):
         if not values.get('category_name'):
             # 如果直接有category字段，使用它
             values['category_name'] = values.get('category')
+        
+        # 填充section_name
+        if not values.get('section_name'):
+            # 如果有section关系对象，尝试从中获取name
+            section = values.get('section')
+            if section:
+                if isinstance(section, dict):
+                    values['section_name'] = section.get('name')
+                elif hasattr(section, 'name'):
+                    values['section_name'] = section.name
+        
         return values
 
     class Config:
