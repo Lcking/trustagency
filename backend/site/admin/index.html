@@ -3417,14 +3417,20 @@
             const choice = prompt('选择方式:\n1 = 上传本地文件\n2 = 输入图片URL\n\n请输入 1 或 2:');
             
             if (choice === '1') {
-                // 上传文件
+                // 上传文件 - 使用可靠的方法
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
+                input.style.display = 'none';
                 
                 input.onchange = async (e) => {
                     const file = e.target.files[0];
-                    if (!file) return;
+                    if (!file) {
+                        console.log('❌ 未选择文件');
+                        return;
+                    }
+                    
+                    console.log('📤 开始上传文件:', file.name);
                     
                     try {
                         // 上传文件
@@ -3439,25 +3445,38 @@
                             body: formData
                         });
                         
+                        console.log('📨 上传响应状态:', response.status);
+                        
                         if (response.ok) {
                             const data = await response.json();
+                            console.log('✅ 图片上传成功:', data.url);
+                            
                             // 插入图片到编辑器 - 直接用 style 属性
                             if (articleEditor) {
                                 articleEditor.chain().focus().setImage({ 
                                     src: data.url,
                                     style: 'width: 100%; height: auto; display: block; max-width: 100%;'
                                 }).run();
+                                console.log('✅ 图片已插入编辑器');
                             }
                             alert('图片上传成功！');
                         } else {
                             const error = await response.json();
+                            console.error('❌ 上传失败:', error);
                             alert('上传失败: ' + error.detail);
                         }
                     } catch (error) {
+                        console.error('❌ 上传错误:', error);
                         alert('上传错误: ' + error.message);
+                    } finally {
+                        // 清理
+                        document.body.removeChild(input);
                     }
                 };
                 
+                // 重要：将input添加到DOM，然后触发click
+                document.body.appendChild(input);
+                console.log('📁 文件选择对话框已打开');
                 input.click();
             } else if (choice === '2') {
                 // 输入URL
@@ -3467,6 +3486,7 @@
                         src: url,
                         style: 'width: 100%; height: auto; display: block; max-width: 100%;'
                     }).run();
+                    console.log('✅ 图片已从URL插入:', url);
                 }
             }
         }
