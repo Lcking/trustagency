@@ -67,7 +67,11 @@
       const plainText = temp.textContent ? temp.textContent.replace(/\s+/g,' ').trim() : '';
       const autoSummary = plainText ? plainText.slice(0, 160) + (plainText.length > 160 ? '…' : '') : '';
       const summaryText = (data.summary && data.summary.trim()) || autoSummary;
-      const firstImage = temp.querySelector('img')?.getAttribute('src') || null;
+      
+      // 获取所有图片
+      const images = Array.from(temp.querySelectorAll('img')).map(img => img.getAttribute('src')).filter(Boolean);
+      const firstImage = images[0] || null;
+      
       const container = document.getElementById('articleContainer');
       
       let html = `
@@ -86,7 +90,18 @@
       
       container.innerHTML = html;
       
-      // 生成结构化数据 (Article) - 修复：添加@id字段包含article ID
+      // 生成结构化数据 (Article) - 使用完整HTML内容而非纯文本
+      // 构建 articleBody：包含所有内容的 HTML
+      const articleBodyHTML = data.content || '';
+      
+      // 构建图片数组：所有图片的完整URL
+      const imageArray = images.map(img => {
+        // 确保图片URL是完整URL
+        if (img.startsWith('http')) return img;
+        if (img.startsWith('/')) return API_URL + img;
+        return API_URL + '/' + img;
+      });
+      
       const ld = {
         '@context':'https://schema.org',
         '@type':'Article',
@@ -94,7 +109,7 @@
         'identifier': data.id,
         'headline': data.title,
         'description': summaryText || undefined,
-        'articleBody': plainText || undefined,
+        'articleBody': articleBodyHTML || undefined,
         'articleSection': data.category_name || data.category || '',
         'datePublished': data.published_at || data.created_at,
         'dateModified': data.published_at || data.created_at,
@@ -102,7 +117,7 @@
         'publisher': { '@type':'Organization','name':'TrustAgency' },
         'inLanguage':'zh-CN',
         'mainEntityOfPage': data.slug ? `/article/${data.slug}` : `${API_URL}/static/article_view.html?id=${data.id}`,
-        'image': firstImage ? [firstImage] : undefined,
+        'image': imageArray.length > 0 ? imageArray : undefined,
         'wordCount': plainText ? plainText.split(/\s+/).filter(Boolean).length : undefined,
         'isAccessibleForFree': true
       };
