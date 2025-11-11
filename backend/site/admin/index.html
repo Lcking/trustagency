@@ -805,7 +805,17 @@
             margin-bottom: 8px;
         }
 
-        /* 支持data-width属性的图片宽度设置 */
+        /* 支持data-width属性的图片宽度设置 - 使用通用选择器 */
+        .ProseMirror img[data-width] {
+            max-width: var(--img-width, 100%);
+            height: auto;
+        }
+
+        /* 针对特定宽度值的精确CSS */
+        .ProseMirror img[data-width='100'] {
+            max-width: 100%;
+        }
+
         .ProseMirror img[data-width='80'] {
             max-width: 80%;
         }
@@ -816,10 +826,6 @@
 
         .ProseMirror img[data-width='40'] {
             max-width: 40%;
-        }
-
-        .ProseMirror img[data-width='100'] {
-            max-width: 100%;
         }
 
         .ProseMirror a {
@@ -3219,7 +3225,11 @@
                 // 修复：确保初始内容正确处理（避免null/undefined导致的丢失）
                 let editorContent = initialContent;
                 if (!editorContent || editorContent.trim() === '') {
-                    editorContent = '<p>开始编辑文章内容...</p>';
+                    editorContent = '<p></p>';
+                }
+                // 确保内容是字符串且不为空
+                if (typeof editorContent !== 'string' || editorContent.length === 0) {
+                    editorContent = '<p></p>';
                 }
                 console.log('📝 编辑器内容长度:', editorContent.length, '字符');
                 
@@ -3410,9 +3420,14 @@
                         
                         if (response.ok) {
                             const data = await response.json();
-                            // 插入图片到编辑器
+                            // 插入图片到编辑器 - 使用data-align和data-width属性
                             if (articleEditor) {
-                                articleEditor.chain().focus().setImage({ src: data.url, style: 'max-width:100%;height:auto;display:block;' }).run();
+                                articleEditor.chain().focus().setImage({ 
+                                    src: data.url,
+                                    'data-align': 'center',
+                                    'data-width': '100',
+                                    style: 'max-width:100%;height:auto;display:block;'
+                                }).run();
                             }
                             alert('图片上传成功！');
                         } else {
@@ -3429,7 +3444,12 @@
                 // 输入URL
                 const url = prompt('输入图片URL:');
                 if (url && articleEditor) {
-                    articleEditor.chain().focus().setImage({ src: url, style: 'max-width:100%;height:auto;display:block;' }).run();
+                    articleEditor.chain().focus().setImage({ 
+                        src: url,
+                        'data-align': 'center',
+                        'data-width': '100',
+                        style: 'max-width:100%;height:auto;display:block;'
+                    }).run();
                 }
             }
         }

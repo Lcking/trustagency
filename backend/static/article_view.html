@@ -86,10 +86,12 @@
       
       container.innerHTML = html;
       
-      // 生成结构化数据 (Article)
+      // 生成结构化数据 (Article) - 修复：添加@id字段包含article ID
       const ld = {
         '@context':'https://schema.org',
         '@type':'Article',
+        '@id': `/article/${data.slug}#article`,
+        'identifier': data.id,
         'headline': data.title,
         'description': summaryText || undefined,
         'articleBody': plainText || undefined,
