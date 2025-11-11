@@ -53,14 +53,13 @@ class ArticleResponse(ArticleBase):
     published_at: Optional[datetime] = None
     category_name: Optional[str] = None
 
-    @root_validator(pre=True)
-    def _hydrate_category_name(cls, values):
-        # 优先使用外键关系名称，其次回退到 legacy category 字段
-        category_obj = values.get('category_obj')
-        if category_obj and getattr(category_obj, 'name', None):
-            values['category_name'] = category_obj.name
-        else:
-            values.setdefault('category_name', values.get('category'))
+    @root_validator(pre=False, skip_on_failure=True)
+    def _populate_category_name(cls, values):
+        # 在Pydantic验证后调用，只处理转换后的值
+        # 如果category_id已填充，尝试从关系对象获取category_name
+        if not values.get('category_name'):
+            # 如果直接有category字段，使用它
+            values['category_name'] = values.get('category')
         return values
 
     class Config:
