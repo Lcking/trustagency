@@ -274,10 +274,11 @@ async def health_check():
 async def view_article(slug: str, db: Session = Depends(get_db)):
     """
     公开文章查看页面
-    返回HTML页面，直接嵌入文章数据
+    返回HTML页面，直接嵌入文章数据和Schema标签（服务端生成）
     """
     from sqlalchemy.orm import joinedload
     import json
+    from bs4 import BeautifulSoup
     
     # 查询已发布的文章
     article = db.query(Article).options(joinedload(Article.section)).filter(
@@ -318,12 +319,69 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "published_at": article.published_at.isoformat() if article.published_at else None,
     }
     
-    # 在HTML中嵌入文章数据
+    # 生成Schema标签（服务端生成，而非客户端动态生成）
+    # 提取纯文本和图片
+    soup = BeautifulSoup(article.content, 'html.parser')
+    plain_text = soup.get_text().replace('\n', ' ').strip()
+    plain_text = ' '.join(plain_text.split())  # 清理空白
+    
+    # 提取所有图片URL
+    images = []
+    for img in soup.find_all('img'):
+        src = img.get('src')
+        if src:
+            # 完整化URL
+            if src.startswith('http'):
+                images.append(src)
+            elif src.startswith('/'):
+                images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}{src}")
+            else:
+                images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}/{src}")
+    
+    # 生成摘要
+    auto_summary = plain_text[:160] + ('…' if len(plain_text) > 160 else '')
+    summary_text = (article.summary and article.summary.strip()) or auto_summary
+    
+    # 构建Schema.org Article 结构化数据（最新标准）
+    schema_data = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "@id": f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}/article/{article.slug}#article",
+        "identifier": article.id,
+        "headline": article.title,
+        "description": summary_text,
+        "articleBody": article.content,  # 完整HTML内容
+        "articleSection": article.category_name or article.section.name if article.section else "未分类",
+        "datePublished": (article.published_at or article.created_at).isoformat() if article.published_at or article.created_at else None,
+        "dateModified": (article.published_at or article.created_at).isoformat() if article.published_at or article.created_at else None,
+        "author": {
+            "@type": "Person",
+            "name": "Admin"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "TrustAgency"
+        },
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}/article/{article.slug}",
+        "image": images if images else None,  # 所有图片
+        "wordCount": len(plain_text.split()),
+        "isAccessibleForFree": True
+    }
+    
+    # 移除None值
+    schema_data = {k: v for k, v in schema_data.items() if v is not None}
+    
+    # 在HTML中嵌入文章数据和Schema标签（服务端生成）
     article_json = json.dumps(article_data, ensure_ascii=False)
-    html_content = html_content.replace(
-        '</head>',
-        f'<script>window.__ARTICLE_DATA__ = {article_json};</script>\n</head>'
-    )
+    schema_json = json.dumps(schema_data, ensure_ascii=False, indent=2)
+    
+    schema_script = f'''<script type="application/ld+json">
+{schema_json}
+</script>
+<script>window.__ARTICLE_DATA__ = {article_json};</script>'''
+    
+    html_content = html_content.replace('</head>', f'{schema_script}\n</head>')
     
     return HTMLResponse(content=html_content, status_code=200)
 
