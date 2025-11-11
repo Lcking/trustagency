@@ -1117,6 +1117,7 @@
                         <button class="close-btn" onclick="closeArticleModal()">&times;</button>
                     </div>
                     <form id="articleForm" onsubmit="saveArticle(event)">
+                        <input type="hidden" id="articleId" />
                         <div class="form-row full-width">
                             <div class="form-group">
                                 <label>标题 *</label>
@@ -3209,20 +3210,13 @@
                         addAttributes() {
                             return {
                                 ...this.parent?.(),
-                                dataAlign: {
+                                // 支持 style 属性用于控制宽度和对齐
+                                style: {
                                     default: null,
-                                    parseHTML: element => element.getAttribute('data-align'),
+                                    parseHTML: element => element.getAttribute('style'),
                                     renderHTML: attributes => {
-                                        if (!attributes.dataAlign) return {};
-                                        return { 'data-align': attributes.dataAlign };
-                                    },
-                                },
-                                dataWidth: {
-                                    default: null,
-                                    parseHTML: element => element.getAttribute('data-width'),
-                                    renderHTML: attributes => {
-                                        if (!attributes.dataWidth) return {};
-                                        return { 'data-width': attributes.dataWidth };
+                                        if (!attributes.style) return {};
+                                        return { style: attributes.style };
                                     },
                                 },
                             };
@@ -3447,13 +3441,11 @@
                         
                         if (response.ok) {
                             const data = await response.json();
-                            // 插入图片到编辑器 - 使用dataAlign和dataWidth属性（驼峰式）
+                            // 插入图片到编辑器 - 直接用 style 属性
                             if (articleEditor) {
                                 articleEditor.chain().focus().setImage({ 
                                     src: data.url,
-                                    'dataAlign': 'center',
-                                    'dataWidth': '100',
-                                    style: 'max-width:100%;height:auto;display:block;'
+                                    style: 'width: 100%; height: auto; display: block; max-width: 100%;'
                                 }).run();
                             }
                             alert('图片上传成功！');
@@ -3473,9 +3465,7 @@
                 if (url && articleEditor) {
                     articleEditor.chain().focus().setImage({ 
                         src: url,
-                        'dataAlign': 'center',
-                        'dataWidth': '100',
-                        style: 'max-width:100%;height:auto;display:block;'
+                        style: 'width: 100%; height: auto; display: block; max-width: 100%;'
                     }).run();
                 }
             }
@@ -3491,15 +3481,32 @@
         }
 
         // 图片对齐
-        // 修复：使用dataAlign属性（驼峰式）对应HTML中的data-align
+        // 修复：使用style属性直接控制图片对齐，更稳定
         function alignImage(pos) {
             if (!ensureImageSelected()) return;
-            articleEditor.chain().focus().updateAttributes('image', { 'dataAlign': pos }).run();
+            
+            let floatStyle = 'none';
+            let marginStyle = '0';
+            
+            if (pos === 'left') {
+                floatStyle = 'left';
+                marginStyle = '0 15px 10px 0';
+            } else if (pos === 'right') {
+                floatStyle = 'right';
+                marginStyle = '0 0 10px 15px';
+            }
+            
+            const styleStr = `float: ${floatStyle}; margin: ${marginStyle}; width: 45%; height: auto; display: block; max-width: 100%;`;
+            
+            articleEditor.chain()
+                .focus()
+                .updateAttributes('image', { style: styleStr })
+                .run();
             console.log('✅ 设置图片对齐为:', pos);
         }
 
         // 设置图片宽度（百分比）
-        // 修复：使用dataWidth属性（驼峰式）对应HTML中的data-width
+        // 修复：直接修改选中图片的 style 属性，更加稳定可靠
         function setImageWidth() {
             if (!ensureImageSelected()) return;
             const val = prompt('输入图片宽度(1-100)%：', '80');
@@ -3508,10 +3515,20 @@
                 alert('请输入1-100之间的数字');
                 return;
             }
-            // 修复：使用dataWidth属性，Tiptap会自动转换为data-width HTML属性
+            
+            // 获取当前选中的图片节点
+            const { $anchor } = articleEditor.state.selection;
+            if (!$anchor) {
+                console.error('❌ 无法获取选中图片的位置');
+                return;
+            }
+            
+            // 使用 updateAttributes 更新 style 属性，直接设置宽度
             articleEditor.chain()
                 .focus()
-                .updateAttributes('image', { 'dataWidth': String(n) })
+                .updateAttributes('image', { 
+                    style: `width: ${n}%; height: auto; display: block; max-width: 100%;`
+                })
                 .run();
             console.log('✅ 设置图片宽度为:', n + '%');
         }
