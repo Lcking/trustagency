@@ -5,7 +5,7 @@ import os
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
@@ -274,9 +274,10 @@ async def health_check():
 async def view_article(slug: str, db: Session = Depends(get_db)):
     """
     公开文章查看页面
-    返回HTML页面，而不是JSON API
+    返回HTML页面，直接嵌入文章数据
     """
     from sqlalchemy.orm import joinedload
+    import json
     
     # 查询已发布的文章
     article = db.query(Article).options(joinedload(Article.section)).filter(
@@ -291,12 +292,40 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     db.add(article)
     db.commit()
     
-    # 返回预览页面
+    # 从article_view.html读取基础模板
     article_view_html = BACKEND_DIR / "static" / "article_view.html"
-    if article_view_html.exists():
-        return FileResponse(article_view_html)
-    else:
+    if not article_view_html.exists():
         raise HTTPException(status_code=500, detail="文章预览页面不存在")
+    
+    # 读取HTML模板
+    html_content = article_view_html.read_text(encoding='utf-8')
+    
+    # 准备文章数据JSON（与API响应格式一致）
+    article_data = {
+        "id": article.id,
+        "title": article.title,
+        "slug": article.slug,
+        "content": article.content,
+        "summary": article.summary,
+        "section_id": article.section_id,
+        "section_name": article.section.name if article.section else "未分类",
+        "category_name": article.category_name,
+        "author_id": article.author_id,
+        "is_published": article.is_published,
+        "view_count": article.view_count,
+        "like_count": article.like_count,
+        "created_at": article.created_at.isoformat() if article.created_at else None,
+        "published_at": article.published_at.isoformat() if article.published_at else None,
+    }
+    
+    # 在HTML中嵌入文章数据
+    article_json = json.dumps(article_data, ensure_ascii=False)
+    html_content = html_content.replace(
+        '</head>',
+        f'<script>window.__ARTICLE_DATA__ = {article_json};</script>\n</head>'
+    )
+    
+    return HTMLResponse(content=html_content, status_code=200)
 
 # 根路由
 @app.get("/")
