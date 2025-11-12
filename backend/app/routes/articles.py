@@ -21,19 +21,56 @@ import os
 router = APIRouter(prefix="/api/articles", tags=["articles"])
 
 
-@router.get("", response_model=ArticleListResponse)
+@router.get(
+    "",
+    response_model=ArticleListResponse,
+    summary="获取文章列表",
+    description="获取文章列表，支持搜索、分类、平台、排序和分页过滤",
+    responses={
+        200: {
+            "description": "成功获取文章列表",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "data": [
+                            {
+                                "id": 1,
+                                "title": "Bitcoin 初学者指南",
+                                "slug": "bitcoin-beginner-guide",
+                                "content": "完整的 HTML 内容...",
+                                "summary": "快速了解 Bitcoin",
+                                "category": "教程",
+                                "tags": ["bitcoin", "初学者"],
+                                "is_published": True,
+                                "is_featured": True,
+                                "author": {"id": 1, "username": "admin"},
+                                "view_count": 1200,
+                                "like_count": 89,
+                                "created_at": "2025-11-01T10:00:00",
+                                "updated_at": "2025-11-12T15:30:00"
+                            }
+                        ],
+                        "total": 150,
+                        "skip": 0,
+                        "limit": 10
+                    }
+                }
+            }
+        }
+    }
+)
 async def list_articles(
     skip: int = Query(0, ge=0, description="跳过的记录数"),
-    limit: int = Query(10, ge=1, le=100, description="每页记录数"),
-    search: Optional[str] = Query(None, description="搜索关键词（标题、内容、摘要）"),
-    category: Optional[str] = Query(None, description="分类过滤（传统字符串，向后兼容）"),
+    limit: int = Query(10, ge=1, le=100, description="每页记录数，最多 100"),
+    search: Optional[str] = Query(None, description="搜索关键词（标题、内容、摘要、标签）"),
+    category: Optional[str] = Query(None, description="分类过滤（传统字符串格式）"),
     category_id: Optional[int] = Query(None, description="分类 ID 过滤（推荐使用）"),
-    platform_id: Optional[int] = Query(None, description="平台过滤"),
-    author_id: Optional[int] = Query(None, description="作者过滤"),
-    is_published: Optional[bool] = Query(None, description="发布状态过滤"),
-    is_featured: Optional[bool] = Query(None, description="精选状态过滤"),
-    sort_by: str = Query("created_at", description="排序字段: title, created_at, updated_at, view_count, like_count"),
-    sort_order: str = Query("desc", description="排序顺序: asc, desc"),
+    platform_id: Optional[int] = Query(None, description="平台 ID 过滤"),
+    author_id: Optional[int] = Query(None, description="作者 ID 过滤"),
+    is_published: Optional[bool] = Query(None, description="发布状态：true/false/null(全部)"),
+    is_featured: Optional[bool] = Query(None, description="精选状态：true/false/null(全部)"),
+    sort_by: str = Query("created_at", description="排序字段：created_at, updated_at, title, view_count, like_count"),
+    sort_order: str = Query("desc", description="排序顺序：asc(升序) 或 desc(降序)"),
     db: Session = Depends(get_db),
 ):
     """

@@ -1,0 +1,730 @@
+{
+  "info": {
+    "_postman_id": "trustagency-api-collection",
+    "name": "TrustAgency API",
+    "description": "TrustAgency 项目完整 API 集合\n\n## 使用说明\n\n1. **导入集合**: 在 Postman 中导入此 JSON 文件\n2. **设置环境变量**: 创建环境并设置以下变量:\n   - `base_url`: http://localhost:8001\n   - `token`: 从登录端点获取\n3. **认证**: 所有需要认证的请求使用 Bearer Token\n4. **示例数据**: 每个请求都包含示例数据，可直接使用\n\n## API 分类\n\n- **Authentication** (认证) - 登录、登出、用户信息\n- **Articles** (文章) - 文章 CRUD、发布、搜索\n- **Categories** (分类) - 分类管理\n- **Sections** (栏目) - 栏目管理\n- **Platforms** (平台) - 平台配置\n- **AI Configs** (AI 配置) - AI 模型配置\n- **Upload** (上传) - 文件上传\n- **Tasks** (任务) - 后台任务管理",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication (认证)",
+      "item": [
+        {
+          "name": "Login - 管理员登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('token', jsonData.access_token);",
+                  "    pm.test('Token saved to environment', function() {",
+                  "        pm.expect(jsonData.access_token).to.exist;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"admin\", \"password\": \"admin123\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User - 获取当前用户信息",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout - 登出",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "logout"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📄 Articles (文章)",
+      "item": [
+        {
+          "name": "List Articles - 获取文章列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/articles?skip=0&limit=10&sort_by=created_at&sort_order=desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "bitcoin",
+                  "disabled": true
+                },
+                {
+                  "key": "category_id",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "is_published",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_by",
+                  "value": "created_at"
+                },
+                {
+                  "key": "sort_order",
+                  "value": "desc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Article - 创建新文章",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bitcoin 初学者指南\",\n  \"content\": \"<p>这是一篇完整的 Bitcoin 介绍文章...</p>\",\n  \"summary\": \"快速了解 Bitcoin 的要点\",\n  \"section_id\": 1,\n  \"category\": \"教程\",\n  \"tags\": [\"bitcoin\", \"加密货币\", \"初学者\"],\n  \"meta_description\": \"Learn about Bitcoin basics\",\n  \"meta_keywords\": \"bitcoin, cryptocurrency, blockchain\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/articles",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Article - 获取单篇文章",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/articles/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Article - 更新文章",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bitcoin 初学者指南 - 更新版\",\n  \"content\": \"<p>更新后的内容...</p>\",\n  \"summary\": \"更新的摘要\",\n  \"tags\": [\"bitcoin\", \"加密货币\", \"初学者\", \"更新\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/articles/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publish Article - 发布文章",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/articles/1/publish",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles", "1", "publish"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Feature Article - 精选文章",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/articles/1/feature",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles", "1", "feature"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Article - 删除文章",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/articles/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📚 Categories (分类)",
+      "item": [
+        {
+          "name": "List Categories - 获取分类列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Category - 创建分类",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"DeFi 指南\",\n  \"description\": \"关于 DeFi (去中心化金融) 的教程和指南\",\n  \"icon\": \"📊\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category - 获取单个分类",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/categories/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category - 更新分类",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"DeFi 完全指南\",\n  \"description\": \"更新的 DeFi 教程和指南\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/categories/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category - 删除分类",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/categories/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏗️ Sections (栏目)",
+      "item": [
+        {
+          "name": "List Sections - 获取栏目列表",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sections",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sections"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Section - 创建栏目",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"交易指南\",\n  \"order\": 1,\n  \"is_visible\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sections",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sections"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Section - 更新栏目",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"交易完全指南\",\n  \"order\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sections/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sections", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "⬆️ Upload (上传)",
+      "item": [
+        {
+          "name": "Upload Single File - 上传单个文件",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/upload/single",
+              "host": ["{{base_url}}"],
+              "path": ["api", "upload", "single"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Multiple Files - 上传多个文件",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/upload/multiple",
+              "host": ["{{base_url}}"],
+              "path": ["api", "upload", "multiple"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🤖 AI Config (AI 配置)",
+      "item": [
+        {
+          "name": "List AI Configs - 获取 AI 配置列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ai_configs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai_configs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create AI Config - 创建 AI 配置",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"gpt-4\",\n  \"api_key\": \"sk-xxxxxxxxxxxx\",\n  \"is_active\": true,\n  \"temperature\": 0.7,\n  \"max_tokens\": 2000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai_configs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai_configs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test AI Config - 测试 AI 配置",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"测试提示词\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai_configs/1/test",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai_configs", "1", "test"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📱 Platform (平台)",
+      "item": [
+        {
+          "name": "List Platforms - 获取平台列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/platforms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "platforms"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Platform - 创建平台",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Medium\",\n  \"api_key\": \"your-api-key\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/platforms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "platforms"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "⚙️ Tasks (后台任务)",
+      "item": [
+        {
+          "name": "List Tasks - 获取任务列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tasks?skip=0&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tasks"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task Status - 获取任务状态",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tasks/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tasks", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🏥 System (系统)",
+      "item": [
+        {
+          "name": "Health Check - 健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics - 获取统计数据",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["api", "statistics"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// 在执行请求前设置默认环境变量",
+          "if (!pm.environment.get('base_url')) {",
+          "    pm.environment.set('base_url', 'http://localhost:8001');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
