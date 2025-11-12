@@ -25,9 +25,14 @@ app = FastAPI(
 
 # CORS 配置 - 允许所有来源（本地开发）
 cors_origins = os.getenv("CORS_ORIGINS", '["http://localhost", "http://localhost:80", "http://localhost:8000", "http://localhost:8001"]')
-if isinstance(cors_origins, str):
+if isinstance(cors_origins, str) and cors_origins.strip():
     import json
-    cors_origins = json.loads(cors_origins)
+    try:
+        cors_origins = json.loads(cors_origins)
+    except json.JSONDecodeError:
+        cors_origins = ["http://localhost:8001"]
+else:
+    cors_origins = ["http://localhost:8001"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -385,15 +390,34 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     
     return HTMLResponse(content=html_content, status_code=200)
 
-# 根路由
-@app.get("/")
-async def root():
-    """根路由"""
+# 主前端路由 - 服务主站点的 index.html
+SITE_DIR = BACKEND_DIR.parent / "site"
+
+@app.get("/", include_in_schema=False)
+async def main_index():
+    """返回主站点的索引页面"""
+    main_index_path = SITE_DIR / "index.html"
+    
+    if main_index_path.exists():
+        return FileResponse(str(main_index_path), media_type="text/html; charset=utf-8")
+    
+    # 如果找不到，返回API信息
     return {
         "name": "TrustAgency API",
         "version": os.getenv("API_VERSION", "1.0.0"),
         "docs": "/api/docs"
     }
+
+# 挂载主前端的静态资源
+site_assets_dir = SITE_DIR / "assets"
+if site_assets_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(site_assets_dir)), name="site_assets")
+
+# 挂载其他主站点的目录
+for subdir in ["platforms", "guides", "wiki", "qa", "compare", "about", "legal"]:
+    subdir_path = SITE_DIR / subdir
+    if subdir_path.exists():
+        app.mount(f"/{subdir}", StaticFiles(directory=str(subdir_path), html=True), name=f"site_{subdir}")
 
 if __name__ == "__main__":
     import uvicorn
