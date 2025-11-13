@@ -167,8 +167,11 @@ def init_db():
         ]
         
         for platform_data in platforms_data:
-            existing = db.query(Platform).filter(Platform.name == platform_data["name"]).first()
-            if not existing:
+            # 使用 raw SQL 检查而不是 ORM，以避免加载不存在的列
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT id FROM platforms WHERE name = :name"), {"name": platform_data["name"]}).first()
+            if not result:
                 platform = Platform(**platform_data)
                 db.add(platform)
         

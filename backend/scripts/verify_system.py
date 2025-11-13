@@ -4,11 +4,13 @@
 验证脚本 - 检查系统是否准备就绪
 """
 import sys
+import os
 from pathlib import Path
 
-# 添加项目根路径到Python路径
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+# 添加后端目录到Python路径
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+os.chdir(backend_dir)
 
 def check_imports():
     """检查必要的导入"""
