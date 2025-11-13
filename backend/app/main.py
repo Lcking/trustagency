@@ -120,6 +120,8 @@ app.include_router(articles.router)
 app.include_router(tasks.router)
 app.include_router(ai_configs.router)
 app.include_router(upload.router)
+from app.routes import admin_platforms
+app.include_router(admin_platforms.router)
 
 # 设置管理后台路由
 setup_admin_routes(app)
