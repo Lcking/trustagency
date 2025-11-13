@@ -54,6 +54,7 @@
                 const query = {
                     page: this.state.currentPage,
                     limit: this.state.pageSize,
+                    // Bug004修复：支持按推荐排序和按评分排序
                     sort_by: this.state.sortBy,
                     ...this.state.filters
                 };
@@ -61,14 +62,44 @@
                 const response = await apiClient.getPlatforms(query);
                 
                 this.state.platforms = response.data || response.items || response;
-                this.state.filteredPlatforms = this.state.platforms;
+                
+                // Bug004修复：根据排序选项排序平台
+                this.state.filteredPlatforms = this.sortPlatforms(this.state.platforms);
 
                 this.render();
-                this.updatePaginationInfo(response.total || this.state.platforms.length);            } catch (error) {
+                this.updatePaginationInfo(response.total || this.state.platforms.length);
+            } catch (error) {
                 this.showError(apiClient.formatErrorMessage(error));
                 console.error('Failed to load platforms:', error);
             } finally {
                 this.state.loading = false;
+            }
+        },
+
+        /**
+         * Bug004修复：根据sortBy参数排序平台列表
+         */
+        sortPlatforms(platforms) {
+            const sorted = [...platforms];
+            
+            switch(this.state.sortBy) {
+                case 'rating':
+                    // 评分最高排在前面
+                    return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                case 'leverage':
+                    // 杠杆最高排在前面
+                    return sorted.sort((a, b) => (b.max_leverage || 0) - (a.max_leverage || 0));
+                case 'fee':
+                    // 费率最低排在前面
+                    return sorted.sort((a, b) => (a.commission_rate || 0) - (b.commission_rate || 0));
+                case 'ranking':
+                default:
+                    // 推荐排序：推荐的平台优先，然后按评分排序
+                    return sorted.sort((a, b) => {
+                        if (a.is_recommended && !b.is_recommended) return -1;
+                        if (!a.is_recommended && b.is_recommended) return 1;
+                        return (b.rating || 0) - (a.rating || 0);
+                    });
             }
         },
 
@@ -248,8 +279,9 @@
                     <article class="card h-100 shadow-sm hover-lift platform-card" 
                              data-platform-id="${platform.id}" 
                              aria-label="${platform.name} 平台">
-                        <div class="card-header bg-primary text-white">
-                            <h3 class="card-title h5 mb-0">${this.escapeHtml(platform.name)}</h3>
+                        <!-- Bug003修复：使用蓝底白字 -->
+                        <div class="card-header bg-primary text-white" style="background-color: #0d6efd !important;">
+                            <h3 class="card-title h5 mb-0" style="color: white;">${this.escapeHtml(platform.name)}</h3>
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
@@ -266,6 +298,7 @@
                                     <span class="text-muted">(${rating.toFixed(1)})</span>
                                 </div>
                             </div>
+                            <!-- Bug005修复：显示安全评级和成立年份 -->
                             <ul class="list-unstyled small mb-3">
                                 <li class="mb-2">
                                     <strong>最高杠杆:</strong>
@@ -277,7 +310,11 @@
                                 </li>
                                 <li class="mb-2">
                                     <strong>安全评级:</strong>
-                                    <span class="text-success fw-bold">${platform.safety_rating || 'B'}</span>
+                                    <span class="badge bg-warning text-dark">${platform.safety_rating || 'B'}</span>
+                                </li>
+                                <li class="mb-2">
+                                    <strong>成立年份:</strong>
+                                    <span class="badge bg-light text-dark">${foundedYear}</span>
                                 </li>
                             </ul>
                         </div>
@@ -354,12 +391,12 @@
          */
         showLoading() {
             if (!this.container) return;
+            // Bug006修复：只显示spinner，不显示加载中文字
             this.container.innerHTML = `
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">加载中...</span>
                     </div>
-                    <p class="mt-3 text-muted">加载平台数据中...</p>
                 </div>
             `;
         },

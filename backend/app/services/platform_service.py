@@ -72,7 +72,7 @@ class PlatformService:
             skip: 跳过的记录数
             limit: 返回的最大记录数
             search: 搜索关键词（搜索名称和描述）
-            sort_by: 排序字段 (name, rank, rating, commission_rate, created_at)
+            sort_by: 排序字段 (name, rank, rating, commission_rate, created_at, recommended)
             sort_order: 排序顺序 (asc, desc)
             is_active: 过滤活跃状态
             is_featured: 过滤精选状态
@@ -102,20 +102,35 @@ class PlatformService:
         # 获取总数（过滤后）
         total = query.count()
 
-        # 应用排序
-        sort_columns = {
-            "name": Platform.name,
-            "rank": Platform.rank,
-            "rating": Platform.rating,
-            "commission_rate": Platform.commission_rate,
-            "created_at": Platform.created_at,
-        }
-
-        sort_column = sort_columns.get(sort_by, Platform.rank)
-        if sort_order.lower() == "desc":
-            query = query.order_by(sort_column.desc())
+        # Bug004修复：应用排序 - 支持推荐排序
+        if sort_by == "rating":
+            # 评分最高排在前面
+            query = query.order_by(Platform.rating.desc())
+        elif sort_by == "leverage":
+            # 杠杆最高排在前面
+            query = query.order_by(Platform.max_leverage.desc())
+        elif sort_by == "fee":
+            # 费率最低排在前面
+            query = query.order_by(Platform.commission_rate.asc())
+        elif sort_by == "recommended":
+            # Bug002修复：推荐排序 - 推荐的平台优先，然后按评分排序
+            query = query.order_by(Platform.is_recommended.desc(), Platform.rating.desc())
+        elif sort_by == "ranking":
+            # 推荐排序（默认）
+            query = query.order_by(Platform.is_recommended.desc(), Platform.rating.desc())
         else:
-            query = query.order_by(sort_column.asc())
+            # 默认排序字段
+            sort_columns = {
+                "name": Platform.name,
+                "rank": Platform.rank,
+                "commission_rate": Platform.commission_rate,
+                "created_at": Platform.created_at,
+            }
+            sort_column = sort_columns.get(sort_by, Platform.rank)
+            if sort_order.lower() == "desc":
+                query = query.order_by(sort_column.desc())
+            else:
+                query = query.order_by(sort_column.asc())
 
         # 应用分页
         platforms = query.offset(skip).limit(limit).all()

@@ -9,6 +9,7 @@ from datetime import datetime
 class PlatformBase(BaseModel):
     """平台基础 Schema"""
     name: str
+    slug: Optional[str] = None
     description: Optional[str] = None
     rating: Optional[float] = 0.0
     rank: Optional[int] = None
@@ -19,6 +20,17 @@ class PlatformBase(BaseModel):
     logo_url: Optional[str] = None
     website_url: Optional[str] = None
     is_featured: bool = False
+    # Bug001: 平台详情页字段
+    introduction: Optional[str] = None
+    main_features: Optional[str] = None
+    fee_structure: Optional[str] = None
+    account_opening_link: Optional[str] = None
+    # Bug005: 卡片字段
+    safety_rating: str = "B"
+    founded_year: Optional[int] = None
+    fee_rate: Optional[float] = None
+    # Bug002: 推荐字段
+    is_recommended: bool = False
 
 
 class PlatformCreate(PlatformBase):
@@ -29,6 +41,7 @@ class PlatformCreate(PlatformBase):
 class PlatformUpdate(BaseModel):
     """更新平台 Schema"""
     name: Optional[str] = None
+    slug: Optional[str] = None
     description: Optional[str] = None
     rating: Optional[float] = None
     rank: Optional[int] = None
@@ -40,6 +53,17 @@ class PlatformUpdate(BaseModel):
     website_url: Optional[str] = None
     is_featured: Optional[bool] = None
     is_active: Optional[bool] = None
+    # Bug001: 平台详情页字段
+    introduction: Optional[str] = None
+    main_features: Optional[str] = None
+    fee_structure: Optional[str] = None
+    account_opening_link: Optional[str] = None
+    # Bug005: 卡片字段
+    safety_rating: Optional[str] = None
+    founded_year: Optional[int] = None
+    fee_rate: Optional[float] = None
+    # Bug002: 推荐字段
+    is_recommended: Optional[bool] = None
 
 
 class PlatformResponse(PlatformBase):
