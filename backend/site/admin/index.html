@@ -2296,13 +2296,34 @@
             
             if (platformId) {
                 title.textContent = '编辑平台';
-                // 加载平台数据
-                fetch(`${API_URL}/api/platforms/${platformId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.json()).then(data => {
-                    // 使用动态字段填充（如果字段存在）
-                    populateFormFields(data);
-                });
+                
+                try {
+                    // 先获取表单定义
+                    const formDefResponse = await fetch(
+                        `${API_URL}/api/admin/platforms/form-definition`,
+                        { headers: { 'Authorization': `Bearer ${token}` } }
+                    );
+                    
+                    if (formDefResponse.ok) {
+                        const formDef = await formDefResponse.json();
+                        renderDynamicPlatformForm(formDef);
+                    }
+                    
+                    // 再加载平台数据
+                    const response = await fetch(`${API_URL}/api/admin/platforms/${platformId}/edit`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        populateFormFields(data);
+                    } else {
+                        showNotification('加载平台数据失败', 'error');
+                    }
+                } catch (error) {
+                    console.error('编辑表单错误:', error);
+                    showNotification('加载表单失败: ' + error.message, 'error');
+                }
             } else {
                 title.textContent = '新增平台';
                 
@@ -2316,23 +2337,30 @@
                     if (response.ok) {
                         const formDef = await response.json();
                         renderDynamicPlatformForm(formDef);
+                    } else {
+                        showNotification('获取表单定义失败，请重试', 'error');
+                        modal.classList.remove('active');
+                        return;
                     }
                 } catch (error) {
-                    console.warn('获取表单定义失败，使用默认表单:', error);
+                    console.error('获取表单定义错误:', error);
+                    showNotification('表单加载失败: ' + error.message, 'error');
+                    modal.classList.remove('active');
+                    return;
                 }
                 
                 form.reset();
-                document.getElementById('platformActive').checked = true;
+                // 设置默认值
+                const activeCheckbox = document.getElementById('platform_is_active');
+                if (activeCheckbox) {
+                    activeCheckbox.checked = true;
+                }
             }
             modal.classList.add('active');
         }
         
         function renderDynamicPlatformForm(formDefinition) {
             const formContainer = document.getElementById('platformForm');
-            
-            // 清空现有表单内容（除了提交按钮）
-            const modal = formContainer.parentElement;
-            const footerElement = modal.querySelector('.modal-footer');
             formContainer.innerHTML = '';
             
             // 为每个 section 生成表单字段
@@ -2344,104 +2372,105 @@
                 formContainer.appendChild(sectionTitle);
                 
                 // 添加字段
-                section.fields.forEach(field => {
-                    const fieldGroup = document.createElement('div');
-                    fieldGroup.className = 'form-group';
-                    
-                    const label = document.createElement('label');
-                    label.textContent = field.label;
-                    if (field.required) {
-                        label.innerHTML += ' <span style="color:red">*</span>';
-                    }
-                    fieldGroup.appendChild(label);
-                    
-                    let input;
-                    
-                    switch(field.type) {
-                        case 'text':
-                            input = document.createElement('input');
-                            input.type = 'text';
-                            input.id = `platform_${field.name}`;
-                            input.placeholder = field.placeholder || '';
-                            input.required = field.required || false;
-                            break;
-                            
-                        case 'number':
-                            input = document.createElement('input');
-                            input.type = 'number';
-                            input.id = `platform_${field.name}`;
-                            input.placeholder = field.placeholder || '';
-                            input.min = field.min || '';
-                            input.max = field.max || '';
-                            input.step = field.step || '1';
-                            input.required = field.required || false;
-                            break;
-                            
-                        case 'textarea':
-                            input = document.createElement('textarea');
-                            input.id = `platform_${field.name}`;
-                            input.placeholder = field.placeholder || '';
-                            input.rows = 3;
-                            input.required = field.required || false;
-                            break;
-                            
-                        case 'checkbox':
+                if (section.fields && Array.isArray(section.fields)) {
+                    section.fields.forEach(field => {
+                        const fieldGroup = document.createElement('div');
+                        fieldGroup.className = 'form-group';
+                        
+                        let input;
+                        
+                        // 处理 checkbox 和 boolean 类型
+                        if (field.type === 'checkbox' || field.type === 'boolean') {
                             input = document.createElement('input');
                             input.type = 'checkbox';
                             input.id = `platform_${field.name}`;
                             input.checked = field.default || false;
+                            
+                            const label = document.createElement('label');
                             label.style.display = 'flex';
                             label.style.alignItems = 'center';
                             label.style.gap = '8px';
-                            const labelText = label.textContent;
-                            label.innerHTML = '';
                             label.appendChild(input);
-                            label.appendChild(document.createTextNode(labelText));
-                            break;
-                            
-                        case 'select':
-                            input = document.createElement('select');
-                            input.id = `platform_${field.name}`;
-                            input.required = field.required || false;
-                            
-                            const defaultOption = document.createElement('option');
-                            defaultOption.value = '';
-                            defaultOption.textContent = '请选择...';
-                            input.appendChild(defaultOption);
-                            
-                            if (field.options) {
-                                field.options.forEach(opt => {
-                                    const option = document.createElement('option');
-                                    option.value = opt.value;
-                                    option.textContent = opt.label;
-                                    input.appendChild(option);
-                                });
+                            label.appendChild(document.createTextNode(field.label));
+                            fieldGroup.appendChild(label);
+                        } else {
+                            // 其他字段类型
+                            const label = document.createElement('label');
+                            label.textContent = field.label;
+                            if (field.required) {
+                                label.innerHTML += ' <span style="color:red">*</span>';
                             }
-                            break;
+                            fieldGroup.appendChild(label);
                             
-                        case 'json':
-                            input = document.createElement('textarea');
-                            input.id = `platform_${field.name}`;
-                            input.placeholder = field.placeholder || '输入 JSON 格式数据';
-                            input.rows = 4;
-                            input.className = 'json-editor';
-                            break;
+                            switch(field.type) {
+                                case 'text':
+                                    input = document.createElement('input');
+                                    input.type = 'text';
+                                    input.id = `platform_${field.name}`;
+                                    input.placeholder = field.placeholder || '';
+                                    input.required = field.required || false;
+                                    break;
+                                    
+                                case 'number':
+                                    input = document.createElement('input');
+                                    input.type = 'number';
+                                    input.id = `platform_${field.name}`;
+                                    input.placeholder = field.placeholder || '';
+                                    if (field.min !== undefined) input.min = field.min;
+                                    if (field.max !== undefined) input.max = field.max;
+                                    input.step = field.step || '1';
+                                    input.required = field.required || false;
+                                    break;
+                                    
+                                case 'textarea':
+                                    input = document.createElement('textarea');
+                                    input.id = `platform_${field.name}`;
+                                    input.placeholder = field.placeholder || '';
+                                    input.rows = 3;
+                                    input.required = field.required || false;
+                                    break;
+                                    
+                                case 'select':
+                                    input = document.createElement('select');
+                                    input.id = `platform_${field.name}`;
+                                    input.required = field.required || false;
+                                    
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.value = '';
+                                    defaultOption.textContent = '请选择...';
+                                    input.appendChild(defaultOption);
+                                    
+                                    if (field.options && Array.isArray(field.options)) {
+                                        field.options.forEach(opt => {
+                                            const option = document.createElement('option');
+                                            option.value = opt.value;
+                                            option.textContent = opt.label;
+                                            input.appendChild(option);
+                                        });
+                                    }
+                                    break;
+                                    
+                                case 'json':
+                                    input = document.createElement('textarea');
+                                    input.id = `platform_${field.name}`;
+                                    input.placeholder = field.placeholder || '输入 JSON 格式数据';
+                                    input.rows = 4;
+                                    input.className = 'json-editor';
+                                    break;
+                                    
+                                default:
+                                    input = document.createElement('input');
+                                    input.type = 'text';
+                                    input.id = `platform_${field.name}`;
+                                    input.placeholder = field.placeholder || '';
+                            }
                             
-                        default:
-                            input = document.createElement('input');
-                            input.type = 'text';
-                            input.id = `platform_${field.name}`;
-                            input.placeholder = field.placeholder || '';
-                    }
-                    
-                    if (input.type !== 'checkbox') {
-                        fieldGroup.appendChild(input);
-                    } else {
-                        fieldGroup.appendChild(label);
-                    }
-                    
-                    formContainer.appendChild(fieldGroup);
-                });
+                            fieldGroup.appendChild(input);
+                        }
+                        
+                        formContainer.appendChild(fieldGroup);
+                    });
+                }
             });
             
             // 添加底部按钮
@@ -2455,43 +2484,60 @@
         }
         
         function populateFormFields(data) {
-            // 填充已有字段
-            const fieldIds = [
-                'platformName', 'platformUrl', 'platformRating', 'platformRank',
-                'platformDescription', 'platformRegulated', 'platformActive',
-                'platformMinLeverage', 'platformMaxLeverage'
-            ];
+            // 填充所有动态生成的字段
+            const fieldMapping = {
+                'name': 'name',
+                'slug': 'slug',
+                'description': 'description',
+                'website_url': 'website_url',
+                'logo_url': 'logo_url',
+                'rating': 'rating',
+                'rank': 'rank',
+                'founded_year': 'founded_year',
+                'safety_rating': 'safety_rating',
+                'platform_type': 'platform_type',
+                'is_active': 'is_active',
+                'is_recommended': 'is_recommended',
+                'is_regulated': 'is_regulated',
+                'is_featured': 'is_featured',
+                'overview_intro': 'overview_intro',
+                'fee_table': 'fee_table',
+                'safety_info': 'safety_info',
+                'platform_badges': 'platform_badges',
+                'top_badges': 'top_badges',
+                'introduction': 'introduction',
+                'main_features': 'main_features',
+                'fee_structure': 'fee_structure',
+                'why_choose': 'why_choose',
+                'trading_conditions': 'trading_conditions',
+                'fee_advantages': 'fee_advantages',
+                'account_types': 'account_types',
+                'trading_tools': 'trading_tools',
+                'opening_steps': 'opening_steps',
+                'security_measures': 'security_measures',
+                'customer_support': 'customer_support',
+                'learning_resources': 'learning_resources',
+                'min_leverage': 'min_leverage',
+                'max_leverage': 'max_leverage',
+                'commission_rate': 'commission_rate',
+                'fee_rate': 'fee_rate',
+                'account_opening_link': 'account_opening_link'
+            };
             
-            // 尝试填充硬编码字段
-            if (document.getElementById('platformName')) {
-                document.getElementById('platformName').value = data.name || '';
-                document.getElementById('platformUrl').value = data.url || data.website_url || '';
-                document.getElementById('platformRating').value = data.rating || '';
-                document.getElementById('platformRank').value = data.rank || '';
-                document.getElementById('platformDescription').value = data.description || '';
-                document.getElementById('platformRegulated').checked = data.is_regulated || false;
-                document.getElementById('platformActive').checked = data.is_active !== false;
-                document.getElementById('platformMinLeverage').value = data.min_leverage || '';
-                document.getElementById('platformMaxLeverage').value = data.max_leverage || '';
-            }
-            
-            // 填充新字段（动态生成的）
-            const newFields = [
-                'platform_overview_intro', 'platform_fee_table', 'platform_safety_info',
-                'platform_top_badges', 'platform_founded_year', 'platform_safety_rating',
-                'platform_is_recommended', 'platform_platform_type', 'platform_slug'
-            ];
-            
-            newFields.forEach(fieldId => {
-                const element = document.getElementById(fieldId);
-                if (element) {
-                    const fieldName = fieldId.replace('platform_', '');
-                    const value = data[fieldName];
+            Object.entries(fieldMapping).forEach(([fieldName, dataKey]) => {
+                const elementId = `platform_${fieldName}`;
+                const element = document.getElementById(elementId);
+                
+                if (element && data[dataKey] !== undefined) {
+                    const value = data[dataKey];
                     
                     if (element.type === 'checkbox') {
                         element.checked = value || false;
                     } else if (element.classList && element.classList.contains('json-editor')) {
+                        // JSON 字段
                         element.value = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+                    } else if (element.type === 'number') {
+                        element.value = value || '';
                     } else {
                         element.value = value || '';
                     }
@@ -2524,7 +2570,8 @@
                         // JSON 字段
                         try {
                             platformData[fieldName] = input.value ? JSON.parse(input.value) : null;
-                        } catch (e) {
+                        } catch (parseError) {
+                            console.warn(`JSON解析失败 for field ${fieldName}:`, parseError);
                             platformData[fieldName] = input.value; // 如果不是有效的 JSON，作为字符串存储
                         }
                     } else if (input.type === 'number') {
@@ -2534,15 +2581,11 @@
                     }
                 }
             });
-            
-            // 兼容旧字段名
-            if (platformData.website_url) platformData.website_url = platformData.website_url;
-            if (platformData.url) platformData.website_url = platformData.url;
 
             try {
                 const method = currentPlatformId ? 'PUT' : 'POST';
                 const url = currentPlatformId 
-                    ? `${API_URL}/api/platforms/${currentPlatformId}`
+                    ? `${API_URL}/api/admin/platforms/${currentPlatformId}/edit`
                     : `${API_URL}/api/platforms`;
 
                 const response = await authenticatedFetch(url, {
@@ -2560,20 +2603,40 @@
                 } else {
                     let errorMsg = '保存失败';
                     const contentType = response.headers.get('content-type');
+                    
                     if (contentType && contentType.includes('application/json')) {
                         try {
-                            const error = await response.json();
-                            errorMsg = error.detail || error.message || errorMsg;
-                        } catch (e) {
+                            const errorData = await response.json();
+                            // 详细错误解析
+                            if (errorData.detail) {
+                                if (typeof errorData.detail === 'string') {
+                                    errorMsg = errorData.detail;
+                                } else if (Array.isArray(errorData.detail)) {
+                                    // Pydantic 验证错误
+                                    errorMsg = errorData.detail.map(err => 
+                                        `${err.loc ? err.loc.join('.') : 'Field'}: ${err.msg}`
+                                    ).join('; ');
+                                } else {
+                                    errorMsg = JSON.stringify(errorData.detail);
+                                }
+                            } else if (errorData.message) {
+                                errorMsg = errorData.message;
+                            } else {
+                                errorMsg = `HTTP ${response.status}: ${JSON.stringify(errorData).substring(0, 100)}`;
+                            }
+                        } catch (jsonError) {
                             errorMsg = `HTTP ${response.status}`;
                         }
                     } else {
                         errorMsg = `HTTP ${response.status}`;
                     }
+                    
                     showNotification(errorMsg, 'error');
+                    console.error('保存失败详情:', {method, url, platformData, response});
                 }
             } catch (error) {
                 showNotification('错误: ' + error.message, 'error');
+                console.error('保存平台异常:', error);
             }
         }
 
