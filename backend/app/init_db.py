@@ -187,12 +187,23 @@ def init_db():
         ]
 
         for platform_data in platforms:
+            # 验证必需字段
+            required_fields = ["name", "slug"]
+            if not all(field in platform_data and platform_data[field] for field in required_fields):
+                print(f"⚠️  跳过平台（缺少必需字段）: {platform_data.get('name', 'Unknown')}")
+                continue
+                
             existing = db.query(Platform).filter(
                 Platform.name == platform_data["name"]
             ).first()
             if not existing:
-                platform = Platform(**platform_data)
-                db.add(platform)
+                try:
+                    platform = Platform(**platform_data)
+                    db.add(platform)
+                    print(f"✅ 创建平台: {platform_data['name']}")
+                except Exception as e:
+                    print(f"❌ 创建平台失败 {platform_data['name']}: {e}")
+                    db.rollback()
             else:
                 # 如果平台已存在，更新website_url
                 if not existing.website_url or existing.website_url != platform_data.get("website_url"):
