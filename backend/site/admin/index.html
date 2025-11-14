@@ -349,6 +349,16 @@
             margin-bottom: 15px;
         }
 
+        .form-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -2278,7 +2288,7 @@
         // ============= 平台管理函数 =============
         let currentPlatformId = null;
 
-        function showPlatformForm(platformId = null) {
+        async function showPlatformForm(platformId = null) {
             currentPlatformId = platformId;
             const modal = document.getElementById('platformModal');
             const title = document.getElementById('platformModalTitle');
@@ -2290,20 +2300,203 @@
                 fetch(`${API_URL}/api/platforms/${platformId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }).then(r => r.json()).then(data => {
-                    document.getElementById('platformName').value = data.name;
-                    document.getElementById('platformUrl').value = data.url || data.website_url || '';
-                    document.getElementById('platformRating').value = data.rating || '';
-                    document.getElementById('platformRank').value = data.rank || '';
-                    document.getElementById('platformDescription').value = data.description || '';
-                    document.getElementById('platformRegulated').checked = data.is_regulated || false;
-                    document.getElementById('platformActive').checked = data.is_active !== false;
+                    // 使用动态字段填充（如果字段存在）
+                    populateFormFields(data);
                 });
             } else {
                 title.textContent = '新增平台';
+                
+                // 获取表单定义并动态渲染
+                try {
+                    const response = await fetch(
+                        `${API_URL}/api/admin/platforms/create-form-definition`,
+                        { headers: { 'Authorization': `Bearer ${token}` } }
+                    );
+                    
+                    if (response.ok) {
+                        const formDef = await response.json();
+                        renderDynamicPlatformForm(formDef);
+                    }
+                } catch (error) {
+                    console.warn('获取表单定义失败，使用默认表单:', error);
+                }
+                
                 form.reset();
                 document.getElementById('platformActive').checked = true;
             }
             modal.classList.add('active');
+        }
+        
+        function renderDynamicPlatformForm(formDefinition) {
+            const formContainer = document.getElementById('platformForm');
+            
+            // 清空现有表单内容（除了提交按钮）
+            const modal = formContainer.parentElement;
+            const footerElement = modal.querySelector('.modal-footer');
+            formContainer.innerHTML = '';
+            
+            // 为每个 section 生成表单字段
+            formDefinition.sections.forEach(section => {
+                // 添加 section 标题
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'form-section-title';
+                sectionTitle.textContent = section.title;
+                formContainer.appendChild(sectionTitle);
+                
+                // 添加字段
+                section.fields.forEach(field => {
+                    const fieldGroup = document.createElement('div');
+                    fieldGroup.className = 'form-group';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = field.label;
+                    if (field.required) {
+                        label.innerHTML += ' <span style="color:red">*</span>';
+                    }
+                    fieldGroup.appendChild(label);
+                    
+                    let input;
+                    
+                    switch(field.type) {
+                        case 'text':
+                            input = document.createElement('input');
+                            input.type = 'text';
+                            input.id = `platform_${field.name}`;
+                            input.placeholder = field.placeholder || '';
+                            input.required = field.required || false;
+                            break;
+                            
+                        case 'number':
+                            input = document.createElement('input');
+                            input.type = 'number';
+                            input.id = `platform_${field.name}`;
+                            input.placeholder = field.placeholder || '';
+                            input.min = field.min || '';
+                            input.max = field.max || '';
+                            input.step = field.step || '1';
+                            input.required = field.required || false;
+                            break;
+                            
+                        case 'textarea':
+                            input = document.createElement('textarea');
+                            input.id = `platform_${field.name}`;
+                            input.placeholder = field.placeholder || '';
+                            input.rows = 3;
+                            input.required = field.required || false;
+                            break;
+                            
+                        case 'checkbox':
+                            input = document.createElement('input');
+                            input.type = 'checkbox';
+                            input.id = `platform_${field.name}`;
+                            input.checked = field.default || false;
+                            label.style.display = 'flex';
+                            label.style.alignItems = 'center';
+                            label.style.gap = '8px';
+                            const labelText = label.textContent;
+                            label.innerHTML = '';
+                            label.appendChild(input);
+                            label.appendChild(document.createTextNode(labelText));
+                            break;
+                            
+                        case 'select':
+                            input = document.createElement('select');
+                            input.id = `platform_${field.name}`;
+                            input.required = field.required || false;
+                            
+                            const defaultOption = document.createElement('option');
+                            defaultOption.value = '';
+                            defaultOption.textContent = '请选择...';
+                            input.appendChild(defaultOption);
+                            
+                            if (field.options) {
+                                field.options.forEach(opt => {
+                                    const option = document.createElement('option');
+                                    option.value = opt.value;
+                                    option.textContent = opt.label;
+                                    input.appendChild(option);
+                                });
+                            }
+                            break;
+                            
+                        case 'json':
+                            input = document.createElement('textarea');
+                            input.id = `platform_${field.name}`;
+                            input.placeholder = field.placeholder || '输入 JSON 格式数据';
+                            input.rows = 4;
+                            input.className = 'json-editor';
+                            break;
+                            
+                        default:
+                            input = document.createElement('input');
+                            input.type = 'text';
+                            input.id = `platform_${field.name}`;
+                            input.placeholder = field.placeholder || '';
+                    }
+                    
+                    if (input.type !== 'checkbox') {
+                        fieldGroup.appendChild(input);
+                    } else {
+                        fieldGroup.appendChild(label);
+                    }
+                    
+                    formContainer.appendChild(fieldGroup);
+                });
+            });
+            
+            // 添加底部按钮
+            const newFooter = document.createElement('div');
+            newFooter.className = 'modal-footer';
+            newFooter.innerHTML = `
+                <button type="button" class="btn btn-secondary" onclick="closePlatformModal()">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            `;
+            formContainer.appendChild(newFooter);
+        }
+        
+        function populateFormFields(data) {
+            // 填充已有字段
+            const fieldIds = [
+                'platformName', 'platformUrl', 'platformRating', 'platformRank',
+                'platformDescription', 'platformRegulated', 'platformActive',
+                'platformMinLeverage', 'platformMaxLeverage'
+            ];
+            
+            // 尝试填充硬编码字段
+            if (document.getElementById('platformName')) {
+                document.getElementById('platformName').value = data.name || '';
+                document.getElementById('platformUrl').value = data.url || data.website_url || '';
+                document.getElementById('platformRating').value = data.rating || '';
+                document.getElementById('platformRank').value = data.rank || '';
+                document.getElementById('platformDescription').value = data.description || '';
+                document.getElementById('platformRegulated').checked = data.is_regulated || false;
+                document.getElementById('platformActive').checked = data.is_active !== false;
+                document.getElementById('platformMinLeverage').value = data.min_leverage || '';
+                document.getElementById('platformMaxLeverage').value = data.max_leverage || '';
+            }
+            
+            // 填充新字段（动态生成的）
+            const newFields = [
+                'platform_overview_intro', 'platform_fee_table', 'platform_safety_info',
+                'platform_top_badges', 'platform_founded_year', 'platform_safety_rating',
+                'platform_is_recommended', 'platform_platform_type', 'platform_slug'
+            ];
+            
+            newFields.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                if (element) {
+                    const fieldName = fieldId.replace('platform_', '');
+                    const value = data[fieldName];
+                    
+                    if (element.type === 'checkbox') {
+                        element.checked = value || false;
+                    } else if (element.classList && element.classList.contains('json-editor')) {
+                        element.value = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+                    } else {
+                        element.value = value || '';
+                    }
+                }
+            });
         }
 
         function closePlatformModal() {
@@ -2314,17 +2507,37 @@
 
         async function savePlatform(e) {
             e.preventDefault();
-            const platformData = {
-                name: document.getElementById('platformName').value,
-                website_url: document.getElementById('platformUrl').value,  // 改用website_url
-                description: document.getElementById('platformDescription').value,
-                rating: parseFloat(document.getElementById('platformRating').value) || 0,
-                rank: parseInt(document.getElementById('platformRank').value) || 1,
-                min_leverage: parseFloat(document.getElementById('platformMinLeverage').value) || 1,
-                max_leverage: parseFloat(document.getElementById('platformMaxLeverage').value) || 1,
-                is_regulated: document.getElementById('platformRegulated').checked,
-                is_active: document.getElementById('platformActive').checked
-            };
+            
+            const platformData = {};
+            
+            // 收集所有动态生成的字段
+            const form = document.getElementById('platformForm');
+            const inputs = form.querySelectorAll('input, textarea, select');
+            
+            inputs.forEach(input => {
+                if (input.id && input.id.startsWith('platform_')) {
+                    const fieldName = input.id.replace('platform_', '');
+                    
+                    if (input.type === 'checkbox') {
+                        platformData[fieldName] = input.checked;
+                    } else if (input.classList && input.classList.contains('json-editor')) {
+                        // JSON 字段
+                        try {
+                            platformData[fieldName] = input.value ? JSON.parse(input.value) : null;
+                        } catch (e) {
+                            platformData[fieldName] = input.value; // 如果不是有效的 JSON，作为字符串存储
+                        }
+                    } else if (input.type === 'number') {
+                        platformData[fieldName] = input.value ? parseFloat(input.value) : null;
+                    } else {
+                        platformData[fieldName] = input.value;
+                    }
+                }
+            });
+            
+            // 兼容旧字段名
+            if (platformData.website_url) platformData.website_url = platformData.website_url;
+            if (platformData.url) platformData.website_url = platformData.url;
 
             try {
                 const method = currentPlatformId ? 'PUT' : 'POST';
