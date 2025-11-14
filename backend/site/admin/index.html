@@ -2298,27 +2298,25 @@
                 title.textContent = '编辑平台';
                 
                 try {
-                    // 先获取表单定义
+                    // 先获取表单定义和平台数据
                     const formDefResponse = await fetch(
                         `${API_URL}/api/admin/platforms/form-definition`,
                         { headers: { 'Authorization': `Bearer ${token}` } }
                     );
                     
-                    if (formDefResponse.ok) {
-                        const formDef = await formDefResponse.json();
-                        renderDynamicPlatformForm(formDef);
-                    }
-                    
-                    // 再加载平台数据
-                    const response = await fetch(`${API_URL}/api/admin/platforms/${platformId}/edit`, {
+                    const platformDataResponse = await fetch(`${API_URL}/api/admin/platforms/${platformId}/edit`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     
-                    if (response.ok) {
-                        const data = await response.json();
-                        populateFormFields(data);
+                    if (formDefResponse.ok && platformDataResponse.ok) {
+                        const formDef = await formDefResponse.json();
+                        const platformData = await platformDataResponse.json();
+                        
+                        // 编辑模式：传递平台数据用于隐藏空字段
+                        renderDynamicPlatformForm(formDef, platformData);
+                        populateFormFields(platformData);
                     } else {
-                        showNotification('加载平台数据失败', 'error');
+                        showNotification('加载表单或数据失败', 'error');
                     }
                 } catch (error) {
                     console.error('编辑表单错误:', error);
@@ -2359,7 +2357,7 @@
             modal.classList.add('active');
         }
         
-        function renderDynamicPlatformForm(formDefinition) {
+        function renderDynamicPlatformForm(formDefinition, existingData = null) {
             const formContainer = document.getElementById('platformForm');
             formContainer.innerHTML = '';
             
@@ -2374,8 +2372,25 @@
                 // 添加字段
                 if (section.fields && Array.isArray(section.fields)) {
                     section.fields.forEach(field => {
+                        // 检查是否应该显示该字段：必填项或有值的字段
+                        let shouldShow = field.required === true; // 必填项总是显示
+                        
+                        // 如果不是必填项，检查是否有值
+                        if (!shouldShow && existingData) {
+                            const value = existingData[field.name];
+                            shouldShow = value !== null && value !== undefined && value !== '';
+                        }
+                        
+                        // 如果在新增模式（没有existingData），显示所有必填项
+                        if (!existingData) {
+                            shouldShow = true; // 新增时显示所有字段
+                        }
+                        
                         const fieldGroup = document.createElement('div');
                         fieldGroup.className = 'form-group';
+                        if (!shouldShow) {
+                            fieldGroup.style.display = 'none';
+                        }
                         
                         let input;
                         
@@ -2583,7 +2598,7 @@
             });
 
             try {
-                const method = currentPlatformId ? 'PUT' : 'POST';
+                const method = currentPlatformId ? 'POST' : 'POST';
                 const url = currentPlatformId 
                     ? `${API_URL}/api/admin/platforms/${currentPlatformId}/edit`
                     : `${API_URL}/api/platforms`;

@@ -2,7 +2,7 @@
 平台管理编辑接口 - 用于后台管理系统
 提供平台详情页面所有字段的编辑和管理功能
 """
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -28,8 +28,8 @@ class PlatformEditForm(BaseModel):
     # 交易参数
     min_leverage: Optional[float] = None
     max_leverage: Optional[float] = None
-    commission_rate: Optional[float] = None
-    fee_rate: Optional[float] = None
+    commission_rate: Optional[float] = Field(None, ge=0.0, le=1.0, description="佣金率，范围0-1")
+    fee_rate: Optional[float] = Field(None, ge=0.0, le=1.0, description="费率，范围0-1")
     
     # 状态和分类
     is_active: Optional[bool] = True

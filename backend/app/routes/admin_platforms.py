@@ -132,15 +132,21 @@ async def get_edit_form_definition(
                     },
                     {
                         "name": "commission_rate",
-                        "label": "佣金率",
+                        "label": "佣金率 (0-1)",
                         "type": "number",
-                        "placeholder": "0.005 (小数形式)"
+                        "min": 0,
+                        "max": 1,
+                        "step": 0.0001,
+                        "placeholder": "0.005 (小数形式，例: 0.001, 0.005)"
                     },
                     {
                         "name": "fee_rate",
-                        "label": "费率 (%)",
+                        "label": "费率 (0-1)",
                         "type": "number",
-                        "placeholder": "0.5 (百分比形式)"
+                        "min": 0,
+                        "max": 1,
+                        "step": 0.0001,
+                        "placeholder": "0.005 (小数形式，例: 0.001, 0.5)"
                     },
                 ]
             },
