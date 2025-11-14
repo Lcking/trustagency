@@ -30,9 +30,9 @@ if isinstance(cors_origins, str) and cors_origins.strip():
     try:
         cors_origins = json.loads(cors_origins)
     except json.JSONDecodeError:
-        cors_origins = ["http://localhost:8001"]
+        cors_origins = ["http://localhost:8000", "http://localhost:8001", "http://127.0.0.1:8000"]
 else:
-    cors_origins = ["http://localhost:8001"]
+    cors_origins = ["http://localhost:8000", "http://localhost:8001", "http://127.0.0.1:8000"]
 
 app.add_middleware(
     CORSMiddleware,
