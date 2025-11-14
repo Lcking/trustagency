@@ -176,6 +176,12 @@ async def get_edit_form_definition(
                         "placeholder": "详细介绍平台的基本信息"
                     },
                     {
+                        "name": "overview_intro",
+                        "label": "平台概览介绍",
+                        "type": "textarea",
+                        "placeholder": "简明扼要的平台介绍，用于详情页面顶部"
+                    },
+                    {
                         "name": "main_features",
                         "label": "主要特性 (JSON)",
                         "type": "json",
@@ -186,6 +192,12 @@ async def get_edit_form_definition(
                         "label": "费用结构 (JSON)",
                         "type": "json",
                         "placeholder": '[{"type":"手续费","value":"0.5%","desc":"..."},...]'
+                    },
+                    {
+                        "name": "fee_table",
+                        "label": "费用表格 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"type":"交易手续费","basic":"0.20%","vip":"0.10%"},...]'
                     },
                     {
                         "name": "account_opening_link",
@@ -262,6 +274,12 @@ async def get_edit_form_definition(
                         "placeholder": '[{"text":"✓ 安全措施1"},...]'
                     },
                     {
+                        "name": "safety_info",
+                        "label": "安全信息",
+                        "type": "textarea",
+                        "placeholder": "详细的安全信息说明"
+                    },
+                    {
                         "name": "customer_support",
                         "label": "客户支持 (JSON)",
                         "type": "json",
@@ -270,19 +288,30 @@ async def get_edit_form_definition(
                 ]
             },
             {
-                "title": "学习资源和徽章",
+                "title": "平台徽章和标签",
+                "fields": [
+                    {
+                        "name": "platform_badges",
+                        "label": "平台徽章 (JSON)",
+                        "type": "json",
+                        "placeholder": '["推荐平台","新手友好","低成本"]'
+                    },
+                    {
+                        "name": "top_badges",
+                        "label": "顶部徽章 (JSON)",
+                        "type": "json",
+                        "placeholder": '["推荐平台","专业级交易","最高杠杆"]'
+                    }
+                ]
+            },
+            {
+                "title": "学习资源",
                 "fields": [
                     {
                         "name": "learning_resources",
                         "label": "学习资源 (JSON)",
                         "type": "json",
                         "placeholder": '[{"title":"资源","description":"...","link":"..."},...]'
-                    },
-                    {
-                        "name": "platform_badges",
-                        "label": "平台徽章 (JSON)",
-                        "type": "json",
-                        "placeholder": '["推荐平台","新手友好","低成本"]'
                     }
                 ]
             }

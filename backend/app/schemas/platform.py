@@ -99,17 +99,21 @@ class PlatformBase(BaseModel):
     is_recommended: bool = False
     
     # ===== 新增：详情页面完整字段 =====
+    overview_intro: Optional[str] = None  # 平台概览
+    fee_table: Optional[str] = None  # 费用表
     why_choose: Optional[str] = None  # JSON
     trading_conditions: Optional[str] = None  # JSON
     fee_advantages: Optional[str] = None  # JSON
     account_types: Optional[str] = None  # JSON
     trading_tools: Optional[str] = None  # JSON
     opening_steps: Optional[str] = None  # JSON
+    safety_info: Optional[str] = None  # 安全信息
     security_measures: Optional[str] = None  # JSON
     customer_support: Optional[str] = None  # JSON
     learning_resources: Optional[str] = None  # JSON
     platform_type: Optional[str] = None  # "专业", "新手友好" 等
     platform_badges: Optional[str] = None  # JSON: ["推荐平台", "新手友好"]
+    top_badges: Optional[str] = None  # JSON: ["推荐平台", "新手友好"]: ["推荐平台", "新手友好"]
 
 
 class PlatformCreate(PlatformBase):
@@ -145,17 +149,21 @@ class PlatformUpdate(BaseModel):
     is_recommended: Optional[bool] = None
     
     # ===== 新增：详情页面完整字段 =====
+    overview_intro: Optional[str] = None  # 平台概览
+    fee_table: Optional[str] = None  # 费用表
     why_choose: Optional[str] = None  # JSON
     trading_conditions: Optional[str] = None  # JSON
     fee_advantages: Optional[str] = None  # JSON
     account_types: Optional[str] = None  # JSON
     trading_tools: Optional[str] = None  # JSON
     opening_steps: Optional[str] = None  # JSON
+    safety_info: Optional[str] = None  # 安全信息
     security_measures: Optional[str] = None  # JSON
     customer_support: Optional[str] = None  # JSON
     learning_resources: Optional[str] = None  # JSON
     platform_type: Optional[str] = None  # "专业", "新手友好" 等
     platform_badges: Optional[str] = None  # JSON
+    top_badges: Optional[str] = None  # JSON: ["推荐平台", "新手友好"]
 
 
 class PlatformResponse(PlatformBase):

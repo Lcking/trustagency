@@ -69,6 +69,12 @@ class Platform(Base):
     # 平台标签和分类
     platform_type = Column(String(50), nullable=True)  # 平台类型: "专业", "新手友好", "平衡", "高风险" 等
     platform_badges = Column(Text, nullable=True)      # JSON: 平台徽章 ["推荐平台", "新手友好", "零佣金"] 等
+    
+    # 额外的详情页面字段
+    overview_intro = Column(Text, nullable=True)  # 平台概览介绍
+    fee_table = Column(Text, nullable=True)       # 费用表格（JSON格式）
+    safety_info = Column(Text, nullable=True)     # 安全信息
+    top_badges = Column(Text, nullable=True)      # 顶部徽章
 
     # 状态
     is_active = Column(Boolean, default=True, index=True)

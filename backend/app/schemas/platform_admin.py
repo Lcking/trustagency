@@ -43,6 +43,8 @@ class PlatformEditForm(BaseModel):
     introduction: Optional[str] = None
     main_features: Optional[str] = None
     fee_structure: Optional[str] = None
+    overview_intro: Optional[str] = None
+    fee_table: Optional[str] = None
     
     why_choose: Optional[str] = None
     trading_conditions: Optional[str] = None
@@ -50,10 +52,12 @@ class PlatformEditForm(BaseModel):
     account_types: Optional[str] = None
     trading_tools: Optional[str] = None
     opening_steps: Optional[str] = None
+    safety_info: Optional[str] = None
     security_measures: Optional[str] = None
     customer_support: Optional[str] = None
     learning_resources: Optional[str] = None
     platform_badges: Optional[str] = None
+    top_badges: Optional[str] = None
 
 
 class PlatformEditResponse(BaseModel):
@@ -82,6 +86,7 @@ class PlatformEditResponse(BaseModel):
     is_recommended: bool
     is_regulated: bool
     platform_badges: Optional[str]
+    top_badges: Optional[str]
     
     # 交易参数
     min_leverage: float
@@ -92,12 +97,15 @@ class PlatformEditResponse(BaseModel):
     # 详情页面内容
     main_features: Optional[str]
     fee_structure: Optional[str]
+    overview_intro: Optional[str]
+    fee_table: Optional[str]
     why_choose: Optional[str]
     trading_conditions: Optional[str]
     fee_advantages: Optional[str]
     account_types: Optional[str]
     trading_tools: Optional[str]
     opening_steps: Optional[str]
+    safety_info: Optional[str]
     security_measures: Optional[str]
     customer_support: Optional[str]
     learning_resources: Optional[str]
