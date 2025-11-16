@@ -129,6 +129,50 @@ def init_db():
         db.commit()
         print("✅ 默认栏目创建成功 (FAQ, Wiki, Guide, Review)")
         
+        # 2.5. 创建默认分类（针对每个栏目）
+        from app.models.category import Category
+        
+        # 获取创建好的栏目
+        sections = {s.slug: s for s in db.query(Section).all()}
+        
+        categories_data = [
+            # 常见问题分类
+            {"name": "入门问题", "section_id": sections["faq"].id, "sort_order": 1},
+            {"name": "平台选择", "section_id": sections["faq"].id, "sort_order": 2},
+            {"name": "交易相关", "section_id": sections["faq"].id, "sort_order": 3},
+            {"name": "风险管理", "section_id": sections["faq"].id, "sort_order": 4},
+            
+            # 百科分类
+            {"name": "基础概念", "section_id": sections["wiki"].id, "sort_order": 1},
+            {"name": "交易术语", "section_id": sections["wiki"].id, "sort_order": 2},
+            {"name": "市场分析", "section_id": sections["wiki"].id, "sort_order": 3},
+            {"name": "技术指标", "section_id": sections["wiki"].id, "sort_order": 4},
+            
+            # 指南分类
+            {"name": "新手指南", "section_id": sections["guide"].id, "sort_order": 1},
+            {"name": "进阶策略", "section_id": sections["guide"].id, "sort_order": 2},
+            {"name": "风险控制", "section_id": sections["guide"].id, "sort_order": 3},
+            {"name": "工具使用", "section_id": sections["guide"].id, "sort_order": 4},
+            
+            # 验证分类
+            {"name": "平台验证", "section_id": sections["review"].id, "sort_order": 1},
+            {"name": "用户评价", "section_id": sections["review"].id, "sort_order": 2},
+            {"name": "安全审计", "section_id": sections["review"].id, "sort_order": 3},
+            {"name": "监管信息", "section_id": sections["review"].id, "sort_order": 4},
+        ]
+        
+        for category_data in categories_data:
+            existing = db.query(Category).filter(
+                Category.name == category_data["name"],
+                Category.section_id == category_data["section_id"]
+            ).first()
+            if not existing:
+                category = Category(**category_data)
+                db.add(category)
+        
+        db.commit()
+        print("✅ 默认分类创建成功 (16个分类)")
+        
         # 3. 创建默认平台
         platforms_data = [
             {
