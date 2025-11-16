@@ -184,6 +184,27 @@ def init_db():
                 "fee_structure": '[{"type":"手续费","value":"0.004%","desc":"竞争力的费率结构"},{"type":"隔夜利息","value":"浮动","desc":"根据央行利率"},{"type":"点差","value":"2-4点","desc":"主要货币对"}]',
                 "account_opening_link": "https://gammatrader.com/register",
             },
+            {
+                "name": "百度",
+                "slug": "baidu",
+                "description": "百度推荐平台",
+                "website_url": "https://baidu.com",
+                "rating": 4.7,
+                "rank": 4,
+                "min_leverage": 1.0,
+                "max_leverage": 350.0,
+                "commission_rate": 0.0035,
+                "is_regulated": True,
+                "is_active": True,
+                "is_recommended": True,  # Bug015修复：百度是推荐平台
+                "safety_rating": "A",  # Bug015修复：安全评级A
+                "founded_year": 2020,  # Bug015修复：成立年份
+                "fee_rate": 0.35,  # Bug015修复：费率
+                "introduction": "百度是一个实际推荐的交易平台，提供专业的杠杆交易服务。平台拥有完善的风险管理系统和优秀的客户支持。",
+                "main_features": '[{"title":"推荐平台","desc":"经过专业评测推荐"},{"title":"稳定可靠","desc":"技术架构完善"},{"title":"专业支持","desc":"24/7客户服务"},{"title":"完善功能","desc":"提供全套交易工具"}]',
+                "fee_structure": '[{"type":"手续费","value":"0.0035%","desc":"行业竞争力费率"},{"type":"隔夜利息","value":"浮动","desc":"根据市场利率"},{"type":"点差","value":"1-3点","desc":"主要货币对"}]',
+                "account_opening_link": "https://baidu.com/open-account",
+            },
         ]
 
         for platform_data in platforms:

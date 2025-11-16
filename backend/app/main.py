@@ -311,45 +311,60 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     # 准备文章数据JSON（与API响应格式一致）
     article_data = {
         "id": article.id,
-        "title": article.title,
+        "title": article.title or "",
         "slug": article.slug,
-        "content": article.content,
-        "summary": article.summary,
+        "content": article.content or "",
+        "summary": article.summary or "",
         "section_id": article.section_id,
         "section_name": article.section.name if article.section else "未分类",
-        "category_name": article.category_name,
+        "category_name": article.category_name or "",
         "author_id": article.author_id,
         "is_published": article.is_published,
-        "view_count": article.view_count,
-        "like_count": article.like_count,
+        "view_count": article.view_count or 0,
+        "like_count": article.like_count or 0,
         "created_at": article.created_at.isoformat() if article.created_at else None,
         "published_at": article.published_at.isoformat() if article.published_at else None,
     }
     
     # 生成Schema标签（服务端生成，而非客户端动态生成）
     # 提取纯文本和图片
-    soup = BeautifulSoup(article.content, 'html.parser')
-    plain_text = soup.get_text().replace('\n', ' ').strip()
-    plain_text = ' '.join(plain_text.split())  # 清理空白
+    content_html = article.content or ""
+    try:
+        soup = BeautifulSoup(content_html, 'html.parser')
+        plain_text = soup.get_text().replace('\n', ' ').strip()
+        plain_text = ' '.join(plain_text.split())  # 清理空白
+    except Exception:
+        plain_text = ""
     
     # 提取所有图片URL
     images = []
-    for img in soup.find_all('img'):
-        src = img.get('src')
-        if src:
-            # 完整化URL
-            if src.startswith('http'):
-                images.append(src)
-            elif src.startswith('/'):
-                images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}{src}")
-            else:
-                images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}/{src}")
+    try:
+        soup = BeautifulSoup(content_html, 'html.parser')
+        for img in soup.find_all('img'):
+            src = img.get('src')
+            if src:
+                # 完整化URL
+                if src.startswith('http'):
+                    images.append(src)
+                elif src.startswith('/'):
+                    images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8000')}{src}")
+                else:
+                    images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8000')}/{src}")
+    except Exception:
+        images = []
     
     # 生成摘要
-    auto_summary = plain_text[:160] + ('…' if len(plain_text) > 160 else '')
+    auto_summary = plain_text[:160] + ('…' if len(plain_text) > 160 else '') if plain_text else ""
     summary_text = (article.summary and article.summary.strip()) or auto_summary
     
     # 构建Schema.org Article 结构化数据（最新标准）
+    # 处理分类字段 - 优先使用category_name，否则使用section.name，最后默认为"未分类"
+    article_section = article.category_name or (article.section.name if article.section else "未分类")
+    
+    # 处理日期字段 - 使用published_at或created_at
+    pub_date = article.published_at or article.created_at
+    pub_date_str = pub_date.isoformat() if pub_date else None
+    
     schema_data = {
         "@context": "https://schema.org",
         "@type": "Article",
@@ -358,9 +373,9 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "headline": article.title,
         "description": summary_text,
         "articleBody": article.content,  # 完整HTML内容
-        "articleSection": article.category_name or article.section.name if article.section else "未分类",
-        "datePublished": (article.published_at or article.created_at).isoformat() if article.published_at or article.created_at else None,
-        "dateModified": (article.published_at or article.created_at).isoformat() if article.published_at or article.created_at else None,
+        "articleSection": article_section,
+        "datePublished": pub_date_str,
+        "dateModified": pub_date_str,
         "author": {
             "@type": "Person",
             "name": "Admin"
@@ -372,7 +387,7 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "inLanguage": "zh-CN",
         "mainEntityOfPage": f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}/article/{article.slug}",
         "image": images if images else None,  # 所有图片
-        "wordCount": len(plain_text.split()),
+        "wordCount": len(plain_text.split()) if plain_text else 0,
         "isAccessibleForFree": True
     }
     

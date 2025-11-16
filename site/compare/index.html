@@ -257,8 +257,12 @@
 
             async loadComparisonData() {
                 try {
-                    const response = await apiClient.getPlatforms({ limit: 100 });
+                    // Use skipCache to ensure we get fresh data
+                    const response = await apiClient.request('GET', '/platforms?limit=100', { skipCache: true });
                     const platforms = response.data || response.items || response;
+                    
+                    console.log('Loaded platforms:', platforms);
+                    console.log('Number of platforms:', platforms.length);
                     
                     this.renderComparisonTable(platforms);
                     this.renderDetailedComparison(platforms);

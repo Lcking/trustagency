@@ -280,5 +280,110 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/assets/js/main.js" defer></script>
+    
+    <script>
+        /**
+         * 动态加载常见问题分类的文章
+         * 如果加载失败，则保留默认的FAQ内容
+         */
+        async function loadQAArticles() {
+            try {
+                const API_URL = location.origin.replace(/\/$/, '');
+                
+                // 获取"常见问题"分类的文章
+                // 首先尝试按分类名称获取
+                const response = await fetch(`${API_URL}/api/articles/by-category/常见问题?limit=100`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('加载常见问题分类文章失败, 使用默认FAQ内容');
+                    return;
+                }
+                
+                const data = await response.json();
+                const articles = data.data || data.items || data;
+                
+                if (!Array.isArray(articles) || articles.length === 0) {
+                    console.warn('未找到常见问题分类的文章, 使用默认FAQ内容');
+                    return;
+                }
+                
+                // 获取accordion容器
+                const accordionDiv = document.getElementById('faqAccordion');
+                if (!accordionDiv) {
+                    console.error('找不到accordion容器');
+                    return;
+                }
+                
+                // 清空现有的FAQ项
+                accordionDiv.innerHTML = '';
+                
+                // 生成新的accordion项
+                articles.forEach((article, index) => {
+                    const itemId = `faq-article-${article.id}`;
+                    const targetId = `faq-content-${article.id}`;
+                    
+                    const accordionItem = document.createElement('div');
+                    accordionItem.className = 'accordion-item';
+                    
+                    const isExpanded = index === 0; // 第一项默认展开
+                    
+                    accordionItem.innerHTML = `
+                        <h2 class="accordion-header">
+                            <button class="accordion-button ${!isExpanded ? 'collapsed' : ''}" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#${targetId}" 
+                                    aria-expanded="${isExpanded}" 
+                                    aria-controls="${targetId}">
+                                ${escapeHtml(article.title)}
+                            </button>
+                        </h2>
+                        <div id="${targetId}" class="accordion-collapse collapse ${isExpanded ? 'show' : ''}" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                <div class="article-summary">
+                                    ${article.summary ? escapeHtml(article.summary) : ''}
+                                </div>
+                                <div class="article-link">
+                                    <a href="/article/${article.slug}" target="_blank" rel="noopener" class="btn btn-sm btn-primary mt-3">
+                                        查看完整文章 →
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    accordionDiv.appendChild(accordionItem);
+                });
+                
+                console.log(`✅ 成功加载 ${articles.length} 篇常见问题文章`);
+                
+            } catch (error) {
+                console.error('加载常见问题文章时发生错误:', error);
+                console.warn('将保留默认FAQ内容');
+            }
+        }
+        
+        /**
+         * HTML转义函数 - 防止XSS攻击
+         */
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 页面加载完成后，动态加载常见问题文章
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadQAArticles);
+        } else {
+            loadQAArticles();
+        }
+    </script>
 </body>
 </html>
