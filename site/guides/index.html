@@ -574,6 +574,47 @@
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     
+    <!-- 动态加载指南文章 -->
+    <script>
+        /**
+         * 动态加载指南栏目的文章
+         * 如果加载失败，则保留默认的指南内容
+         */
+        async function loadGuideArticles() {
+            try {
+                const API_URL = location.origin.replace(/\/$/, '');
+                
+                // 获取"指南"栏目的文章
+                const response = await fetch(`${API_URL}/api/articles/by-section/guide?limit=50`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('加载指南栏目文章失败，保留默认内容');
+                    return;
+                }
+                
+                const articles = await response.json();
+                
+                if (!Array.isArray(articles) || articles.length === 0) {
+                    console.warn('未找到指南栏目的文章，保留默认内容');
+                    return;
+                }
+                
+                console.log(`✅ 成功加载 ${articles.length} 篇指南文章`);
+                
+            } catch (error) {
+                console.error('加载指南文章时发生错误:', error);
+            }
+        }
+        
+        // 页面加载完毕后加载文章
+        document.addEventListener('DOMContentLoaded', loadGuideArticles);
+    </script>
+    
     <!-- Main Script -->
     <script src="/assets/js/main.js" defer></script>
 </body>

@@ -1,0 +1,80 @@
+<testsuites id="" name="" tests="2" failures="2" skipped="0" errors="0" time="5.8948540000000005">
+<testsuite name="platforms.spec.js" timestamp="2025-11-16T09:23:33.960Z" hostname="webkit" tests="2" failures="2" skipped="0" time="7.888" errors="0">
+<testcase name="Platform Listing E2E Tests › Empty States and Errors › should handle no platforms gracefully" classname="platforms.spec.js" time="3.454">
+<failure message="platforms.spec.js:415:5 should handle no platforms gracefully" type="FAILURE">
+<![CDATA[  [webkit] › platforms.spec.js:415:5 › Platform Listing E2E Tests › Empty States and Errors › should handle no platforms gracefully 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      425 |         const hasEmptyMessage = await page.locator('text=无结果, text=未找到, text=暂无').isVisible({ timeout: 5000 }).catch(() => false);
+      426 |
+    > 427 |         expect(results === 0 || hasEmptyMessage).toBeTruthy();
+          |                                                  ^
+      428 |       }
+      429 |     });
+      430 |
+        at /Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js:427:50
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/test-failed-1.png]]
+
+[[ATTACHMENT|platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/video.webm]]
+
+[[ATTACHMENT|platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Platform Listing E2E Tests › Empty States and Errors › should show error message on API failure" classname="platforms.spec.js" time="4.434">
+<failure message="platforms.spec.js:431:5 should show error message on API failure" type="FAILURE">
+<![CDATA[  [webkit] › platforms.spec.js:431:5 › Platform Listing E2E Tests › Empty States and Errors › should show error message on API failure 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      448 |       
+      449 |       const content = await page.locator('[id*="platforms"], .platforms-container').isVisible({ timeout: 10000 }).catch(() => false);
+    > 450 |       expect(content).toBeTruthy();
+          |                       ^
+      451 |     });
+      452 |   });
+      453 | });
+        at /Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js:450:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/test-failed-1.png]]
+
+[[ATTACHMENT|platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/video.webm]]
+
+[[ATTACHMENT|platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

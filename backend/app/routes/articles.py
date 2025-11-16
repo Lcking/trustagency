@@ -416,3 +416,42 @@ async def get_articles_by_author(
     """
     articles = ArticleService.get_articles_by_author(db, author_id, limit=limit)
     return [ArticleResponse.model_validate(a) for a in articles]
+
+
+@router.get("/by-section/{section_slug}", response_model=list[ArticleResponse])
+async def get_articles_by_section(
+    section_slug: str,
+    limit: int = Query(100, ge=1, le=500, description="最大返回数"),
+    skip: int = Query(0, ge=0, description="跳过数量"),
+    db: Session = Depends(get_db),
+):
+    """
+    按栏目获取发布的文章（用于前端页面动态加载）
+    
+    示例:
+    ```
+    GET /api/articles/by-section/wiki?limit=50
+    GET /api/articles/by-section/faq?limit=20
+    ```
+    
+    支持的 section_slug: wiki, faq, guide, review
+    """
+    from sqlalchemy.orm import joinedload
+    
+    # 查询栏目
+    section = db.query(Section).filter(Section.slug == section_slug).first()
+    if not section:
+        return []
+    
+    # 查询该栏目下已发布的文章
+    articles = db.query(Article).filter(
+        Article.section_id == section.id,
+        Article.is_published == True
+    ).options(
+        joinedload(Article.section),
+        joinedload(Article.category_obj)
+    ).order_by(
+        Article.created_at.desc()
+    ).offset(skip).limit(limit).all()
+    
+    return [ArticleResponse.model_validate(a) for a in articles]

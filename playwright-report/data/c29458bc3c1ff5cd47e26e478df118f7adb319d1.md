@@ -1,0 +1,120 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - link "跳转到主要内容" [ref=e2]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - navigation "主导航" [ref=e4]:
+      - generic [ref=e5]:
+        - link "股票杠杆平台排行榜单首页" [ref=e6]:
+          - /url: /
+          - text: 股票杠杆平台排行榜单
+        - list [ref=e8]:
+          - listitem [ref=e9]:
+            - link "首页" [ref=e10]:
+              - /url: /
+          - listitem [ref=e11]:
+            - link "平台" [ref=e12]:
+              - /url: /platforms/
+          - listitem [ref=e13]:
+            - link "对比" [ref=e14]:
+              - /url: /compare/
+          - listitem [ref=e15]:
+            - link "常见问题" [ref=e16]:
+              - /url: /qa/
+          - listitem [ref=e17]:
+            - button "资源" [ref=e18] [cursor=pointer]
+  - text: /
+  - main [ref=e19]:
+    - generic [ref=e21]:
+      - heading "杠杆交易平台" [level=1] [ref=e22]
+      - paragraph [ref=e23]: 精选的股票杠杆交易平台，详细对比各平台的特性、费率、安全性和用户体验。
+    - generic [ref=e24]:
+      - alert [ref=e26]:
+        - strong [ref=e27]: ⚠️ 风险提示：
+        - text: 杠杆交易具有高风险性。本网站仅供参考，不构成投资建议。
+        - button "关闭" [ref=e28] [cursor=pointer]
+      - region "筛选和排序" [ref=e29]:
+        - heading "筛选和排序" [level=2] [ref=e30]
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: 搜索平台
+            - searchbox "搜索平台" [active] [ref=e34]: xyznonexistent99999
+          - generic [ref=e35]:
+            - generic [ref=e36]: 最小杠杆
+            - spinbutton "最小杠杆" [ref=e37]
+          - generic [ref=e38]:
+            - generic [ref=e39]: 最大杠杆
+            - spinbutton "最大杠杆" [ref=e40]
+          - generic [ref=e41]:
+            - generic [ref=e42]: 排序方式
+            - combobox "排序方式" [ref=e43]:
+              - option "推荐排序" [selected]
+              - option "评分最高"
+              - option "杠杆最高"
+              - option "费率最低"
+          - button "清除筛选" [ref=e45] [cursor=pointer]
+      - region "平台列表" [ref=e46]:
+        - heading "平台列表" [level=2] [ref=e47]
+        - status [ref=e50]:
+          - generic [ref=e51]: 加载中...
+      - navigation "页面导航" [ref=e52]:
+        - button "← 上一页" [ref=e53] [cursor=pointer]
+        - generic [ref=e54]: 加载中...
+        - button "下一页 →" [ref=e55] [cursor=pointer]
+      - region "如何选择平台？" [ref=e56]:
+        - heading "如何选择平台？" [level=2] [ref=e57]
+        - generic [ref=e58]:
+          - generic [ref=e61]:
+            - heading "📊 考虑费率" [level=3] [ref=e62]
+            - paragraph [ref=e63]: 费率直接影响交易成本。建议对比不同平台的手续费和利息。
+          - generic [ref=e66]:
+            - heading "🛡️ 检查安全性" [level=3] [ref=e67]
+            - paragraph [ref=e68]: 查看平台的监管情况、资金安全措施和用户评价。
+          - generic [ref=e71]:
+            - heading "🎓 评估支持" [level=3] [ref=e72]
+            - paragraph [ref=e73]: 优先选择提供充分教育资源和客户支持的平台。
+      - generic [ref=e74]:
+        - heading "更多对比信息？" [level=2] [ref=e75]
+        - paragraph [ref=e76]: 查看详细的平台对比表，了解各平台在费率、杠杆、工具等方面的差异。
+        - link "查看平台对比" [ref=e77] [cursor=pointer]:
+          - /url: /compare/
+  - contentinfo "页脚" [ref=e78]:
+    - generic [ref=e79]:
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - heading "关于我们" [level=3] [ref=e82]
+          - paragraph [ref=e83]: 为投资者提供专业、透明的杠杆平台信息和交易指南。
+        - generic [ref=e84]:
+          - heading "快速链接" [level=3] [ref=e85]
+          - list [ref=e86]:
+            - listitem [ref=e87]:
+              - link "平台列表" [ref=e88]:
+                - /url: /platforms/
+            - listitem [ref=e89]:
+              - link "平台对比" [ref=e90]:
+                - /url: /compare/
+            - listitem [ref=e91]:
+              - link "关于我们" [ref=e92]:
+                - /url: /about/
+            - listitem [ref=e93]:
+              - link "法律声明" [ref=e94]:
+                - /url: /legal/
+        - generic [ref=e95]:
+          - heading "联系我们" [level=3] [ref=e96]
+          - paragraph [ref=e97]:
+            - text: "Email:"
+            - link "support@example.com" [ref=e98]:
+              - /url: mailto:support@example.com
+      - separator [ref=e99]
+      - generic [ref=e100]:
+        - paragraph [ref=e101]: © 2025 股票杠杆平台排行榜单。版权所有。
+        - paragraph [ref=e102]:
+          - link "法律声明" [ref=e103]:
+            - /url: /legal/
+          - text: "|"
+          - link "风险声明" [ref=e104]:
+            - /url: /legal/#disclaimer
+          - text: "| 更新时间：2025-10-21"
+```

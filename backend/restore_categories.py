@@ -4,13 +4,24 @@
 恢复分类数据 - 修复 oldbug001
 将所有分类从无恢复到正常状态
 """
+import sys
+import os
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.database import DATABASE_URL, Base
-from app.models.category import Category
-from app.models.section import Section
-from datetime import datetime
+# 提前导入验证
+try:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from app.database import DATABASE_URL, Base, engine
+    from app.models.category import Category
+    from app.models.section import Section
+    from datetime import datetime
+    sys.stdout.flush()
+except ImportError as e:
+    print(f"❌ 导入失败: {e}", file=sys.stderr)
+    sys.exit(1)
+
+print("当前数据库文件:", engine.url.database)
+sys.stdout.flush()
 
 # 分类数据定义
 CATEGORIES_DATA = {
@@ -47,8 +58,8 @@ CATEGORIES_DATA = {
 def restore_categories():
     """恢复所有分类数据"""
     
-    engine = create_engine(DATABASE_URL)
-    Session = sessionmaker(bind=engine)
+    db_engine = create_engine(DATABASE_URL)
+    Session = sessionmaker(bind=db_engine)
     db = Session()
     
     try:
@@ -57,8 +68,9 @@ def restore_categories():
         section_map = {s.slug: s for s in sections}
         
         print("=" * 60)
-        print("🔄 开始恢复分类数据...")
+        print("开始恢复分类数据...")
         print("=" * 60)
+        sys.stdout.flush()
         
         total_added = 0
         
@@ -66,10 +78,11 @@ def restore_categories():
             section = section_map.get(section_slug)
             
             if not section:
-                print(f"⚠️  栏目 {section_slug} 不存在，跳过")
+                print(f"栏目 {section_slug} 不存在，跳过")
+                sys.stdout.flush()
                 continue
             
-            print(f"\n📚 栏目: {section.name}")
+            print(f"\n栏目: {section.name}")
             
             for cat_data in categories:
                 # 检查分类是否已存在
@@ -79,7 +92,7 @@ def restore_categories():
                 ).first()
                 
                 if existing:
-                    print(f"  ✓ 分类已存在: {cat_data['name']}")
+                    print(f"  分类已存在: {cat_data['name']}")
                     continue
                 
                 # 创建新分类
@@ -92,25 +105,30 @@ def restore_categories():
                 )
                 db.add(category)
                 total_added += 1
-                print(f"  ✅ 添加分类: {cat_data['name']}")
+                print(f"  添加分类: {cat_data['name']}")
+                sys.stdout.flush()
         
         # 提交更改
         db.commit()
+        sys.stdout.flush()
         
         print("\n" + "=" * 60)
-        print(f"✅ 恢复完成! 共添加 {total_added} 个分类")
+        print(f"恢复完成! 共添加 {total_added} 个分类")
         print("=" * 60)
+        sys.stdout.flush()
         
         # 验证
-        print("\n📊 验证结果:")
+        print("\n验证结果:")
         for section in sections:
             count = db.query(Category).filter(Category.section_id == section.id).count()
             print(f"  {section.name}: {count} 个分类")
+        sys.stdout.flush()
         
         return True
         
     except Exception as e:
-        print(f"❌ 错误: {str(e)}")
+        print(f"错误: {str(e)}", file=sys.stderr)
+        sys.stderr.flush()
         db.rollback()
         return False
         
@@ -118,4 +136,12 @@ def restore_categories():
         db.close()
 
 if __name__ == "__main__":
-    restore_categories()
+    try:
+        result = restore_categories()
+        sys.exit(0 if result else 1)
+    except KeyboardInterrupt:
+        print("\n操作已取消", file=sys.stderr)
+        sys.exit(130)
+    except Exception as e:
+        print(f"未捕获的错误: {e}", file=sys.stderr)
+        sys.exit(1)

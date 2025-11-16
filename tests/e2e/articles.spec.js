@@ -1,12 +1,10 @@
 const { test, expect } = require('@playwright/test');
+const { resetClientStorage } = require('./test-utils');
 
 test.describe('Article Browsing E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage and cookies
-    await page.context().clearCookies();
-    await page.evaluate(() => localStorage.clear());
-    
-    // Navigate to articles page
+    await resetClientStorage(page);
+
     await page.goto('/articles/');
     await page.waitForLoadState('networkidle');
   });

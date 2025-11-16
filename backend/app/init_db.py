@@ -11,6 +11,7 @@ from app.models.category import Category
 from app.models.ai_config import AIConfig
 from app.utils.security import hash_password
 from datetime import datetime
+from slugify import slugify
 
 
 def init_db():
@@ -298,30 +299,33 @@ def init_db():
                 sample_articles = [
                     {
                         "title": "什么是杠杆交易？",
+                        "slug": slugify("什么是杠杆交易？"),
                         "content": "杠杆交易是一种使用借来的资金进行更大规模交易的方式。了解杠杆风险对成功交易至关重要。",
                         "summary": "杠杆交易基础概念",
                         "category_id": basic_category.id,
                         "platform_id": None,
                         "is_published": True,
-                        "views": 150,
+                        "view_count": 150,
                     },
                     {
                         "title": "如何选择交易平台？",
+                        "slug": slugify("如何选择交易平台？"),
                         "content": "选择交易平台时需要考虑安全性、手续费、杠杆比例和用户体验等多个因素。",
                         "summary": "平台选择指南",
                         "category_id": basic_category.id,
                         "platform_id": None,
                         "is_published": True,
-                        "views": 200,
+                        "view_count": 200,
                     },
                     {
                         "title": "风险管理基础",
+                        "slug": slugify("风险管理基础"),
                         "content": "良好的风险管理是长期交易成功的基石。学会控制风险比追求高收益更重要。",
                         "summary": "风险管理入门",
                         "category_id": basic_category.id,
                         "platform_id": None,
                         "is_published": True,
-                        "views": 180,
+                        "view_count": 180,
                     },
                 ]
                 
@@ -332,6 +336,8 @@ def init_db():
                     if not existing_article:
                         article = Article(
                             **article_data,
+                            section_id=faq_section.id,
+                            author_id=admin.id,
                             created_at=datetime.utcnow(),
                             updated_at=datetime.utcnow()
                         )

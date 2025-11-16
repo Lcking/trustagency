@@ -1,10 +1,9 @@
 const { test, expect } = require('@playwright/test');
+const { resetClientStorage } = require('./test-utils');
 
 test.describe('Performance and Security E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage and cookies
-    await page.context().clearCookies();
-    await page.evaluate(() => localStorage.clear());
+    await resetClientStorage(page);
   });
 
   test.describe('Performance Tests', () => {

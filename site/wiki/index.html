@@ -258,7 +258,8 @@
     
     <!-- Wiki Search Script -->
     <script>
-        // Wiki文章数据
+        // 从后端动态加载 Wiki 文章
+        // 首先，硬编码的文章数据（作为后备方案）
         const wikiArticles = [
             {
                 title: '什么是保证金追加（Margin Call）？',
@@ -309,6 +310,71 @@
                 color: 'secondary'
             }
         ];
+
+        // 颜色映射（用于分类徽章）
+        const categoryColorMap = {
+            '基础概念': 'primary',
+            '交易技巧': 'info',
+            '市场分析': 'warning',
+            '风险管理': 'danger',
+            '平台对比': 'success',
+            '交易成本': 'info',
+            '交易心理': 'secondary'
+        };
+
+        // 从后端加载文章
+        async function loadWikiArticlesFromBackend() {
+            try {
+                // 确定 API 基础 URL
+                const apiUrl = window.location.hostname === 'localhost' 
+                    ? `http://localhost:${window.location.port || 8000}`
+                    : window.location.origin;
+                
+                // 从后端获取百科（wiki）栏目的文章
+                const response = await fetch(`${apiUrl}/api/articles/by-section/wiki?limit=100`);
+                
+                if (!response.ok) {
+                    console.warn('从后端加载文章失败，使用静态数据');
+                    return wikiArticles;
+                }
+                
+                const backendArticles = await response.json();
+                
+                if (!backendArticles || backendArticles.length === 0) {
+                    console.warn('后端返回空文章列表，使用静态数据');
+                    return wikiArticles;
+                }
+                
+                // 将后端文章转换为前端格式
+                return backendArticles.map(article => {
+                    // 计算估计阅读时间（按 200 字/分钟）
+                    const contentLength = (article.content || article.description || '').length;
+                    const readTime = Math.max(1, Math.round(contentLength / 200));
+                    
+                    // 获取分类名称
+                    const categoryName = article.category_name || article.category || '其他';
+                    const color = categoryColorMap[categoryName] || 'secondary';
+                    
+                    return {
+                        title: article.title,
+                        category: categoryName,
+                        description: article.summary || article.description || article.content?.substring(0, 100) || '暂无描述',
+                        time: readTime,
+                        // 关键改动：使用 /article/{slug} 路径而不是 /wiki/{slug}
+                        url: `/article/${article.slug}`,
+                        color: color,
+                        // 保存原始数据用于高级功能
+                        id: article.id,
+                        slug: article.slug,
+                        viewCount: article.view_count || 0
+                    };
+                });
+                
+            } catch (error) {
+                console.error('加载后端文章时出错:', error);
+                return wikiArticles;
+            }
+        }
         
         // Wiki搜索和过滤功能
         const WikiSearch = {
@@ -318,12 +384,16 @@
             
             currentCategory: '',
             currentSearch: '',
+            allArticles: [],
             
-            init() {
+            async init() {
                 if (!this.searchInput || !this.articlesContainer) return;
                 
+                // 从后端加载文章
+                this.allArticles = await loadWikiArticlesFromBackend();
+                
                 // 首先生成所有文章卡片
-                this.renderArticles(wikiArticles);
+                this.renderArticles(this.allArticles);
                 
                 // 搜索事件
                 this.searchInput.addEventListener('input', (e) => {
@@ -358,7 +428,7 @@
                                 <p class="card-text text-muted small">${article.description}</p>
                             </div>
                             <div class="card-footer bg-transparent">
-                                <small class="text-muted">⏱️ ${article.time} 分钟阅读</small><br>
+                                <small class="text-muted">⏱️ ${article.time} 分钟阅读</small>${article.viewCount ? `<small class="text-muted"> | 👁️ ${article.viewCount} 次浏览</small>` : ''}<br>
                                 <a href="${article.url}" class="btn btn-sm btn-${article.color} mt-2">阅读全文</a>
                             </div>
                         </div>

@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { resetClientStorage } = require('./test-utils');
 
 // Helper to create a test user
 async function createTestUser(page) {
@@ -23,11 +24,8 @@ async function createTestUser(page) {
 
 test.describe('Platform Listing E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage and cookies
-    await page.context().clearCookies();
-    await page.evaluate(() => localStorage.clear());
-    
-    // Navigate to platforms page
+    await resetClientStorage(page);
+
     await page.goto('/platforms/');
     await page.waitForLoadState('networkidle');
   });

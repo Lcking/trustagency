@@ -283,16 +283,15 @@
     
     <script>
         /**
-         * 动态加载常见问题分类的文章
+         * 动态加载常见问题栏目的文章
          * 如果加载失败，则保留默认的FAQ内容
          */
         async function loadQAArticles() {
             try {
                 const API_URL = location.origin.replace(/\/$/, '');
                 
-                // 获取"常见问题"分类的文章
-                // 首先尝试按分类名称获取
-                const response = await fetch(`${API_URL}/api/articles/by-category/常见问题?limit=100`, {
+                // 获取"常见问题"栏目的文章（使用新的 by-section 端点）
+                const response = await fetch(`${API_URL}/api/articles/by-section/faq?limit=100`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -300,15 +299,14 @@
                 });
                 
                 if (!response.ok) {
-                    console.warn('加载常见问题分类文章失败, 使用默认FAQ内容');
+                    console.warn('加载常见问题栏目文章失败, 使用默认FAQ内容');
                     return;
                 }
                 
-                const data = await response.json();
-                const articles = data.data || data.items || data;
+                const articles = await response.json();
                 
                 if (!Array.isArray(articles) || articles.length === 0) {
-                    console.warn('未找到常见问题分类的文章, 使用默认FAQ内容');
+                    console.warn('未找到常见问题栏目的文章, 使用默认FAQ内容');
                     return;
                 }
                 

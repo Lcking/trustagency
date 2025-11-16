@@ -1,0 +1,320 @@
+{
+  "config": {
+    "configFile": "/Users/ck/Desktop/Project/trustagency/playwright.config.js",
+    "rootDir": "/Users/ck/Desktop/Project/trustagency/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/junit.xml"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/ck/Desktop/Project/trustagency/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/ck/Desktop/Project/trustagency/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ck/Desktop/Project/trustagency/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/ck/Desktop/Project/trustagency/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ck/Desktop/Project/trustagency/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/ck/Desktop/Project/trustagency/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ck/Desktop/Project/trustagency/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/ck/Desktop/Project/trustagency/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/ck/Desktop/Project/trustagency/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/ck/Desktop/Project/trustagency/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 7,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "platforms.spec.js",
+      "file": "platforms.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Platform Listing E2E Tests",
+          "file": "platforms.spec.js",
+          "line": 25,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Empty States and Errors",
+              "file": "platforms.spec.js",
+              "line": 414,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle no platforms gracefully",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "webkit",
+                      "projectName": "webkit",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 3454,
+                          "error": {
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js:427:50",
+                            "location": {
+                              "file": "/Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js",
+                              "column": 50,
+                              "line": 427
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 425 |\u001b[39m         \u001b[36mconst\u001b[39m hasEmptyMessage \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=无结果, text=未找到, text=暂无'\u001b[39m)\u001b[33m.\u001b[39misVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m \u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 426 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 427 |\u001b[39m         expect(results \u001b[33m===\u001b[39m \u001b[35m0\u001b[39m \u001b[33m||\u001b[39m hasEmptyMessage)\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 428 |\u001b[39m       }\n \u001b[90m 429 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 430 |\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js",
+                                "column": 50,
+                                "line": 427
+                              },
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n\n\u001b[0m \u001b[90m 425 |\u001b[39m         \u001b[36mconst\u001b[39m hasEmptyMessage \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=无结果, text=未找到, text=暂无'\u001b[39m)\u001b[33m.\u001b[39misVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m \u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 426 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 427 |\u001b[39m         expect(results \u001b[33m===\u001b[39m \u001b[35m0\u001b[39m \u001b[33m||\u001b[39m hasEmptyMessage)\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 428 |\u001b[39m       }\n \u001b[90m 429 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 430 |\u001b[39m\u001b[0m\n\u001b[2m    at /Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js:427:50\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-16T09:23:34.180Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/ck/Desktop/Project/trustagency/test-results/platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/ck/Desktop/Project/trustagency/test-results/platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Users/ck/Desktop/Project/trustagency/test-results/platforms-Platform-Listing-b1721-dle-no-platforms-gracefully-webkit/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js",
+                            "column": 50,
+                            "line": 427
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "4c9230bef079a25b3a16-8676e883adf3c7a65e64",
+                  "file": "platforms.spec.js",
+                  "line": 415,
+                  "column": 5
+                },
+                {
+                  "title": "should show error message on API failure",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "webkit",
+                      "projectName": "webkit",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "failed",
+                          "duration": 4434,
+                          "error": {
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n    at /Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js:450:23",
+                            "location": {
+                              "file": "/Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js",
+                              "column": 23,
+                              "line": 450
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 448 |\u001b[39m       \n \u001b[90m 449 |\u001b[39m       \u001b[36mconst\u001b[39m content \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'[id*=\"platforms\"], .platforms-container'\u001b[39m)\u001b[33m.\u001b[39misVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m \u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 450 |\u001b[39m       expect(content)\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 451 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 452 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 453 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js",
+                                "column": 23,
+                                "line": 450
+                              },
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mfalse\u001b[39m\n\n\u001b[0m \u001b[90m 448 |\u001b[39m       \n \u001b[90m 449 |\u001b[39m       \u001b[36mconst\u001b[39m content \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'[id*=\"platforms\"], .platforms-container'\u001b[39m)\u001b[33m.\u001b[39misVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m.\u001b[39m\u001b[36mcatch\u001b[39m(() \u001b[33m=>\u001b[39m \u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 450 |\u001b[39m       expect(content)\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 451 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 452 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 453 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at /Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js:450:23\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2025-11-16T09:23:34.181Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Users/ck/Desktop/Project/trustagency/test-results/platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Users/ck/Desktop/Project/trustagency/test-results/platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Users/ck/Desktop/Project/trustagency/test-results/platforms-Platform-Listing-c65a4-rror-message-on-API-failure-webkit/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Users/ck/Desktop/Project/trustagency/tests/e2e/platforms.spec.js",
+                            "column": 23,
+                            "line": 450
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "4c9230bef079a25b3a16-8888a1e140c7906c724d",
+                  "file": "platforms.spec.js",
+                  "line": 431,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-11-16T09:23:32.977Z",
+    "duration": 5894.854,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}
