@@ -113,134 +113,23 @@
             <section class="mb-5">
                 <div class="input-group mb-3">
                     <span class="input-group-text bg-light border-end-0">🔍</span>
-                    <input type="text" class="form-control border-start-0" placeholder="搜索百科文章...">
+                    <input id="wiki-search-input" type="text" class="form-control border-start-0" placeholder="搜索百科文章...">
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn btn-outline-primary btn-sm">全部</button>
-                    <button class="btn btn-outline-secondary btn-sm">基础概念</button>
-                    <button class="btn btn-outline-secondary btn-sm">风险管理</button>
-                    <button class="btn btn-outline-secondary btn-sm">交易工具</button>
-                    <button class="btn btn-outline-secondary btn-sm">市场分析</button>
+                    <button class="btn btn-outline-primary btn-sm wiki-filter-btn" data-category="">全部</button>
+                    <button class="btn btn-outline-secondary btn-sm wiki-filter-btn" data-category="基础概念">基础概念</button>
+                    <button class="btn btn-outline-secondary btn-sm wiki-filter-btn" data-category="风险管理">风险管理</button>
+                    <button class="btn btn-outline-secondary btn-sm wiki-filter-btn" data-category="交易工具">交易工具</button>
+                    <button class="btn btn-outline-secondary btn-sm wiki-filter-btn" data-category="市场分析">市场分析</button>
                 </div>
             </section>
 
             <!-- Wiki Articles Grid -->
+                        <!-- Wiki Articles Grid -->
             <section class="mb-5" aria-labelledby="articles-title">
                 <h2 id="articles-title" class="h5 mb-3">热门文章</h2>
-                <div class="row g-4">
-                    <!-- Article 1: Margin Call -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-left border-primary">
-                            <div class="card-header bg-light">
-                                <span class="badge bg-primary">基础概念</span>
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title h5">什么是保证金追加（Margin Call）？</h3>
-                                <p class="card-text text-muted small">
-                                    理解保证金追加的含义、触发条件、风险和应对策略。
-                                </p>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <small class="text-muted">⏱️ 5 分钟阅读</small><br>
-                                <a href="/wiki/margin-call/" class="btn btn-sm btn-primary mt-2">阅读全文</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Article 2: Risk Metrics -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-left border-info">
-                            <div class="card-header bg-light">
-                                <span class="badge bg-info">风险管理</span>
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title h5">关键风险指标解读</h3>
-                                <p class="card-text text-muted small">
-                                    学习如何监测和理解杠杆交易中的关键风险指标。
-                                </p>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <small class="text-muted">⏱️ 6 分钟阅读</small><br>
-                                <a href="/wiki/risk-metrics/" class="btn btn-sm btn-info mt-2">阅读全文</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Article 3: Fee Structure -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-left border-success">
-                            <div class="card-header bg-light">
-                                <span class="badge bg-success">交易成本</span>
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title h5">杠杆交易费用详解</h3>
-                                <p class="card-text text-muted small">
-                                    全面了解交易手续费、借款利息和其他隐含成本。
-                                </p>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <small class="text-muted">⏱️ 7 分钟阅读</small><br>
-                                <a href="/wiki/fee-structure/" class="btn btn-sm btn-success mt-2">阅读全文</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Article 4: Technical Analysis -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-left border-warning">
-                            <div class="card-header bg-light">
-                                <span class="badge bg-warning text-dark">市场分析</span>
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title h5">技术分析基础</h3>
-                                <p class="card-text text-muted small">
-                                    学习趋势、支撑/阻力和技术指标的基本概念。
-                                </p>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <small class="text-muted">⏱️ 8 分钟阅读</small><br>
-                                <a href="/wiki/technical-analysis/" class="btn btn-sm btn-warning text-dark mt-2">阅读全文</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Article 5: Position Sizing -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-left border-danger">
-                            <div class="card-header bg-light">
-                                <span class="badge bg-danger">风险管理</span>
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title h5">仓位管理和杠杆比例</h3>
-                                <p class="card-text text-muted small">
-                                    如何选择合适的仓位大小和杠杆比例来控制风险。
-                                </p>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <small class="text-muted">⏱️ 7 分钟阅读</small><br>
-                                <a href="/wiki/position-sizing/" class="btn btn-sm btn-danger mt-2">阅读全文</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Article 6: Emotions Trading -->
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 border-left border-secondary">
-                            <div class="card-header bg-light">
-                                <span class="badge bg-secondary">交易心理</span>
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title h5">控制情绪交易</h3>
-                                <p class="card-text text-muted small">
-                                    克服恐惧和贪婪，建立有纪律的交易策略。
-                                </p>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <small class="text-muted">⏱️ 6 分钟阅读</small><br>
-                                <a href="/wiki/emotions-trading/" class="btn btn-sm btn-secondary mt-2">阅读全文</a>
-                            </div>
-                        </div>
-                    </div>
+                <div id="wiki-articles" class="row g-4">
+                    <!-- 文章会动态生成 -->
                 </div>
             </section>
 
@@ -363,6 +252,155 @@
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    
+    <!-- API Client -->
+    <script src="/assets/js/api-client.js"></script>
+    
+    <!-- Wiki Search Script -->
+    <script>
+        // Wiki文章数据
+        const wikiArticles = [
+            {
+                title: '什么是保证金追加（Margin Call）？',
+                category: '基础概念',
+                description: '理解保证金追加的含义、触发条件、风险和应对策略。',
+                time: '5',
+                url: '/wiki/margin-call/',
+                color: 'primary'
+            },
+            {
+                title: '关键风险指标解读',
+                category: '风险管理',
+                description: '学习如何监测和理解杠杆交易中的关键风险指标。',
+                time: '6',
+                url: '/wiki/risk-metrics/',
+                color: 'info'
+            },
+            {
+                title: '杠杆交易费用详解',
+                category: '交易成本',
+                description: '全面了解交易手续费、借款利息和其他隐含成本。',
+                time: '7',
+                url: '/wiki/fee-structure/',
+                color: 'success'
+            },
+            {
+                title: '技术分析基础',
+                category: '市场分析',
+                description: '学习趋势、支撑/阻力和技术指标的基本概念。',
+                time: '8',
+                url: '/wiki/technical-analysis/',
+                color: 'warning'
+            },
+            {
+                title: '仓位管理和杠杆比例',
+                category: '风险管理',
+                description: '如何选择合适的仓位大小和杠杆比例来控制风险。',
+                time: '7',
+                url: '/wiki/position-sizing/',
+                color: 'danger'
+            },
+            {
+                title: '控制情绪交易',
+                category: '交易心理',
+                description: '克服恐惧和贪婪，建立有纪律的交易策略。',
+                time: '6',
+                url: '/wiki/emotions-trading/',
+                color: 'secondary'
+            }
+        ];
+        
+        // Wiki搜索和过滤功能
+        const WikiSearch = {
+            searchInput: document.getElementById('wiki-search-input'),
+            filterButtons: document.querySelectorAll('.wiki-filter-btn'),
+            articlesContainer: document.getElementById('wiki-articles'),
+            
+            currentCategory: '',
+            currentSearch: '',
+            
+            init() {
+                if (!this.searchInput || !this.articlesContainer) return;
+                
+                // 首先生成所有文章卡片
+                this.renderArticles(wikiArticles);
+                
+                // 搜索事件
+                this.searchInput.addEventListener('input', (e) => {
+                    this.currentSearch = e.target.value.toLowerCase();
+                    this.filterArticles();
+                });
+                
+                // 分类过滤事件
+                this.filterButtons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        // 更新按钮状态
+                        this.filterButtons.forEach(b => b.classList.remove('btn-outline-primary'));
+                        this.filterButtons.forEach(b => b.classList.add('btn-outline-secondary'));
+                        e.target.classList.remove('btn-outline-secondary');
+                        e.target.classList.add('btn-outline-primary');
+                        
+                        this.currentCategory = e.target.dataset.category;
+                        this.filterArticles();
+                    });
+                });
+            },
+            
+            renderArticles(articles) {
+                this.articlesContainer.innerHTML = articles.map(article => `
+                    <div class="col-md-6 col-lg-4" data-article data-title="${article.title}" data-category="${article.category}" data-description="${article.description}">
+                        <div class="card h-100 border-left border-${article.color}">
+                            <div class="card-header bg-light">
+                                <span class="badge bg-${article.color}">${article.category}</span>
+                            </div>
+                            <div class="card-body">
+                                <h3 class="card-title h5">${article.title}</h3>
+                                <p class="card-text text-muted small">${article.description}</p>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <small class="text-muted">⏱️ ${article.time} 分钟阅读</small><br>
+                                <a href="${article.url}" class="btn btn-sm btn-${article.color} mt-2">阅读全文</a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            
+            filterArticles() {
+                const articles = this.articlesContainer.querySelectorAll('[data-article]');
+                let visibleCount = 0;
+                
+                articles.forEach(article => {
+                    const title = article.dataset.title || '';
+                    const category = article.dataset.category || '';
+                    const description = article.dataset.description || '';
+                    
+                    // 检查是否与搜索和分类匹配
+                    const matchesSearch = !this.currentSearch || 
+                                         title.toLowerCase().includes(this.currentSearch) ||
+                                         description.toLowerCase().includes(this.currentSearch);
+                    const matchesCategory = !this.currentCategory || category === this.currentCategory;
+                    
+                    if (matchesSearch && matchesCategory) {
+                        article.style.display = '';
+                        visibleCount++;
+                    } else {
+                        article.style.display = 'none';
+                    }
+                });
+                
+                // 如果没有结果，显示提示
+                if (visibleCount === 0) {
+                    this.articlesContainer.innerHTML = '<div class="col-12 text-center text-muted">未找到符合条件的文章</div>';
+                }
+            }
+        };
+        
+        // 页面加载完毕后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            WikiSearch.init();
+        });
+    </script>
     
     <!-- Main Script -->
     <script src="/assets/js/main.js" defer></script>

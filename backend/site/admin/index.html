@@ -1350,11 +1350,12 @@
         const getAPIUrl = () => {
             const host = window.location.hostname;
             const port = window.location.port;
-            if (port === '8001' || port === '') {
-                // 从后端直接访问（任何主机名）
-                return `http://${host}:8001`;
+            // 使用当前的端口，如果没有端口号则使用8000
+            if (port === '' || port === '80' || port === '443') {
+                return `http://${host}:8000`;
             }
-            return `http://${host}:8001`;
+            // 使用当前访问的端口
+            return `http://${host}:${port || 8000}`;
         };
         const API_URL = getAPIUrl();
         
@@ -1991,14 +1992,20 @@
         async function loadPlatforms() {
             const search = document.getElementById('platformSearch').value;
             try {
-                const response = await fetch(
-                    `${API_URL}/api/platforms?skip=0&limit=20${search ? '&search=' + search : ''}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
+                // 构建URL并正确编码search参数
+                let url = `${API_URL}/api/platforms?skip=0&limit=20`;
+                if (search) {
+                    url += `&search=${encodeURIComponent(search)}`;
+                }
+                
+                console.log('加载平台列表:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
-                );
+                });
 
                 if (response.ok) {
                     const data = await response.json();
@@ -2025,7 +2032,10 @@
                     html += '</tbody></table>';
                     document.getElementById('platformsContent').innerHTML = html;
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    console.error('HTTP错误:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('响应内容:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
             } catch (error) {
                 console.error('加载平台失败:', error);
@@ -2660,17 +2670,29 @@
 
         async function loadPlatformsForSelect(selectId) {
             try {
+                console.log('加载平台列表到select:', selectId);
                 const response = await fetch(`${API_URL}/api/platforms?limit=100`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 const select = document.getElementById(selectId);
                 select.innerHTML = '<option value="">选择平台...</option>';
                 data.data.forEach(p => {
                     select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
                 });
+                console.log('成功加载', data.data.length, '个平台');
             } catch (error) {
-                console.error('加载平台失败:', error);
+                console.error('加载平台列表失败:', error);
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '<option value="">加载失败</option>';
+                }
             }
         }
 

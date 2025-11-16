@@ -11,8 +11,25 @@
     // Configuration
     // ========================================
     
+    // Get API base URL dynamically
+    function getAPIUrl() {
+        // First check localStorage
+        const storedURL = localStorage.getItem('apiBaseURL');
+        if (storedURL) {
+            return storedURL;
+        }
+        
+        // Otherwise use current host and port
+        const host = window.location.hostname;
+        const port = window.location.port || '8000';
+        const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+        
+        // Return API base URL
+        return `${protocol}://${host}:${port}/api`;
+    }
+    
     const API_CONFIG = {
-        baseURL: localStorage.getItem('apiBaseURL') || 'http://localhost:8001/api',
+        baseURL: getAPIUrl(),
         timeout: 30000,
         retryAttempts: 3,
         retryDelay: 1000,
@@ -369,9 +386,8 @@
          * Search platforms
          */
         async searchPlatforms(query, filters = {}) {
-            return this.request('GET', '/platforms/search', {
-                params: { q: query, ...filters }
-            });
+            const params = this.buildQueryString({ search: query, ...filters });
+            return this.request('GET', `/platforms${params}`, { skipCache: true });
         }
 
         // ========================================
@@ -418,9 +434,8 @@
          * Search articles
          */
         async searchArticles(query, filters = {}) {
-            return this.request('GET', '/articles/search', {
-                params: { q: query, ...filters }
-            });
+            const params = this.buildQueryString({ search: query, ...filters });
+            return this.request('GET', `/articles${params}`, { skipCache: true });
         }
 
         /**

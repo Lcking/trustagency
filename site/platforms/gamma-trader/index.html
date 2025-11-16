@@ -508,6 +508,50 @@
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     
+    <!-- API Client -->
+    <script src="/assets/js/api-client.js"></script>
+    
+    <!-- Dynamic Platform Loading -->
+    <script>
+        const PlatformDetail = {
+            platformSlugVariants: {
+                'gamma-trader': ['gamma-trader', 'gammatrader', 'gamma trader'],
+            },
+            async init() {
+                const slug = this.getPlatformSlugFromURL();
+                await this.loadAndRenderPlatform(slug);
+            },
+            getPlatformSlugFromURL() {
+                const pathParts = window.location.pathname.split('/').filter(p => p);
+                return pathParts[1] || 'gamma-trader';
+            },
+            async loadAndRenderPlatform(slug) {
+                try {
+                    const response = await apiClient.getPlatforms({ limit: 100 });
+                    const platforms = response.data || response.items || response;
+                    const variants = this.platformSlugVariants[slug] || [slug];
+                    const platform = platforms.find(p => {
+                        const pSlug = (p.slug || '').toLowerCase();
+                        const pName = (p.name || '').toLowerCase();
+                        return variants.some(v => pSlug === v.toLowerCase() || pName === v.toLowerCase());
+                    });
+                    if (!platform) return;
+                    this.updatePageContent(platform);
+                } catch (error) {
+                    console.error('Failed to load platform:', error);
+                }
+            },
+            updatePageContent(platform) {
+                document.title = `${platform.name} - 股票杠杆平台排行榜单`;
+                const heading = document.querySelector('h1');
+                if (heading) heading.textContent = platform.name;
+                const description = document.querySelector('.lead.text-muted');
+                if (description) description.textContent = platform.description || '专业交易平台';
+            }
+        };
+        document.addEventListener('DOMContentLoaded', () => PlatformDetail.init());
+    </script>
+    
     <!-- Main Script -->
     <script src="/assets/js/main.js" defer></script>
 </body>

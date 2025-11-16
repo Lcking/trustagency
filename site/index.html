@@ -191,32 +191,11 @@
         <section class="py-5" aria-labelledby="recommended-title">
             <div class="container">
                 <h2 id="recommended-title" class="mb-4">推荐平台</h2>
-                <div class="row g-4">
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h3 class="card-title h5">Alpha Leverage</h3>
-                                <p class="card-text text-muted">高杠杆、低费率的专业交易平台</p>
-                                <a href="/platforms/alpha-leverage/" class="btn btn-primary btn-sm">查看详情</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h3 class="card-title h5">Beta Margin</h3>
-                                <p class="card-text text-muted">风险管理工具完善的保证金交易平台</p>
-                                <a href="/platforms/beta-margin/" class="btn btn-primary btn-sm">查看详情</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h3 class="card-title h5">Gamma Trader</h3>
-                                <p class="card-text text-muted">新手友好、教育资源丰富的平台</p>
-                                <a href="/platforms/gamma-trader/" class="btn btn-primary btn-sm">查看详情</a>
-                            </div>
+                <div id="recommended-platforms" class="row g-4">
+                    <!-- 动态加载 -->
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
                         </div>
                     </div>
                 </div>
@@ -339,6 +318,58 @@
     
     <!-- Auth Manager -->
     <script src="/assets/js/auth-manager.js"></script>
+    
+    <!-- Load Recommended Platforms -->
+    <script>
+        // 加载推荐平台
+        async function loadRecommendedPlatforms() {
+            try {
+                const container = document.getElementById('recommended-platforms');
+                if (!container) return;
+                
+                // 从API获取推荐平台
+                const response = await apiClient.getPlatforms({
+                    is_featured: true,
+                    limit: 3
+                });
+                
+                const platforms = response.data || response.items || response;
+                
+                if (!platforms || platforms.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-center text-muted">暂无推荐平台</div>';
+                    return;
+                }
+                
+                // 生成HTML
+                container.innerHTML = platforms.map(platform => `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h3 class="card-title h5">${escapeHtml(platform.name)}</h3>
+                                <p class="card-text text-muted">${escapeHtml(platform.description || '')}</p>
+                                <a href="/platforms/${platform.slug || platform.id}/" class="btn btn-primary btn-sm">查看详情</a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load recommended platforms:', error);
+                const container = document.getElementById('recommended-platforms');
+                if (container) {
+                    container.innerHTML = '<div class="col-12 text-center text-danger">加载推荐平台失败</div>';
+                }
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 页面加载完毕后加载推荐平台
+        document.addEventListener('DOMContentLoaded', loadRecommendedPlatforms);
+    </script>
     
     <!-- Main Script -->
     <script src="/assets/js/main.js" defer></script>

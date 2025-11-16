@@ -57,6 +57,7 @@ def init_db():
     from app.models.ai_config import AIConfig
     from app.utils.security import hash_password
     from datetime import datetime
+    from slugify import slugify
     
     # 创建所有表
     Base.metadata.create_all(bind=engine)
@@ -167,6 +168,9 @@ def init_db():
         ]
         
         for platform_data in platforms_data:
+            platform_data = platform_data.copy()
+            if not platform_data.get("slug") and platform_data.get("name"):
+                platform_data["slug"] = slugify(platform_data["name"])
             # 使用 raw SQL 检查而不是 ORM，以避免加载不存在的列
             from sqlalchemy import text
             with engine.connect() as conn:
