@@ -343,8 +343,8 @@
                         </h2>
                         <div id="${targetId}" class="accordion-collapse collapse ${isExpanded ? 'show' : ''}" data-bs-parent="#faqAccordion">
                             <div class="accordion-body">
-                                <div class="article-summary">
-                                    ${article.summary ? escapeHtml(article.summary) : ''}
+                                <div class="article-content">
+                                    ${article.content ? escapeHtml(article.content) : article.summary ? escapeHtml(article.summary) : ''}
                                 </div>
                                 <div class="article-link">
                                     <a href="/article/${article.slug}" target="_blank" rel="noopener" class="btn btn-sm btn-primary mt-3">
