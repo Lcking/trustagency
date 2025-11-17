@@ -500,6 +500,155 @@ async def get_create_form_definition(
                 ]
             },
             {
+                "title": "为什么选择该平台",
+                "description": "展示平台的独特优势 (仅适用于新手友好型平台)",
+                "fields": [
+                    {
+                        "name": "why_choose",
+                        "label": "为什么选择 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"icon":"📚","title":"优点1","description":"..."},...]'
+                    }
+                ]
+            },
+            {
+                "title": "交易条件和费用",
+                "fields": [
+                    {
+                        "name": "trading_conditions",
+                        "label": "交易条件 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"label":"最大杠杆","value":"1:500"},...]'
+                    },
+                    {
+                        "name": "fee_advantages",
+                        "label": "费用优势 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"label":"交易手续费","value":"0.5点"},...]'
+                    }
+                ]
+            },
+            {
+                "title": "账户类型",
+                "fields": [
+                    {
+                        "name": "account_types",
+                        "label": "账户类型 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"name":"基础","leverage":"1:10","min_deposit":"$1000"},...]'
+                    }
+                ]
+            },
+            {
+                "title": "工具和开户",
+                "fields": [
+                    {
+                        "name": "trading_tools",
+                        "label": "交易工具 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"title":"工具1","description":"..."},...]'
+                    },
+                    {
+                        "name": "opening_steps",
+                        "label": "开户步骤 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"step_number":1,"title":"...","description":"..."},...]'
+                    }
+                ]
+            },
+            {
+                "title": "安全和支持",
+                "fields": [
+                    {
+                        "name": "security_measures",
+                        "label": "安全措施 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"text":"✓ 安全措施1"},...]'
+                    },
+                    {
+                        "name": "customer_support",
+                        "label": "客户支持 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"type":"24/5支持","description":"..."},...]'
+                    }
+                ]
+            },
+            {
+                "title": "学习资源",
+                "fields": [
+                    {
+                        "name": "learning_resources",
+                        "label": "学习资源 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"title":"资源","description":"...","link":"..."},...]'
+                    }
+                ]
+            },
+            {
+                "title": "平台介绍信息",
+                "fields": [
+                    {
+                        "name": "introduction",
+                        "label": "平台介绍",
+                        "type": "textarea",
+                        "placeholder": "详细介绍平台的基本信息"
+                    },
+                    {
+                        "name": "main_features",
+                        "label": "主要特性 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"title":"特性1","desc":"描述1"},...]'
+                    },
+                    {
+                        "name": "fee_structure",
+                        "label": "费用结构 (JSON)",
+                        "type": "json",
+                        "placeholder": '[{"type":"手续费","value":"0.5%","desc":"..."},...]'
+                    },
+                    {
+                        "name": "account_opening_link",
+                        "label": "开户链接",
+                        "type": "text",
+                        "placeholder": "https://..."
+                    }
+                ]
+            },
+            {
+                "title": "交易参数",
+                "fields": [
+                    {
+                        "name": "min_leverage",
+                        "label": "最小杠杆",
+                        "type": "number",
+                        "placeholder": "1.0"
+                    },
+                    {
+                        "name": "max_leverage",
+                        "label": "最大杠杆",
+                        "type": "number",
+                        "placeholder": "500"
+                    },
+                    {
+                        "name": "commission_rate",
+                        "label": "佣金率 (0-1)",
+                        "type": "number",
+                        "min": 0,
+                        "max": 1,
+                        "step": 0.0001,
+                        "placeholder": "0.005 (小数形式，例: 0.001, 0.005)"
+                    },
+                    {
+                        "name": "fee_rate",
+                        "label": "费率 (0-1)",
+                        "type": "number",
+                        "min": 0,
+                        "max": 1,
+                        "step": 0.0001,
+                        "placeholder": "0.005 (小数形式，例: 0.001, 0.5)"
+                    }
+                ]
+            },
+            {
                 "title": "其他信息",
                 "fields": [
                     {
