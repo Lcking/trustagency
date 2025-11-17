@@ -82,6 +82,7 @@ def init_integration_data():
                 {"name": "平台相关", "description": "平台相关问题"},
                 {"name": "交易相关", "description": "交易相关问题"},
                 {"name": "风险相关", "description": "风险相关问题"},
+                {"name": "其他", "description": "其他常见问题"},
             ],
         }
         
@@ -114,6 +115,7 @@ def init_integration_data():
         platforms_data = [
             {
                 "name": "Alpha Leverage",
+                "slug": "alpha-leverage",
                 "description": "高杠杆、低费率的专业交易平台，提供完善的风险管理工具和24/7客户支持。",
                 "rating": 4.8,
                 "rank": 1,
@@ -126,6 +128,7 @@ def init_integration_data():
             },
             {
                 "name": "Beta Margin",
+                "slug": "beta-margin",
                 "description": "风险管理工具完善的保证金交易平台，特别适合风险厌恶型投资者。",
                 "rating": 4.5,
                 "rank": 2,
@@ -138,6 +141,7 @@ def init_integration_data():
             },
             {
                 "name": "Gamma Trader",
+                "slug": "gamma-trader",
                 "description": "新手友好、教育资源丰富的平台，配有详细的交易指南和视频教程。",
                 "rating": 4.3,
                 "rank": 3,
@@ -528,10 +532,40 @@ def init_integration_data():
                 "title": "新手应该如何开始？",
                 "slug": "faq-beginner-start",
                 "summary": "新手入门的建议和步骤。",
-                "content": "1. 充分了解杠杆交易的风险\n2. 选择安全、监管完善的平台\n3. 从低杠杆开始（1:2 或 1:5）\n4. 参加平台提供的教育课程\n5. 用模拟账户进行练习\n6. 小额真实交易开始\n7. 严格执行风险管理",
+                "content": "建议先学习基础知识，选择一个信誉良好的平台，使用小资金进行练习，逐步积累经验。参考本站的新手指南。",
                 "category": "交易相关",
                 "tags": "FAQ,新手,入门",
                 "is_featured": True,
+                "is_published": True,
+            },
+            {
+                "title": "如何设置止损和止盈？",
+                "slug": "faq-stoploss-takeprofit",
+                "summary": "止损和止盈的设置方法和策略。",
+                "content": "止损和止盈应该根据你的交易策略和风险承受能力来设置。一般来说，应该在进入交易之前就设定好这些价位。",
+                "category": "交易相关",
+                "tags": "FAQ,止损,止盈",
+                "is_featured": False,
+                "is_published": True,
+            },
+            {
+                "title": "平台是否安全可靠？",
+                "slug": "faq-platform-safety",
+                "summary": "选择安全平台的重要指标。",
+                "content": "应该选择持有正规牌照、受监管的平台。本站只提供信息参考，不构成投资建议。请先充分调查再决定。",
+                "category": "平台相关",
+                "tags": "FAQ,安全,选择",
+                "is_featured": False,
+                "is_published": True,
+            },
+            {
+                "title": "杠杆交易需要缴税吗？",
+                "slug": "faq-tax",
+                "summary": "杠杆交易的税收问题。",
+                "content": "税收问题因地区而异，需要咨询当地的税务部门或专业税务顾问。本网站不提供税务建议。",
+                "category": "其他",
+                "tags": "FAQ,税收",
+                "is_featured": False,
                 "is_published": True,
             },
         ]
