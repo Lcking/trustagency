@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API 测试</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>文章 API 测试</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function test() {
+            const results = document.getElementById('results');
+            
+            // 测试 1: 直接 ID 请求
+            try {
+                console.log('测试 1: 直接通过 ID 获取...');
+                const resp = await fetch('http://localhost:8000/api/articles/6');
+                const data = await resp.json();
+                results.innerHTML += `<h3 class="success">✅ ID 请求成功</h3><pre>${JSON.stringify(data, null, 2).slice(0, 500)}</pre>`;
+            } catch (e) {
+                results.innerHTML += `<h3 class="error">❌ ID 请求失败: ${e.message}</h3>`;
+            }
+            
+            // 测试 2: 搜索请求
+            try {
+                console.log('测试 2: 按关键词搜索...');
+                const resp = await fetch('http://localhost:8000/api/articles/search/by-keyword?keyword=杠杆&limit=1');
+                const data = await resp.json();
+                results.innerHTML += `<h3 class="success">✅ 搜索请求成功</h3><pre>${JSON.stringify(data, null, 2).slice(0, 500)}</pre>`;
+            } catch (e) {
+                results.innerHTML += `<h3 class="error">❌ 搜索请求失败: ${e.message}</h3>`;
+            }
+            
+            // 测试 3: 当前 URL 解析
+            results.innerHTML += `<h3>当前 URL 信息</h3><pre>
+地址栏: ${location.href}
+Pathname: ${location.pathname}
+Search: ${location.search}
+API URL: http://localhost:8000
+</pre>`;
+        }
+        
+        // 页面加载完成后执行测试
+        window.addEventListener('load', test);
+    </script>
+</body>
+</html>
