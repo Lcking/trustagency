@@ -325,10 +325,10 @@
                 const container = document.getElementById('recommended-platforms');
                 if (!container) return;
                 
-                // 从API获取推荐平台
+                // 从API获取推荐平台（不限制数量）
                 const response = await apiClient.getPlatforms({
                     is_featured: true,
-                    limit: 3
+                    limit: 100
                 });
                 
                 const platforms = response.data || response.items || response;
@@ -338,18 +338,32 @@
                     return;
                 }
                 
-                // 生成HTML
-                container.innerHTML = platforms.map(platform => `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h3 class="card-title h5">${escapeHtml(platform.name)}</h3>
-                                <p class="card-text text-muted">${escapeHtml(platform.description || '')}</p>
-                                <a href="/platforms/${platform.slug || platform.id}/" class="btn btn-primary btn-sm">查看详情</a>
+                // 生成HTML，添加序号标志
+                container.innerHTML = platforms.map((platform, index) => {
+                    const rank = index + 1;
+                    const hasBackground = rank <= 3; // 前3个显示背景色
+                    const badgeClass = hasBackground ? 'badge bg-primary text-white' : 'badge bg-light text-dark';
+                    
+                    return `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 shadow-sm position-relative">
+                                <div class="position-absolute" style="top: 10px; left: 10px; z-index: 10;">
+                                    <span class="${badgeClass}" style="font-size: 1.2rem; padding: 0.5rem 0.7rem; font-weight: bold;">
+                                        ${rank}
+                                    </span>
+                                </div>
+                                <div class="card-body pt-5">
+                                    <h3 class="card-title h5">${escapeHtml(platform.name)}</h3>
+                                    <p class="card-text text-muted">${escapeHtml(platform.description || '')}</p>
+                                    <div class="d-flex gap-2">
+                                        <a href="/platforms/${platform.slug || platform.id}/" class="btn btn-primary btn-sm flex-grow-1">查看详情</a>
+                                        ${platform.website_url ? `<a href="${escapeHtml(platform.website_url)}" target="_blank" class="btn btn-outline-secondary btn-sm">官网</a>` : ''}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } catch (error) {
                 console.error('Failed to load recommended platforms:', error);
                 const container = document.getElementById('recommended-platforms');
