@@ -57,21 +57,94 @@
                     <h1 id="platform-name" class="mb-4">百度</h1>
                     <p id="platform-description" class="lead text-muted mb-5">推荐平台</p>
 
-                    <section class="mb-5">
+                    <!-- 平台介绍 -->
+                    <section class="mb-5" id="section-intro" style="display:none;">
                         <h2 class="h4 mb-3">平台介绍</h2>
-                        <p id="platform-intro">
-                            加载中...
-                        </p>
+                        <p id="platform-intro"></p>
                     </section>
 
-                    <section class="mb-5">
+                    <!-- 为什么选择该平台 -->
+                    <section class="mb-5" id="section-why-choose" style="display:none;">
+                        <h2 class="h4 mb-3">为什么选择该平台</h2>
+                        <div class="row" id="why-choose-cards"></div>
+                    </section>
+
+                    <!-- 账户类型 -->
+                    <section class="mb-5" id="section-account-types" style="display:none;">
+                        <h2 class="h4 mb-3">账户类型</h2>
+                        <div class="row" id="account-types-cards"></div>
+                    </section>
+
+                    <!-- 交易条件和费用 -->
+                    <section class="mb-5" id="section-trading-conditions" style="display:none;">
+                        <h2 class="h4 mb-3">交易条件</h2>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>项目</th>
+                                        <th>条件</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trading-conditions-body"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- 费用优势 -->
+                    <section class="mb-5" id="section-fee-advantages" style="display:none;">
+                        <h2 class="h4 mb-3">费用优势</h2>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>项目</th>
+                                        <th>优势</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fee-advantages-body"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- 交易工具 -->
+                    <section class="mb-5" id="section-trading-tools" style="display:none;">
+                        <h2 class="h4 mb-3">交易工具</h2>
+                        <div class="row" id="trading-tools-cards"></div>
+                    </section>
+
+                    <!-- 开户步骤 -->
+                    <section class="mb-5" id="section-opening-steps" style="display:none;">
+                        <h2 class="h4 mb-3">开户步骤</h2>
+                        <div id="opening-steps-container"></div>
+                    </section>
+
+                    <!-- 安全措施 -->
+                    <section class="mb-5" id="section-security" style="display:none;">
+                        <h2 class="h4 mb-3">安全措施</h2>
+                        <ul class="list-group" id="security-measures-list"></ul>
+                    </section>
+
+                    <!-- 客户支持 -->
+                    <section class="mb-5" id="section-support" style="display:none;">
+                        <h2 class="h4 mb-3">客户支持</h2>
+                        <ul class="list-group" id="customer-support-list"></ul>
+                    </section>
+
+                    <!-- 学习资源 -->
+                    <section class="mb-5" id="section-learning" style="display:none;">
+                        <h2 class="h4 mb-3">学习资源</h2>
+                        <div class="row" id="learning-resources-cards"></div>
+                    </section>
+
+                    <!-- 主要特性（后备用） -->
+                    <section class="mb-5" id="section-features" style="display:none;">
                         <h2 class="h4 mb-3">主要特性</h2>
-                        <ul class="list-group" id="platform-features">
-                            <li class="list-group-item">加载中...</li>
-                        </ul>
+                        <ul class="list-group" id="platform-features"></ul>
                     </section>
 
-                    <section class="mb-5">
+                    <!-- 交易参数（后备用） -->
+                    <section class="mb-5" id="section-params" style="display:none;">
                         <h2 class="h4 mb-3">交易参数</h2>
                         <div class="table-responsive">
                             <table class="table table-sm">
@@ -81,9 +154,7 @@
                                         <th>参数</th>
                                     </tr>
                                 </thead>
-                                <tbody id="platform-params">
-                                    <tr><td colspan="2">加载中...</td></tr>
-                                </tbody>
+                                <tbody id="platform-params"></tbody>
                             </table>
                         </div>
                     </section>
@@ -157,17 +228,14 @@
 
             getPlatformSlugFromURL() {
                 const pathParts = window.location.pathname.split('/').filter(p => p);
-                // URL format: /platforms/{slug}/
                 return pathParts[1] || 'baidu';
             },
 
             async loadPlatformData() {
                 try {
-                    // 从API获取平台数据
                     const response = await apiClient.getPlatforms({ limit: 100 });
                     const platforms = response.data || response.items || response;
                     
-                    // 查找匹配的平台
                     const platform = platforms.find(p => 
                         (p.slug || '').toLowerCase() === this.platformSlug.toLowerCase() ||
                         (p.id + '').toLowerCase() === this.platformSlug.toLowerCase()
@@ -188,16 +256,342 @@
             renderPlatformData(platform) {
                 const ratingStars = this.createStars(platform.rating || 0);
                 
-                // 更新标题和描述
+                // 更新基础信息
                 document.getElementById('platform-name').textContent = platform.name;
                 document.getElementById('platform-description').textContent = platform.description || '专业交易平台';
                 document.getElementById('breadcrumb-platform').textContent = platform.name;
                 document.title = `${platform.name} - 股票杠杆平台排行榜单`;
+                document.getElementById('platform-rating').textContent = ratingStars + ` (${(platform.rating || 0).toFixed(1)})`;
+                document.getElementById('platform-leverage').textContent = `1:${platform.max_leverage || '未公开'}`;
+                document.getElementById('platform-fee').textContent = platform.fee_rate ? `${platform.fee_rate}%` : '未公开';
+                document.getElementById('platform-safety').textContent = platform.safety_rating || 'B';
+                document.getElementById('platform-founded').textContent = platform.founded_year || '未公开';
 
-                // 更新介绍文本
-                document.getElementById('platform-intro').textContent = platform.description || '专业交易平台';
+                // 渲染各个section
+                this.renderIntroduction(platform);
+                this.renderWhyChoose(platform);
+                this.renderAccountTypes(platform);
+                this.renderTradingConditions(platform);
+                this.renderFeeAdvantages(platform);
+                this.renderTradingTools(platform);
+                this.renderOpeningSteps(platform);
+                this.renderSecurity(platform);
+                this.renderCustomerSupport(platform);
+                this.renderLearningResources(platform);
 
-                // 更新特性列表
+                // 后备渲染（如果没有新字段就用这些）
+                if (!platform.why_choose && !platform.account_types) {
+                    this.renderFallbackFeatures(platform);
+                    this.renderFallbackParams(platform);
+                }
+            },
+
+            renderIntroduction(platform) {
+                if (!platform.introduction && !platform.overview_intro) return;
+                
+                const text = platform.introduction || platform.overview_intro || '';
+                if (text) {
+                    document.getElementById('section-intro').style.display = 'block';
+                    document.getElementById('platform-intro').textContent = text;
+                }
+            },
+
+            renderWhyChoose(platform) {
+                if (!platform.why_choose) return;
+                
+                try {
+                    // 尝试解析为JSON数组
+                    const items = JSON.parse(platform.why_choose);
+                    if (!Array.isArray(items) || items.length === 0) return;
+                    
+                    document.getElementById('section-why-choose').style.display = 'block';
+                    const container = document.getElementById('why-choose-cards');
+                    container.innerHTML = items.map(item => `
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        ${item.icon ? '<span class="me-2">' + this.escapeHtml(item.icon) + '</span>' : ''}
+                                        ${this.escapeHtml(item.title || '')}
+                                    </h5>
+                                    <p class="card-text small text-muted">${this.escapeHtml(item.description || '')}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (e) {
+                    // 如果不是JSON，作为普通文本显示
+                    if (platform.why_choose && typeof platform.why_choose === 'string' && platform.why_choose.trim()) {
+                        document.getElementById('section-why-choose').style.display = 'block';
+                        const container = document.getElementById('why-choose-cards');
+                        container.innerHTML = `
+                            <div class="col-12 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <p class="card-text">${this.escapeHtml(platform.why_choose)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            },
+
+            renderAccountTypes(platform) {
+                if (!platform.account_types) return;
+                
+                try {
+                    const items = JSON.parse(platform.account_types);
+                    if (!Array.isArray(items) || items.length === 0) return;
+                    
+                    document.getElementById('section-account-types').style.display = 'block';
+                    const container = document.getElementById('account-types-cards');
+                    container.innerHTML = items.map(item => `
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">${this.escapeHtml(item.name || '')}</h5>
+                                    <dl class="row mb-0 small">
+                                        ${item.leverage ? `<dt class="col-6">杠杆:</dt><dd class="col-6">${this.escapeHtml(item.leverage)}</dd>` : ''}
+                                        ${item.min_deposit ? `<dt class="col-6">最低入金:</dt><dd class="col-6">${this.escapeHtml(item.min_deposit)}</dd>` : ''}
+                                        ${item.fee ? `<dt class="col-6">费率:</dt><dd class="col-6">${this.escapeHtml(item.fee)}</dd>` : ''}
+                                    </dl>
+                                    ${item.description ? `<p class="card-text text-muted mb-2 mt-2"><small>${this.escapeHtml(item.description)}</small></p>` : ''}
+                                    ${item.features && Array.isArray(item.features) ? `
+                                        <ul class="list-unstyled small mt-2">
+                                            ${item.features.map(f => `<li>✓ ${this.escapeHtml(f)}</li>`).join('')}
+                                        </ul>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (e) {
+                    console.error('Error parsing account_types:', e);
+                }
+            },
+
+            renderTradingConditions(platform) {
+                if (!platform.trading_conditions) return;
+                
+                try {
+                    const items = JSON.parse(platform.trading_conditions);
+                    if (!Array.isArray(items) || items.length === 0) throw new Error('Not array');
+                    
+                    document.getElementById('section-trading-conditions').style.display = 'block';
+                    const tbody = document.getElementById('trading-conditions-body');
+                    tbody.innerHTML = items.map(item => `
+                        <tr>
+                            <td>${this.escapeHtml(item.label || '')}</td>
+                            <td>${this.escapeHtml(item.value || '')}</td>
+                        </tr>
+                    `).join('');
+                } catch (e) {
+                    if (platform.trading_conditions && typeof platform.trading_conditions === 'string' && platform.trading_conditions.trim()) {
+                        document.getElementById('section-trading-conditions').style.display = 'block';
+                        const tbody = document.getElementById('trading-conditions-body');
+                        tbody.innerHTML = `<tr><td colspan="2">${this.escapeHtml(platform.trading_conditions)}</td></tr>`;
+                    }
+                }
+            },
+
+            renderFeeAdvantages(platform) {
+                if (!platform.fee_advantages) return;
+                
+                try {
+                    const items = JSON.parse(platform.fee_advantages);
+                    if (!Array.isArray(items) || items.length === 0) throw new Error('Not array');
+                    
+                    document.getElementById('section-fee-advantages').style.display = 'block';
+                    const tbody = document.getElementById('fee-advantages-body');
+                    tbody.innerHTML = items.map(item => `
+                        <tr>
+                            <td>${this.escapeHtml(item.label || '')}</td>
+                            <td>${this.escapeHtml(item.value || '')}</td>
+                        </tr>
+                    `).join('');
+                } catch (e) {
+                    if (platform.fee_advantages && typeof platform.fee_advantages === 'string' && platform.fee_advantages.trim()) {
+                        document.getElementById('section-fee-advantages').style.display = 'block';
+                        const tbody = document.getElementById('fee-advantages-body');
+                        tbody.innerHTML = `<tr><td colspan="2">${this.escapeHtml(platform.fee_advantages)}</td></tr>`;
+                    }
+                }
+            },
+
+            renderTradingTools(platform) {
+                if (!platform.trading_tools) return;
+                
+                try {
+                    const items = JSON.parse(platform.trading_tools);
+                    if (!Array.isArray(items) || items.length === 0) throw new Error('Not array');
+                    
+                    document.getElementById('section-trading-tools').style.display = 'block';
+                    const container = document.getElementById('trading-tools-cards');
+                    container.innerHTML = items.map(item => `
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">${this.escapeHtml(item.title || '')}</h6>
+                                    <p class="card-text small text-muted">${this.escapeHtml(item.description || '')}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (e) {
+                    if (platform.trading_tools && typeof platform.trading_tools === 'string' && platform.trading_tools.trim()) {
+                        document.getElementById('section-trading-tools').style.display = 'block';
+                        const container = document.getElementById('trading-tools-cards');
+                        container.innerHTML = `
+                            <div class="col-12 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <p class="card-text">${this.escapeHtml(platform.trading_tools)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            },
+
+            renderOpeningSteps(platform) {
+                if (!platform.opening_steps) return;
+                
+                try {
+                    const items = JSON.parse(platform.opening_steps);
+                    if (!Array.isArray(items) || items.length === 0) throw new Error('Not array');
+                    
+                    document.getElementById('section-opening-steps').style.display = 'block';
+                    const container = document.getElementById('opening-steps-container');
+                    container.innerHTML = `
+                        <ol class="list-group list-group-numbered">
+                            ${items.map(step => `
+                                <li class="list-group-item">
+                                    <strong>${this.escapeHtml(step.title || '')}</strong>
+                                    ${step.description ? `<p class="mb-0 text-muted small">${this.escapeHtml(step.description)}</p>` : ''}
+                                </li>
+                            `).join('')}
+                        </ol>
+                    `;
+                } catch (e) {
+                    if (platform.opening_steps && typeof platform.opening_steps === 'string' && platform.opening_steps.trim()) {
+                        document.getElementById('section-opening-steps').style.display = 'block';
+                        const container = document.getElementById('opening-steps-container');
+                        const steps = platform.opening_steps.split('\n').filter(s => s.trim());
+                        if (steps.length > 1) {
+                            container.innerHTML = `
+                                <ol class="list-group list-group-numbered">
+                                    ${steps.map(step => `<li class="list-group-item">${this.escapeHtml(step)}</li>`).join('')}
+                                </ol>
+                            `;
+                        } else {
+                            container.innerHTML = `<p>${this.escapeHtml(platform.opening_steps)}</p>`;
+                        }
+                    }
+                }
+            },
+
+            renderSecurity(platform) {
+                if (!platform.security_measures) return;
+                
+                try {
+                    const items = JSON.parse(platform.security_measures);
+                    if (!Array.isArray(items) || items.length === 0) throw new Error('Not array');
+                    
+                    document.getElementById('section-security').style.display = 'block';
+                    const list = document.getElementById('security-measures-list');
+                    list.innerHTML = items.map(item => `
+                        <li class="list-group-item">
+                            ${item.text ? this.escapeHtml(item.text) : 
+                              typeof item === 'string' ? this.escapeHtml(item) : 
+                              ''}
+                        </li>
+                    `).join('');
+                } catch (e) {
+                    if (platform.security_measures && typeof platform.security_measures === 'string' && platform.security_measures.trim()) {
+                        document.getElementById('section-security').style.display = 'block';
+                        const list = document.getElementById('security-measures-list');
+                        const items = platform.security_measures.split('\n').filter(s => s.trim());
+                        list.innerHTML = items.length > 1 ? 
+                                        items.map(item => `<li class="list-group-item">${this.escapeHtml(item)}</li>`).join('') :
+                                        `<li class="list-group-item">${this.escapeHtml(platform.security_measures)}</li>`;
+                    }
+                }
+            },
+
+            renderCustomerSupport(platform) {
+                if (!platform.customer_support) return;
+                
+                try {
+                    const items = JSON.parse(platform.customer_support);
+                    if (!Array.isArray(items) || items.length === 0) throw new Error('Not array');
+                    
+                    document.getElementById('section-support').style.display = 'block';
+                    const list = document.getElementById('customer-support-list');
+                    list.innerHTML = items.map(item => {
+                        let text = '';
+                        if (item.type) {
+                            text = this.escapeHtml(item.type);
+                            if (item.description) text += ` - ${this.escapeHtml(item.description)}`;
+                        } else if (item.channel) {
+                            text = this.escapeHtml(item.channel);
+                            if (item.hours) text += ` (${this.escapeHtml(item.hours)})`;
+                        } else if (typeof item === 'string') {
+                            text = this.escapeHtml(item);
+                        }
+                        return `<li class="list-group-item">${text}</li>`;
+                    }).join('');
+                } catch (e) {
+                    if (platform.customer_support && typeof platform.customer_support === 'string' && platform.customer_support.trim()) {
+                        document.getElementById('section-support').style.display = 'block';
+                        const list = document.getElementById('customer-support-list');
+                        const items = platform.customer_support.split('\n').filter(s => s.trim());
+                        list.innerHTML = items.length > 1 ? 
+                                        items.map(item => `<li class="list-group-item">${this.escapeHtml(item)}</li>`).join('') :
+                                        `<li class="list-group-item">${this.escapeHtml(platform.customer_support)}</li>`;
+                    }
+                }
+            },
+
+            renderLearningResources(platform) {
+                if (!platform.learning_resources) return;
+                
+                try {
+                    const items = JSON.parse(platform.learning_resources);
+                    if (!Array.isArray(items) || items.length === 0) throw new Error('Not array');
+                    
+                    document.getElementById('section-learning').style.display = 'block';
+                    const container = document.getElementById('learning-resources-cards');
+                    container.innerHTML = items.map(item => `
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">${this.escapeHtml(item.title || '')}</h6>
+                                    ${item.description ? `<p class="card-text small text-muted">${this.escapeHtml(item.description)}</p>` : ''}
+                                    ${item.link ? `<a href="${this.escapeHtml(item.link)}" class="btn btn-sm btn-outline-primary" target="_blank">查看</a>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (e) {
+                    if (platform.learning_resources && typeof platform.learning_resources === 'string' && platform.learning_resources.trim()) {
+                        document.getElementById('section-learning').style.display = 'block';
+                        const container = document.getElementById('learning-resources-cards');
+                        container.innerHTML = `
+                            <div class="col-12 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <p class="card-text">${this.escapeHtml(platform.learning_resources)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            },
+
+            renderFallbackFeatures(platform) {
                 const features = [
                     `✓ 最高杠杆: 1:${platform.max_leverage || 100}`,
                     `✓ 手续费: ${platform.fee_rate ? platform.fee_rate + '%' : '未公开'}`,
@@ -205,11 +599,15 @@
                     `✓ 成立年份: ${platform.founded_year || '未公开'}`
                 ];
 
-                document.getElementById('platform-features').innerHTML = features
-                    .map(f => `<li class="list-group-item">${this.escapeHtml(f)}</li>`)
-                    .join('');
+                if (features.length > 0) {
+                    document.getElementById('section-features').style.display = 'block';
+                    document.getElementById('platform-features').innerHTML = features
+                        .map(f => `<li class="list-group-item">${this.escapeHtml(f)}</li>`)
+                        .join('');
+                }
+            },
 
-                // 更新参数表
+            renderFallbackParams(platform) {
                 const params = [
                     ['最高杠杆', `1:${platform.max_leverage || '未公开'}`],
                     ['手续费', platform.fee_rate ? `${platform.fee_rate}%` : '未公开'],
@@ -218,16 +616,12 @@
                     ['成立年份', platform.founded_year || '未公开']
                 ];
 
-                document.getElementById('platform-params').innerHTML = params
-                    .map(([key, val]) => `<tr><td>${this.escapeHtml(key)}</td><td>${this.escapeHtml(val)}</td></tr>`)
-                    .join('');
-
-                // 更新右侧快速信息
-                document.getElementById('platform-rating').textContent = ratingStars + ` (${(platform.rating || 0).toFixed(1)})`;
-                document.getElementById('platform-leverage').textContent = `1:${platform.max_leverage || '未公开'}`;
-                document.getElementById('platform-fee').textContent = platform.fee_rate ? `${platform.fee_rate}%` : '未公开';
-                document.getElementById('platform-safety').textContent = platform.safety_rating || 'B';
-                document.getElementById('platform-founded').textContent = platform.founded_year || '未公开';
+                if (params.length > 0) {
+                    document.getElementById('section-params').style.display = 'block';
+                    document.getElementById('platform-params').innerHTML = params
+                        .map(([key, val]) => `<tr><td>${this.escapeHtml(key)}</td><td>${this.escapeHtml(val)}</td></tr>`)
+                        .join('');
+                }
             },
 
             createStars(rating) {
