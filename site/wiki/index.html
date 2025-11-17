@@ -360,8 +360,8 @@
                         category: categoryName,
                         description: article.summary || article.description || article.content?.substring(0, 100) || '暂无描述',
                         time: readTime,
-                        // 关键改动：使用 /article/{slug} 路径而不是 /wiki/{slug}
-                        url: `/article/${article.slug}`,
+                        // 关键改动：使用 /article/?slug={slug} 来跳转到详情页
+                        url: `/article/?slug=${article.slug}`,
                         color: color,
                         // 保存原始数据用于高级功能
                         id: article.id,
