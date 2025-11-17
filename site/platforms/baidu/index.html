@@ -166,7 +166,7 @@
                             <h3 class="card-title h6 mb-0">快速信息</h3>
                         </div>
                         <div class="card-body">
-                            <dl class="row mb-0">
+                            <dl class="row mb-3">
                                 <dt class="col-sm-6">评分:</dt>
                                 <dd class="col-sm-6" id="platform-rating">★★★★☆</dd>
                                 
@@ -182,6 +182,9 @@
                                 <dt class="col-sm-6">成立年份:</dt>
                                 <dd class="col-sm-6" id="platform-founded">2008</dd>
                             </dl>
+                            <a id="account-opening-btn" href="#" class="btn btn-primary btn-lg w-100" target="_blank" style="display:none;">
+                                立即开户
+                            </a>
                         </div>
                     </div>
                 </aside>
@@ -266,6 +269,13 @@
                 document.getElementById('platform-fee').textContent = platform.fee_rate ? `${platform.fee_rate}%` : '未公开';
                 document.getElementById('platform-safety').textContent = platform.safety_rating || 'B';
                 document.getElementById('platform-founded').textContent = platform.founded_year || '未公开';
+
+                // 配置开户按钮
+                if (platform.account_opening_link) {
+                    const btn = document.getElementById('account-opening-btn');
+                    btn.href = platform.account_opening_link;
+                    btn.style.display = 'block';
+                }
 
                 // 渲染各个section
                 this.renderIntroduction(platform);
