@@ -287,8 +287,11 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     import json
     from bs4 import BeautifulSoup
     
-    # 查询已发布的文章
-    article = db.query(Article).options(joinedload(Article.section)).filter(
+    # 查询已发布的文章，包含关联的section和category
+    article = db.query(Article).options(
+        joinedload(Article.section),
+        joinedload(Article.category_obj)  # 加载分类对象
+    ).filter(
         and_(Article.slug == slug, Article.is_published == True)
     ).first()
     
@@ -309,6 +312,13 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     html_content = article_view_html.read_text(encoding='utf-8')
     
     # 准备文章数据JSON（与API响应格式一致）
+    # 获取分类名称，使用 category_name 属性
+    category_name = ""
+    if article.category_obj:
+        category_name = article.category_obj.name
+    elif article.category:
+        category_name = article.category
+    
     article_data = {
         "id": article.id,
         "title": article.title or "",
@@ -317,7 +327,7 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "summary": article.summary or "",
         "section_id": article.section_id,
         "section_name": article.section.name if article.section else "未分类",
-        "category_name": article.category_name or "",
+        "category_name": category_name,
         "author_id": article.author_id,
         "is_published": article.is_published,
         "view_count": article.view_count or 0,
@@ -359,7 +369,7 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     
     # 构建Schema.org Article 结构化数据（最新标准）
     # 处理分类字段 - 优先使用category_name，否则使用section.name，最后默认为"未分类"
-    article_section = article.category_name or (article.section.name if article.section else "未分类")
+    article_section = category_name or (article.section.name if article.section else "未分类")
     
     # 处理日期字段 - 使用published_at或created_at
     pub_date = article.published_at or article.created_at

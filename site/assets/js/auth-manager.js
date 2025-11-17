@@ -113,7 +113,7 @@
 
             const authContainer = document.createElement('div');
             authContainer.id = 'auth-container';
-            authContainer.className = 'ms-auto d-flex align-items-center';
+            authContainer.className = 'd-flex align-items-center';
             authContainer.innerHTML = `
                 <div id="auth-anonymous" class="d-none">
                     <button type="button" class="btn btn-primary btn-sm" id="login-btn">登录</button>
@@ -126,7 +126,9 @@
             `;
 
             const navbarNav = navbar.querySelector('.navbar-nav');
-            if (navbarNav) {
+            const navbarCollapse = navbar.querySelector('.navbar-collapse');
+            if (navbarNav && navbarCollapse) {
+                // Insert after navbar-nav, inside the collapse div
                 navbarNav.parentNode.insertBefore(authContainer, navbarNav.nextSibling);
             }
         },
@@ -295,8 +297,15 @@
     window.TrustAgency.AuthManager = AuthManager;
 
     // Auto-initialize
-    document.addEventListener('DOMContentLoaded', function() {
+    // Check if DOM is already loaded (for scripts loaded after page load)
+    if (document.readyState === 'loading') {
+        // DOM is still loading
+        document.addEventListener('DOMContentLoaded', function() {
+            AuthManager.init();
+        });
+    } else {
+        // DOM is already loaded
         AuthManager.init();
-    });
+    }
 
 })();

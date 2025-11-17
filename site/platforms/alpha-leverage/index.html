@@ -39,21 +39,43 @@
     </script>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top border-bottom" role="navigation">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">股票杠杆平台排行榜单</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">首页</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="/platforms/">平台</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/compare/">对比</a></li>
-                </ul>
+    <header role="banner">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top border-bottom" role="navigation" aria-label="主导航">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="/" aria-label="股票杠杆平台排行榜单首页">
+                    <span>股票杠杆</span><span class="d-none d-sm-inline">平台排行榜单</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/platforms/">平台</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/compare/">对比</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/qa/">常见问题</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarResources" role="button" data-bs-toggle="dropdown" aria-expanded="false">资源</a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarResources">
+                                <li><a class="dropdown-item" href="/wiki/">百科</a></li>
+                                <li><a class="dropdown-item" href="/guides/">指南</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/about/">关于</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </header>
 
     <nav aria-label="breadcrumb" class="bg-light border-bottom">
         <div class="container">
@@ -266,5 +288,8 @@
         document.addEventListener('DOMContentLoaded', () => PlatformDetail.init());
     </script>
     <script src="/assets/js/main.js" defer></script>
+    <!-- Auth Manager -->
+    <script src="/assets/js/auth-manager.js"></script>
+
 </body>
 </html>

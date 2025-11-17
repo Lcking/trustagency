@@ -89,6 +89,12 @@ a:focus {
     box-shadow: var(--shadow-sm);
 }
 
+.navbar-collapse {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
 .navbar-brand {
     font-size: 1.25rem;
     font-weight: 700;
@@ -96,7 +102,7 @@ a:focus {
 }
 
 .navbar-nav .nav-link {
-    margin: 0 0.25rem;
+    margin: 0 0.5rem;
     transition: color 0.15s ease-in-out;
 }
 

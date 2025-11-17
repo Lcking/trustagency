@@ -20,8 +20,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="../../assets/css/main.css">
-    <link rel="stylesheet" href="../../assets/css/utilities.css">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/utilities.css">
     
     <!-- Schema.org 标记 -->
     <script type="application/ld+json">
@@ -86,28 +86,44 @@
 <body>
     <a href="#main-content" class="skip-link">跳转到主要内容</a>
     
-    <!-- 导航栏 -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="../../index.html">📊 平台排行</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="../../index.html">首页</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../../platforms/index.html">平台</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../../compare/index.html">对比</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="resourcesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            资源
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="resourcesDropdown">
-                            <li><a class="dropdown-item" href="../../wiki/index.html">📚 百科知识</a></li>
-                            <li><a class="dropdown-item" href="../../guides/index.html">📖 交易指南</a></li>
-                            <li><a class="dropdown-item" href="../../qa/index.html">❓ 常见问题</a></li>
-                        </ul>
-                    </li>
+    <!-- Header / Navigation -->
+    <header role="banner">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top border-bottom" role="navigation" aria-label="主导航">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="/" aria-label="股票杠杆平台排行榜单首页">
+                    <span>股票杠杆</span><span class="d-none d-sm-inline">平台排行榜单</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/platforms/">平台</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/compare/">对比</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/qa/">常见问题</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle active" href="#" id="navbarResources" role="button" data-bs-toggle="dropdown" aria-expanded="false">资源</a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarResources">
+                                <li><a class="dropdown-item" href="/wiki/">百科</a></li>
+                                <li><a class="dropdown-item active" href="/guides/">指南</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/about/">关于</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
                 </ul>
             </div>
         </div>
@@ -117,8 +133,8 @@
     <nav aria-label="breadcrumb" class="bg-light py-2 border-bottom">
         <div class="container">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="../../index.html">首页</a></li>
-                <li class="breadcrumb-item"><a href="../../guides/index.html">指南</a></li>
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item"><a href="/guides/">指南</a></li>
                 <li class="breadcrumb-item active">5分钟快速开始</li>
             </ol>
         </div>
@@ -225,7 +241,7 @@
                             </table>
                         </div>
                         <div class="alert alert-info">
-                            💡 <strong>建议:</strong> 查看我们的 <a href="../../compare/index.html">平台对比工具</a> 来比较不同平台的功能和费用。
+                            💡 <strong>建议:</strong> 查看我们的 <a href="/compare/">平台对比工具</a> 来比较不同平台的功能和费用。
                         </div>
                     </section>
                     
@@ -320,7 +336,7 @@
                                 </h2>
                                 <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                     <div class="accordion-body">
-                                        保证金追加是指当你的账户价值下跌到特定水平以下时，经纪商要求你存入更多资金。这是一种保护机制，但如果你没有准备，可能会造成严重后果。阅读我们的 <a href="../../wiki/margin-call/">保证金追加详解文章</a> 了解更多。
+                                        保证金追加是指当你的账户价值下跌到特定水平以下时，经纪商要求你存入更多资金。这是一种保护机制，但如果你没有准备，可能会造成严重后果。阅读我们的 <a href="/wiki/margin-call/">保证金追加详解文章</a> 了解更多。
                                     </div>
                                 </div>
                             </div>
@@ -386,7 +402,7 @@
                                     <div class="card-body">
                                         <h5 class="card-title">📚 学习更多</h5>
                                         <p class="card-text">阅读我们的百科文章来理解更多概念，如保证金追加、风险管理和杠杆比例。</p>
-                                        <a href="../../wiki/index.html" class="btn btn-sm btn-primary">浏览百科 →</a>
+                                        <a href="/wiki/" class="btn btn-sm btn-primary">浏览百科 →</a>
                                     </div>
                                 </div>
                             </div>
@@ -395,7 +411,7 @@
                                     <div class="card-body">
                                         <h5 class="card-title">🎯 深入指南</h5>
                                         <p class="card-text">查看我们的完整交易指南，涵盖风险管理、交易策略和最佳实践。</p>
-                                        <a href="../../guides/index.html" class="btn btn-sm btn-primary">查看指南 →</a>
+                                        <a href="/guides/" class="btn btn-sm btn-primary">查看指南 →</a>
                                     </div>
                                 </div>
                             </div>
@@ -406,10 +422,10 @@
                     <nav class="guide-pagination mt-5 pt-4 border-top" aria-label="Guide navigation">
                         <div class="row">
                             <div class="col-md-6">
-                                <a href="../../guides/index.html" class="btn btn-outline-secondary">← 返回指南首页</a>
+                                <a href="/guides/" class="btn btn-outline-secondary">← 返回指南首页</a>
                             </div>
                             <div class="col-md-6 text-end">
-                                <a href="../../guides/open-account/" class="btn btn-outline-secondary">下一个指南：详细账户开设教程 →</a>
+                                <a href="/guides/open-account/" class="btn btn-outline-secondary">下一个指南：详细账户开设教程 →</a>
                             </div>
                         </div>
                     </nav>
@@ -470,16 +486,16 @@
                         </div>
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item">
-                                <a href="../../wiki/what-is-leverage/">什么是杠杆交易？</a>
+                                <a href="/wiki/what-is-leverage/">什么是杠杆交易？</a>
                             </li>
                             <li class="list-group-item">
-                                <a href="../../wiki/margin-call/">保证金追加解释</a>
+                                <a href="/wiki/margin-call/">保证金追加解释</a>
                             </li>
                             <li class="list-group-item">
-                                <a href="../../guides/open-account/">详细账户开设教程</a>
+                                <a href="/guides/open-account/">详细账户开设教程</a>
                             </li>
                             <li class="list-group-item">
-                                <a href="../../guides/risk-settings/">风险设置指南</a>
+                                <a href="/guides/risk-settings/">风险设置指南</a>
                             </li>
                         </ul>
                     </div>
@@ -499,16 +515,16 @@
                 <div class="col-md-4 mb-4">
                     <h5>快速链接</h5>
                     <ul class="list-unstyled">
-                        <li><a href="../../index.html" class="text-white-50 text-decoration-none">首页</a></li>
-                        <li><a href="../../platforms/index.html" class="text-white-50 text-decoration-none">平台列表</a></li>
-                        <li><a href="../../guides/index.html" class="text-white-50 text-decoration-none">交易指南</a></li>
+                        <li><a href="/" class="text-white-50 text-decoration-none">首页</a></li>
+                        <li><a href="/platforms/" class="text-white-50 text-decoration-none">平台列表</a></li>
+                        <li><a href="/guides/" class="text-white-50 text-decoration-none">交易指南</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
                     <h5>法律</h5>
                     <ul class="list-unstyled">
-                        <li><a href="../../legal/index.html" class="text-white-50 text-decoration-none">法律声明</a></li>
-                        <li><a href="../../about/index.html" class="text-white-50 text-decoration-none">关于我们</a></li>
+                        <li><a href="/legal/" class="text-white-50 text-decoration-none">法律声明</a></li>
+                        <li><a href="/about/" class="text-white-50 text-decoration-none">关于我们</a></li>
                     </ul>
                 </div>
             </div>
@@ -523,6 +539,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Custom JS -->
-    <script src="../../assets/js/main.js" defer></script>
+    <script src="/assets/js/main.js" defer></script>
+    <!-- Auth Manager -->
+    <script src="/assets/js/auth-manager.js"></script>
+
 </body>
 </html>
