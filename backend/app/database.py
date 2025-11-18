@@ -7,16 +7,20 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
 
 # 从环境变量获取数据库 URL
-# 优先使用SQLite进行本地开发
+# 使用 SQLite 作为默认数据库（本地开发和线上都适用）
 import os as _os_module
 _db_url_env = _os_module.getenv("DATABASE_URL", None)
 
-# 如果环境变量为 PostgreSQL 但我们在本地开发,使用 SQLite
-if _db_url_env and "postgresql" in _db_url_env:
-    # 本地开发模式，强制使用 SQLite
-    DATABASE_URL = "sqlite:///./trustagency.db"
+# SQLite 优先：无论开发还是生产都使用 SQLite
+# 数据库文件位置：
+# - 开发环境：./trustagency.db（项目根目录）
+# - Docker环境：/app/data/trustagency.db（持久化卷目录）
+if _db_url_env and "sqlite" in _db_url_env:
+    # 如果明确配置了 SQLite 路径，使用配置值
+    DATABASE_URL = _db_url_env
 else:
-    DATABASE_URL = _db_url_env or "sqlite:///./trustagency.db"
+    # 默认使用 SQLite
+    DATABASE_URL = "sqlite:///./trustagency.db"
 
 # 根据数据库类型配置引擎
 if DATABASE_URL.startswith("sqlite"):

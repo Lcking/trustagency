@@ -1,8 +1,8 @@
 version: '3.8'
 
-# 生产环境 Docker Compose 配置
+# 生产环境 Docker Compose 配置 (SQLite版本)
 # 使用方法：docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
-# 注意：所有敏感信息应该通过 .env.prod 文件提供
+# 注意：SQLite数据库文件通过卷持久化，容器删除后数据仍保留
 
 services:
   # ===== FastAPI Backend - Production =====
@@ -19,7 +19,7 @@ services:
     environment:
       - ENVIRONMENT=production
       - DEBUG=False
-      - DATABASE_URL=postgresql://trustagency:${DB_PASSWORD}@db:5432/trustagency
+      - DATABASE_URL=sqlite:////app/data/trustagency.db
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
@@ -27,12 +27,11 @@ services:
       - BACKEND_DIR=/app
       - PYTHONUNBUFFERED=1
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
       - ./backend/logs:/app/logs:rw
+      - sqlite_data:/app/data:rw
     restart: always
     networks:
       - trustagency-net
@@ -46,10 +45,10 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 2G
+          memory: 1.5G
         reservations:
           cpus: '1'
-          memory: 1G
+          memory: 800M
 
   # ===== Celery Worker - Production =====
   celery-worker:
@@ -60,22 +59,22 @@ services:
         - ENVIRONMENT=production
     container_name: trustagency-celery-worker-prod
     image: trustagency-backend:latest
-    command: celery -A app.celery_tasks worker --loglevel=info --concurrency=4
+    command: celery -A app.celery_tasks worker --loglevel=info --concurrency=2
     environment:
       - ENVIRONMENT=production
       - DEBUG=False
-      - DATABASE_URL=postgresql://trustagency:${DB_PASSWORD}@db:5432/trustagency
+      - DATABASE_URL=sqlite:////app/data/trustagency.db
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - SECRET_KEY=${SECRET_KEY}
       - PYTHONUNBUFFERED=1
     depends_on:
-      - db
       - redis
       - backend
     volumes:
       - ./backend/logs:/app/logs:rw
+      - sqlite_data:/app/data:rw
     restart: always
     networks:
       - trustagency-net
@@ -83,7 +82,10 @@ services:
       resources:
         limits:
           cpus: '1'
-          memory: 1G
+          memory: 700M
+        reservations:
+          cpus: '0.5'
+          memory: 400M
 
   # ===== Celery Beat - Production =====
   celery-beat:
@@ -98,18 +100,18 @@ services:
     environment:
       - ENVIRONMENT=production
       - DEBUG=False
-      - DATABASE_URL=postgresql://trustagency:${DB_PASSWORD}@db:5432/trustagency
+      - DATABASE_URL=sqlite:////app/data/trustagency.db
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - SECRET_KEY=${SECRET_KEY}
       - PYTHONUNBUFFERED=1
     depends_on:
-      - db
       - redis
       - backend
     volumes:
       - ./backend/logs:/app/logs:rw
+      - sqlite_data:/app/data:rw
     restart: always
     networks:
       - trustagency-net
@@ -117,36 +119,10 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
-
-  # ===== PostgreSQL Database - Production =====
-  db:
-    image: postgres:15-alpine
-    container_name: trustagency-db-prod
-    environment:
-      - POSTGRES_USER=trustagency
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=trustagency
-      - POSTGRES_INITDB_ARGS=-c max_connections=100 -c shared_buffers=256MB
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: always
-    networks:
-      - trustagency-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trustagency"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
+          memory: 400M
         reservations:
-          cpus: '1'
-          memory: 512M
+          cpus: '0.25'
+          memory: 200M
 
   # ===== Redis Cache - Production =====
   redis:
@@ -163,18 +139,18 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    command: redis-server --appendonly yes --appendfsync everysec
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory 256mb --maxmemory-policy allkeys-lru
     deploy:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 300M
         reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 200M
 
 volumes:
-  postgres_data:
+  sqlite_data:
     driver: local
   redis_data:
     driver: local
