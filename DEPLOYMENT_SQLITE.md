@@ -42,11 +42,41 @@ systemctl enable docker
 docker --version
 
 # 安装Docker Compose（v2.24.0+）
-curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+# 🚀 如果官方源下载缓慢，使用国内镜像：
+# curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" \
+#   -o /usr/local/bin/docker-compose
+# 
+# 或使用阿里云CDN（推荐在中国使用）：
+curl -L "https://cdn.jsdelivr.net/gh/docker/compose@v2.24.0/contrib/linux/docker-compose-linux-x86_64" \
+  -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
 # 验证Docker Compose安装
 docker-compose --version
+
+# ⚡ 配置Docker国内镜像源（加快镜像拉取）
+# 这一步很重要，可以显著提高部署速度！
+sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
+{
+  "registry-mirrors": [
+    "https://docker.1panel.live",
+    "https://dockerhub.jobcher.com",
+    "https://docker.awchina.com",
+    "https://docker.ycjszz.cn",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com"
+  ],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+EOF
+
+# 重启Docker使配置生效
+sudo systemctl daemon-reload
+sudo systemctl restart docker
 ```
 
 ### 1.3 验证Docker环境
@@ -135,14 +165,26 @@ LOG_LEVEL=INFO
 # 验证 Docker Compose 配置文件有效
 docker-compose -f docker-compose.prod.yml config > /dev/null && echo "✅ 配置文件有效"
 
-# 第一次启动会构建镜像（需要5-10分钟）
-docker-compose -f docker-compose.prod.yml up -d
+# ⚠️ 重要：使用 --env-file 参数确保 SECRET_KEY 被正确加载
+# 第一次启动会构建镜像（需要5-10分钟，如使用国内镜像会更快）
+
+docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d
+
+# 或者如果.env.prod在同级目录，Docker Compose会自动加载：
+# docker-compose -f docker-compose.prod.yml up -d
 
 # 查看实时日志（Ctrl+C退出）
 docker-compose -f docker-compose.prod.yml logs -f
 
 # 查看容器启动状态
 docker-compose -f docker-compose.prod.yml ps
+
+# ✅ 预期输出（所有服务应该 Up 或 healthy）：
+# NAME                            STATUS              PORTS
+# trustagency-backend-prod        Up (healthy)        0.0.0.0:8001->8001/tcp
+# trustagency-celery-worker-prod  Up                  
+# trustagency-celery-beat-prod    Up                  
+# trustagency-redis-prod          Up (healthy)        6379/tcp
 ```
 
 **预期输出**：
