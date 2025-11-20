@@ -420,20 +420,33 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
 # 主前端路由 - 服务主站点的 index.html
 SITE_DIR = BACKEND_DIR.parent / "site"
 
+if os.getenv("DEBUG", "False") == "True":
+    print(f"[INIT] SITE_DIR: {SITE_DIR}", file=sys.stderr)
+    print(f"[INIT] SITE_DIR exists: {SITE_DIR.exists()}", file=sys.stderr)
+
 @app.get("/", include_in_schema=False)
 async def main_index():
     """返回主站点的索引页面"""
     main_index_path = SITE_DIR / "index.html"
     
+    # 调试信息
+    import os
+    debug_info = {
+        "site_dir": str(SITE_DIR),
+        "main_index_path": str(main_index_path),
+        "exists": main_index_path.exists(),
+        "cwd": os.getcwd(),
+        "backend_dir": str(BACKEND_DIR),
+    }
+    
+    if os.getenv("DEBUG", "False") == "True":
+        print(f"[ROUTE /] {debug_info}", file=sys.stderr)
+    
     if main_index_path.exists():
         return FileResponse(str(main_index_path), media_type="text/html; charset=utf-8")
     
-    # 如果找不到，返回API信息
-    return {
-        "name": "TrustAgency API",
-        "version": os.getenv("API_VERSION", "1.0.0"),
-        "docs": "/api/docs"
-    }
+    # 如果找不到，返回调试信息
+    return debug_info
 
 # 挂载主前端的静态资源
 site_assets_dir = SITE_DIR / "assets"
