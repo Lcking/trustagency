@@ -5,6 +5,44 @@ version: '3.8'
 # 注意：SQLite数据库文件通过卷持久化，容器删除后数据仍保留
 
 services:
+  # ===== Nginx Frontend - Production =====
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trustagency-frontend-prod
+    image: trustagency-frontend:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/logs:/var/log/nginx:rw
+      # SSL证书挂载点 (如需要，取消注释)
+      # - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - trustagency-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/robots.txt"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
   # ===== FastAPI Backend - Production =====
   backend:
     build:
