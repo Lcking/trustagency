@@ -1345,17 +1345,20 @@
     </div>
 
     <script>
-        // API 基础 URL - 自动检测环境
-        // 支持 localhost 和 127.0.0.1
+        // API 基础 URL - 使用相对路径，由 Nginx 代理
+        // 这样既支持直接访问后端，也支持通过 Nginx 代理
         const getAPIUrl = () => {
+            const protocol = window.location.protocol;
             const host = window.location.hostname;
             const port = window.location.port;
-            // 使用当前的端口，如果没有端口号则使用8000
-            if (port === '' || port === '80' || port === '443') {
-                return `http://${host}:8000`;
+            
+            // 如果有显式端口（开发环境通常是 8001），直接连接到后端
+            if (port === '8001' || port === '8000') {
+                return `${protocol}//${host}:${port}`;
             }
-            // 使用当前访问的端口
-            return `http://${host}:${port || 8000}`;
+            
+            // 否则使用相对根路径（由 Nginx 代理）
+            return window.location.origin;
         };
         const API_URL = getAPIUrl();
         
