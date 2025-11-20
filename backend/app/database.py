@@ -146,6 +146,7 @@ def init_db():
                 "commission_rate": 0.005,
                 "is_regulated": True,
                 "is_active": True,
+                "platform_type": "专业",
             },
             {
                 "name": "BetaMargin",
@@ -157,6 +158,7 @@ def init_db():
                 "commission_rate": 0.003,
                 "is_regulated": True,
                 "is_active": True,
+                "platform_type": "平衡",
             },
             {
                 "name": "GammaTrader",
@@ -168,6 +170,7 @@ def init_db():
                 "commission_rate": 0.001,
                 "is_regulated": False,
                 "is_active": True,
+                "platform_type": "新手友好",
             },
         ]
         
