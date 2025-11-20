@@ -161,23 +161,59 @@ LOG_LEVEL=INFO
 
 ### 2.3 验证配置和启动服务
 
+#### ⚠️ 解决 SECRET_KEY 未被加载的问题
+
+如果你看到以下警告，说明 Docker Compose **未能正确读取 `.env.prod` 文件**：
+```
+WARN[0000] The "SECRET_KEY" variable is not set. Defaulting to a blank string.
+```
+
+**根本原因**：Docker Compose 默认只查找当前目录下的 `.env` 文件（必须严格叫这个名字）。即使文件内容正确，如果名字是 `.env.prod`，Docker Compose 的 YAML 解析器也不会自动读取。
+
+**解决方案（推荐方法）**：创建软链接，让 Docker Compose 以为它在读取默认的 `.env` 文件：
+
+```bash
+# ✅ 方法一：创建软链接（一劳永逸，推荐）
+ln -s .env.prod .env
+
+# 验证软链接已创建
+ls -la .env
+
+# 预期输出应该显示 .env -> .env.prod
+```
+
+**为什么推荐方法一？**
+- ✅ 一次性配置，之后所有命令都无需加参数
+- ✅ Docker Compose 自动读取 `.env` 变量
+- ✅ 不易出错，最符合 Docker Compose 的设计意图
+
+**备选方案（如不想创建软链接）**：
+
+```bash
+# 方法二：严格的参数顺序
+# ⚠️ 重要：--env-file 必须紧跟 docker-compose 之后，在任何子命令之前
+
+# ❌ 错误写法（可能导致报错）
+docker-compose -f docker-compose.prod.yml up -d --env-file .env.prod
+
+# ✅ 正确写法（--env-file 作为全局参数）
+docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d
+```
+
+#### 启动服务
+
 ```bash
 # 验证 Docker Compose 配置文件有效
+# （如果已创建软链接 .env，这条命令不会再显示 SECRET_KEY 警告）
 docker-compose -f docker-compose.prod.yml config > /dev/null && echo "✅ 配置文件有效"
 
-# ⚠️ 重要：使用 --env-file 参数确保 SECRET_KEY 被正确加载
 # 第一次启动会构建镜像（需要5-10分钟，如使用国内镜像会更快）
-
-docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d
-
-# 或者如果.env.prod在同级目录，Docker Compose会自动加载：
-# docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.prod.yml up -d
 
 # 查看实时日志（Ctrl+C退出）
 docker-compose -f docker-compose.prod.yml logs -f
 
 # 查看容器启动状态
-docker-compose -f docker-compose.prod.yml ps
 
 # ✅ 预期输出（所有服务应该 Up 或 healthy）：
 # NAME                            STATUS              PORTS
@@ -199,13 +235,16 @@ trustagency-redis-prod          Up (healthy)        6379/tcp
 ### 2.4 验证后端服务
 
 ```bash
-# 检查后端健康状态
-curl http://localhost:8001/health
+# 检查后端健康状态（⚠️ 注意：端点是 /api/health，不是 /health）
+curl http://localhost:8001/api/health
 
-# 预期返回：{"status": "ok"}
+# 预期返回：{"status":"ok","message":"TrustAgency Backend is running"}
 
 # 查看API文档（本地测试）
 curl -s http://localhost:8001/api/docs | head -20
+
+# 或者直接在浏览器中访问
+# http://localhost:8001/api/docs
 ```
 
 ---
@@ -299,66 +338,80 @@ certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
 
 ### 4.2 配置Nginx支持HTTPS
 
+> ⚠️ 根据你是否安装宝塔面板，选择下面其一。
+
+#### 方案A：系统原生Nginx（无宝塔，推荐）
+
 ```bash
-# 编辑trustagency.conf
-nano /www/server/nginx/conf/vhost/trustagency.conf
-
-# 替换为以下内容：
-cat > /www/server/nginx/conf/vhost/trustagency.conf << 'NGINX'
+sudo tee /etc/nginx/conf.d/trustagency.conf > /dev/null <<'NGINX'
 upstream backend {
-    server 127.0.0.1:8001;
-    keepalive 32;
+  server 127.0.0.1:8001;
+  keepalive 32;
 }
 
-# HTTP重定向到HTTPS
 server {
-    listen 80;
-    listen [::]:80;
-    server_name yourdomain.com www.yourdomain.com;
-    return 301 https://$server_name$request_uri;
+  listen 80;
+  listen [::]:80;
+  server_name yourdomain.com www.yourdomain.com;
+  return 301 https://$server_name$request_uri;
 }
 
-# HTTPS服务
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name yourdomain.com www.yourdomain.com;
-    
-    # SSL证书配置
-    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-    
-    # SSL安全配置
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-    
-    client_max_body_size 100M;
-    
-    location / {
-        proxy_pass http://backend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-    
-    access_log /www/wwwlogs/trustagency_access.log;
-    error_log /www/wwwlogs/trustagency_error.log;
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+  server_name yourdomain.com www.yourdomain.com;
+
+  ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+  ssl_prefer_server_ciphers on;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_timeout 10m;
+
+  client_max_body_size 100M;
+
+  location / {
+    proxy_pass http://backend;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 60s;
+  }
+
+  access_log /var/log/nginx/trustagency_access.log;
+  error_log  /var/log/nginx/trustagency_error.log;
 }
 NGINX
 
-# 检查并重启Nginx
+# 确保日志目录存在
+sudo mkdir -p /var/log/nginx
+sudo touch /var/log/nginx/trustagency_access.log /var/log/nginx/trustagency_error.log
+sudo chown nginx:nginx /var/log/nginx/trustagency_*log || true
+
+# 检查并重载
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+#### 方案B：宝塔面板 Nginx
+
+```bash
+sudo mkdir -p /www/server/nginx/conf/vhost
+sudo mkdir -p /www/wwwlogs
+nano /www/server/nginx/conf/vhost/trustagency.conf
+
+# 粘贴上面的同一份 server 配置
+
+# 检查并重启宝塔 Nginx
 nginx -t && systemctl restart nginx
 ```
 
@@ -414,10 +467,11 @@ ls -lh /var/lib/docker/volumes/trustagency_sqlite_data/_data/trustagency.db
 ### 6.1 健康检查
 
 ```bash
-# 检查后端API
-curl http://localhost:8001/health
+# 检查后端API（⚠️ 注意：端点是 /api/health，不是 /health）
+curl http://localhost:8001/api/health
 
-# 预期返回：{"status": "ok"}
+# 预期返回：
+# {"status":"ok","message":"TrustAgency Backend is running"}
 
 # 检查所有容器健康状态
 docker-compose -f docker-compose.prod.yml ps
@@ -559,7 +613,49 @@ chmod +x /usr/local/bin/backup-trustagency.sh
 
 ## 🆘 故障排查
 
-### 问题1：容器启动失败
+### 问题1：调用 `/health` 端点返回 404
+
+```bash
+# ❌ 错误：返回 Not Found (404)
+curl http://localhost:8001/health
+# {"detail":"Not Found"}
+
+# ✅ 正确：使用完整路径 /api/health
+curl http://localhost:8001/api/health
+# {"status":"ok","message":"TrustAgency Backend is running"}
+
+# 所有 API 端点都在 /api 路径下
+# 正确的端点列表：
+# - /api/health          (健康检查)
+# - /api/auth/login      (登录)
+# - /api/docs            (Swagger 文档)
+# - /api/openapi.json    (OpenAPI Schema)
+```
+
+### 问题1：SECRET_KEY 变量未被加载警告
+
+```bash
+# 症状：看到以下警告
+WARN[0000] The "SECRET_KEY" variable is not set. Defaulting to a blank string.
+WARN[0000] The "SECRET_KEY" variable is not set. Defaulting to a blank string.
+
+# 原因：Docker Compose 默认只查找 .env 文件，不会自动读取 .env.prod
+
+# ✅ 解决方案 1（推荐）：创建软链接
+ln -s .env.prod .env
+# 之后所有命令无需加参数，直接运行：
+docker-compose -f docker-compose.prod.yml up -d
+
+# ✅ 解决方案 2：使用正确的参数顺序
+# --env-file 必须紧跟 docker-compose 之后
+docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d
+
+# 验证 SECRET_KEY 已被正确加载
+docker-compose -f docker-compose.prod.yml config | grep -A 2 "SECRET_KEY"
+# 应该显示你生成的随机密钥，而不是空值
+```
+
+### 问题2：容器启动失败
 
 ```bash
 # 查看详细错误日志
