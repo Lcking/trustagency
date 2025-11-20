@@ -418,7 +418,40 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     return HTMLResponse(content=html_content, status_code=200)
 
 # 主前端路由 - 服务主站点的 index.html
-SITE_DIR = BACKEND_DIR.parent / "site"
+def get_site_dir():
+    """
+    获取前端site目录的正确路径，支持多种环境配置
+    
+    优先级：
+    1. 环境变量 SITE_DIR（推荐）
+    2. /site（容器默认挂载点）
+    3. BACKEND_DIR.parent / "site"（本地开发时的相对位置）
+    4. 当前工作目录的 site 目录
+    """
+    candidates = [
+        # 1. 环境变量设置的路径
+        os.getenv("SITE_DIR"),
+        # 2. 容器中的标准路径
+        "/site",
+        # 3. 相对于后端目录的位置（本地开发）
+        BACKEND_DIR.parent / "site",
+        # 4. 当前工作目录
+        Path.cwd() / "site",
+    ]
+    
+    for candidate in candidates:
+        if candidate:
+            try:
+                path = Path(candidate).resolve()
+                if path.exists():
+                    return path
+            except (OSError, ValueError):
+                continue
+    
+    # 如果都找不到，返回首选项（通常在容器中会存在）
+    return Path("/site")
+
+SITE_DIR = get_site_dir()
 
 if os.getenv("DEBUG", "False") == "True":
     print(f"[INIT] SITE_DIR: {SITE_DIR}", file=sys.stderr)

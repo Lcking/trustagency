@@ -30,7 +30,7 @@ def init_db():
                 username="admin",
                 email="admin@trustagency.com",
                 full_name="Administrator",
-                hashed_password=hash_password("newpassword123"),
+                hashed_password=hash_password("admin123"),
                 is_active=True,
                 is_superadmin=True,
                 created_at=datetime.utcnow(),
@@ -38,7 +38,7 @@ def init_db():
             db.add(admin)
             db.commit()
             db.refresh(admin)
-            print("✅ 默认管理员创建成功 (用户名: admin / 密码: newpassword123)")
+            print("✅ 默认管理员创建成功 (用户名: admin / 密码: admin123)")
         else:
             print("✅ 管理员已存在")
 

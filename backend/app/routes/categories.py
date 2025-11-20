@@ -54,6 +54,18 @@ class CategoryWithCountResponse(BaseModel):
         from_attributes = True
 
 
+@router.get("", response_model=list[CategoryResponse])
+async def list_all_categories(
+    db: Session = Depends(get_db),
+):
+    """列出所有分类"""
+    categories = db.query(Category).filter(
+        Category.is_active == True
+    ).order_by(Category.sort_order).all()
+
+    return [CategoryResponse.model_validate(c) for c in categories]
+
+
 @router.get("/section/{section_id}/with-count", response_model=list[CategoryWithCountResponse])
 async def list_categories_with_article_count(
     section_id: int,
