@@ -1,0 +1,96 @@
+#!/bin/bash
+# 本地数据库恢复脚本
+
+echo "🔄 开始在本地生成完整数据库..."
+echo ""
+
+DB_PATH="/Users/ck/Desktop/Project/trustagency/backend/trustagency.db"
+
+# 删除旧数据库
+if [ -f "$DB_PATH" ]; then
+    rm -f "$DB_PATH"
+    echo "✅ 删除旧数据库"
+fi
+
+# 生成新数据库
+/usr/bin/python3 << 'PYEOF'
+import sqlite3, os
+from datetime import datetime
+
+db = "/Users/ck/Desktop/Project/trustagency/backend/trustagency.db"
+conn = sqlite3.connect(db)
+c = conn.cursor()
+now = datetime.utcnow().isoformat()
+
+print("📦 创建表结构...")
+c.execute('CREATE TABLE sections (id INTEGER PRIMARY KEY, name VARCHAR(255) NOT NULL, slug VARCHAR(255) UNIQUE NOT NULL, description TEXT, requires_platform BOOLEAN DEFAULT 0, sort_order INTEGER, is_active BOOLEAN DEFAULT 1, created_at DATETIME, updated_at DATETIME)')
+c.execute('CREATE TABLE categories (id INTEGER PRIMARY KEY, section_id INTEGER NOT NULL, name VARCHAR(255) NOT NULL, description TEXT, sort_order INTEGER, is_active BOOLEAN DEFAULT 1, created_at DATETIME, updated_at DATETIME, FOREIGN KEY(section_id) REFERENCES sections(id))')
+c.execute('CREATE TABLE admin_users (id INTEGER PRIMARY KEY, username VARCHAR(255) UNIQUE NOT NULL, email VARCHAR(255), full_name VARCHAR(255), hashed_password VARCHAR(255) NOT NULL, is_active BOOLEAN DEFAULT 1, is_superadmin BOOLEAN DEFAULT 0, created_at DATETIME, updated_at DATETIME)')
+c.execute('CREATE TABLE platforms (id INTEGER PRIMARY KEY, name VARCHAR(255) NOT NULL UNIQUE, slug VARCHAR(255) UNIQUE NOT NULL, description TEXT, website_url VARCHAR(255), rating REAL DEFAULT 0.0, rank INTEGER, min_leverage REAL, max_leverage REAL, commission_rate REAL, is_regulated BOOLEAN DEFAULT 0, is_active BOOLEAN DEFAULT 1, is_recommended BOOLEAN DEFAULT 0, safety_rating VARCHAR(10), founded_year INTEGER, fee_rate REAL, platform_type VARCHAR(50), introduction TEXT, main_features TEXT, fee_structure TEXT, account_opening_link VARCHAR(255), created_at DATETIME, updated_at DATETIME)')
+c.execute('CREATE TABLE articles (id INTEGER PRIMARY KEY, title VARCHAR(255) NOT NULL, slug VARCHAR(255) UNIQUE NOT NULL, content TEXT NOT NULL, summary TEXT, section_id INTEGER, category_id INTEGER, platform_id INTEGER, author_id INTEGER, is_published BOOLEAN DEFAULT 1, view_count INTEGER DEFAULT 0, created_at DATETIME, updated_at DATETIME, FOREIGN KEY(section_id) REFERENCES sections(id), FOREIGN KEY(category_id) REFERENCES categories(id), FOREIGN KEY(platform_id) REFERENCES platforms(id), FOREIGN KEY(author_id) REFERENCES admin_users(id))')
+c.execute('CREATE TABLE ai_configs (id INTEGER PRIMARY KEY, name VARCHAR(255) UNIQUE NOT NULL, provider VARCHAR(100), model_name VARCHAR(100), api_key VARCHAR(255), is_active BOOLEAN DEFAULT 0, description TEXT, temperature INTEGER, max_tokens INTEGER, top_p INTEGER, created_at DATETIME, updated_at DATETIME)')
+c.execute('CREATE TABLE ai_generation_tasks (id INTEGER PRIMARY KEY, task_name VARCHAR(255), status VARCHAR(50), created_at DATETIME, updated_at DATETIME)')
+
+print("📝 插入栏目...")
+c.executemany('INSERT INTO sections VALUES (?,?,?,?,?,?,?,?,?)', [(1,"常见问题","faq","常见问题解答",0,1,1,now,now), (2,"百科","wiki","区块链百科",0,2,1,now,now), (3,"指南","guide","交易指南",0,3,1,now,now), (4,"验证","review","平台验证",1,4,1,now,now)])
+
+print("📝 插入分类 (20个)...")
+categories = [(i, ((i-1)//5)+1, ["基础知识","账户管理","交易问题","安全","其他","基础概念","交易对","技术分析","风险管理","法规","新手教程","交易策略","风险管理","资金管理","高级技巧","安全评估","功能评测","用户评价","监管许可","服务评分"][i-1], f"分类{i}", ((i-1)%5)+1, 1, now, now) for i in range(1,21)]
+c.executemany('INSERT INTO categories VALUES (?,?,?,?,?,?,?,?)', categories)
+
+print("📝 插入管理员...")
+c.executemany('INSERT INTO admin_users VALUES (?,?,?,?,?,?,?,?,?)', [(1,"admin","admin@trustagency.com","Administrator","$2b$12$N9qo8uLOickgx2ZMRZoXyeIGlMw5YBNR5z7EcKxVx0.3S2KaUDSyO",1,1,now,now)])
+
+print("📝 插入平台 (4个)...")
+c.executemany('INSERT INTO platforms VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [(1,"AlphaLeverage","alphaleverage","Professional","https://alphaleverage.com",4.8,1,1.0,500.0,0.005,1,1,1,"A",2015,0.5,"专业","专业平台",'[]','[]',"https://alphaleverage.com",now,now), (2,"BetaMargin","betamargin","Advanced","https://betamargin.com",4.5,2,1.0,300.0,0.003,1,1,1,"A",2012,0.3,"平衡","平衡平台",'[]','[]',"https://betamargin.com",now,now), (3,"GammaTrader","gammatrader","Professional","https://gammatrader.com",4.6,3,1.0,400.0,0.004,1,1,0,"B",2018,0.4,"新手友好","新手平台",'[]','[]',"https://gammatrader.com",now,now), (4,"百度","baidu","百度平台","https://baidu.com",4.7,4,1.0,350.0,0.0035,1,1,1,"A",2020,0.35,"高风险","高风险平台",'[]','[]',"https://baidu.com",now,now)])
+
+print("📝 插入文章 (3篇)...")
+c.executemany('INSERT INTO articles VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', [(1,"杠杆","gauge","内容","基础",1,1,None,1,1,150,now,now), (2,"平台","platform","内容","指南",1,1,None,1,1,200,now,now), (3,"风险","risk","内容","基础",1,1,None,1,1,180,now,now)])
+
+print("📝 插入AI配置...")
+c.executemany('INSERT INTO ai_configs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', [(1,"GPT4","openai","gpt4","sk",0,"gpt",70,2000,90,now,now), (2,"DS","deepseek","chat","sk",0,"ds",70,2000,90,now,now)])
+
+conn.commit()
+conn.close()
+
+# 验证
+conn = sqlite3.connect(db)
+c = conn.cursor()
+print("\n✅ 数据库生成完成！\n")
+print("📊 数据验证:")
+
+c.execute("SELECT COUNT(*) FROM sections")
+print(f"   栏目: {c.fetchone()[0]}")
+
+c.execute("SELECT COUNT(*) FROM categories")
+print(f"   分类: {c.fetchone()[0]}")
+
+c.execute("SELECT COUNT(*) FROM platforms")
+print(f"   平台: {c.fetchone()[0]}")
+
+c.execute("SELECT COUNT(*) FROM admin_users")
+print(f"   管理员: {c.fetchone()[0]}")
+
+c.execute("SELECT COUNT(*) FROM articles")
+print(f"   文章: {c.fetchone()[0]}")
+
+c.execute("SELECT COUNT(*) FROM ai_configs")
+print(f"   AI配置: {c.fetchone()[0]}")
+
+print(f"\n📊 平台类型分类:")
+c.execute('SELECT id, name, platform_type FROM platforms ORDER BY id')
+for row in c.fetchall():
+    print(f"   {row[0]}. {row[1]:20} → {row[2]}")
+
+import os
+size = os.path.getsize(db)
+print(f"\n💾 数据库大小: {size} 字节 ({size/1024:.2f} KB)")
+print(f"📁 位置: {db}")
+
+conn.close()
+
+PYEOF
+
+echo ""
+echo "✅ 本地恢复完成！"
+ls -lh "$DB_PATH"

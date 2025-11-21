@@ -3362,7 +3362,152 @@
         }
 
         async function editAIConfig(configId) {
-            alert('编辑功能开发中...');
+            if (!token) {
+                alert('请先登录');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/ai-configs/${configId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const config = await response.json();
+                    
+                    // 创建编辑模态框
+                    const modal = document.createElement('div');
+                    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;overflow:auto;z-index:10000;padding:40px 20px;';
+                    modal.id = 'aiConfigEditModal';
+                    
+                    const form = document.createElement('div');
+                    form.style.cssText = 'background:white;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.15);padding:30px;max-width:600px;width:100%;';
+                    
+                    form.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                            <h2 style="margin:0;">编辑 AI 配置</h2>
+                            <button onclick="document.getElementById('aiConfigEditModal').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+                        </div>
+                        
+                        <form id="aiConfigEditForm" onsubmit="saveAIConfig(event, ${configId})">
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">配置名称</label>
+                                <input type="text" id="editConfigName" value="${config.name}" readonly style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f5f5f5;" />
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">提供商</label>
+                                <input type="text" id="editConfigProvider" value="${config.provider}" readonly style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;background:#f5f5f5;" />
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">模型名称</label>
+                                <input type="text" id="editModelName" value="${config.model_name}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" />
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">API 端点</label>
+                                <input type="text" id="editApiEndpoint" value="${config.api_endpoint || ''}" placeholder="https://..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" />
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">API 密钥</label>
+                                <input type="password" id="editApiKey" value="${config.api_key || ''}" placeholder="**** (仅修改时输入新密钥)" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" />
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">最大令牌数 (Max Tokens)</label>
+                                <input type="number" id="editMaxTokens" value="${config.max_tokens || 8000}" min="100" max="100000" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" />
+                                <small style="color:#666;">默认: 8000, 范围: 100-100000</small>
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">温度 (Temperature)</label>
+                                <input type="number" id="editTemperature" value="${config.temperature || 7}" min="0" max="100" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" />
+                                <small style="color:#666;">范围: 0-100 (百分比)</small>
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">Top P 采样</label>
+                                <input type="number" id="editTopP" value="${config.top_p || 90}" min="0" max="100" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" />
+                                <small style="color:#666;">范围: 0-100 (百分比)</small>
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">超时时间 (秒)</label>
+                                <input type="number" id="editTimeoutSeconds" value="${config.timeout_seconds || 120}" min="10" max="600" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" />
+                            </div>
+                            
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;margin-bottom:5px;font-weight:bold;">
+                                    <input type="checkbox" id="editIsActive" ${config.is_active ? 'checked' : ''} /> 激活此配置
+                                </label>
+                            </div>
+                            
+                            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('aiConfigEditModal').remove()" style="padding:10px 20px;">取消</button>
+                                <button type="submit" class="btn btn-success" style="padding:10px 20px;">保存配置</button>
+                            </div>
+                        </form>
+                    `;
+                    
+                    modal.appendChild(form);
+                    document.body.appendChild(modal);
+                } else {
+                    alert('加载配置失败');
+                }
+            } catch (error) {
+                alert('加载配置失败: ' + error.message);
+            }
+        }
+        
+        async function saveAIConfig(event, configId) {
+            event.preventDefault();
+            
+            if (!token) {
+                alert('请先登录');
+                return;
+            }
+            
+            const data = {
+                model_name: document.getElementById('editModelName').value,
+                api_endpoint: document.getElementById('editApiEndpoint').value,
+                api_key: document.getElementById('editApiKey').value || undefined,  // 仅在有值时发送
+                max_tokens: parseInt(document.getElementById('editMaxTokens').value),
+                temperature: parseInt(document.getElementById('editTemperature').value),
+                top_p: parseInt(document.getElementById('editTopP').value),
+                timeout_seconds: parseInt(document.getElementById('editTimeoutSeconds').value),
+                is_active: document.getElementById('editIsActive').checked
+            };
+            
+            // 如果 api_key 为空，从数据中删除它（不修改密钥）
+            if (!data.api_key) {
+                delete data.api_key;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/ai-configs/${configId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('✅ 配置已保存！');
+                    document.getElementById('aiConfigEditModal').remove();
+                    loadAIConfigs();  // 刷新列表
+                } else {
+                    const error = await response.json();
+                    alert('保存失败: ' + (error.detail || '未知错误'));
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
         }
 
         async function setDefaultAIConfig(configId) {

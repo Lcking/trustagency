@@ -54,17 +54,17 @@ class ArticleService:
             # 添加时间戳以确保唯一性
             slug = f"{slug}-{datetime.utcnow().timestamp()}"
         
-        # 创建文章 - 排除 platform_id 和 section_id 从 model_dump 因为它们会单独处理
-        article_dict = article_data.model_dump(exclude={'platform_id', 'section_id'})
-        # 若仅提供了 category_id 而未提供 legacy category 字段，回填字符串方便兼容前端旧显示逻辑
-        if not article_dict.get('category') and getattr(article_data, 'category_id', None):
-            from app.models import Category
-            cat = db.query(Category).filter(Category.id == article_data.category_id).first()
-            if cat:
-                article_dict['category'] = cat.name
-
+        # 创建文章 - 逐个字段赋值以避免不支持的字段
         article = Article(
-            **article_dict,
+            title=article_data.title,
+            content=article_data.content,
+            summary=article_data.summary,
+            category=article_data.category,
+            category_id=article_data.category_id,
+            tags=article_data.tags,
+            meta_description=article_data.meta_description,
+            meta_keywords=article_data.meta_keywords,
+            is_featured=article_data.is_featured,
             slug=slug,
             author_id=author_id,
             section_id=article_data.section_id,
@@ -212,7 +212,7 @@ class ArticleService:
         if not article:
             raise ValueError(f"文章 ID {article_id} 不存在")
 
-        # 更新字段
+        # 更新字段 - 只更新设置了的字段
         update_data = article_data.model_dump(exclude_unset=True)
         
         # 如果更新了标题，重新生成 slug
@@ -225,15 +225,10 @@ class ArticleService:
                 new_slug = f"{new_slug}-{datetime.utcnow().timestamp()}"
             update_data["slug"] = new_slug
 
+        # 逐个字段更新，仅更新提供的字段
         for field, value in update_data.items():
-            setattr(article, field, value)
-
-        # 如果传入 category_id 但未提供 category 字符串，同时原有字符串为空，则尝试回填
-        if 'category_id' in update_data and not update_data.get('category') and not article.category:
-            from app.models import Category
-            cat = db.query(Category).filter(Category.id == update_data['category_id']).first()
-            if cat:
-                article.category = cat.name
+            if hasattr(article, field) and field != 'id':  # 不更新 id
+                setattr(article, field, value)
 
         db.add(article)
         db.commit()

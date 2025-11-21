@@ -31,7 +31,7 @@ class AIConfig(Base):
     
     # 参数配置
     temperature = Column(Integer, default=7, nullable=False)  # 温度 0-100（存储为百分比）
-    max_tokens = Column(Integer, default=2000, nullable=False)  # 最大令牌数
+    max_tokens = Column(Integer, default=8000, nullable=False)  # 最大令牌数 (提高至8000以支持更长的输出)
     top_p = Column(Integer, default=90, nullable=False)  # Top P 采样 0-100
     
     # 状态

@@ -2,7 +2,7 @@
 平台管理编辑接口 - 用于后台管理系统
 提供平台详情页面所有字段的编辑和管理功能
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -113,6 +113,22 @@ class PlatformEditResponse(BaseModel):
     # 元数据
     created_at: datetime
     updated_at: datetime
+    
+    @root_validator(pre=False, skip_on_failure=True)
+    def convert_null_json_fields_to_empty_strings(cls, values):
+        """将所有为 None 的 JSON 字段转换为空字符串，以便前端可以正确渲染输入框"""
+        json_fields = [
+            'main_features', 'fee_structure', 'overview_intro', 'fee_table',
+            'why_choose', 'trading_conditions', 'fee_advantages', 'account_types',
+            'trading_tools', 'opening_steps', 'safety_info', 'security_measures',
+            'customer_support', 'learning_resources', 'platform_badges', 'top_badges'
+        ]
+        
+        for field in json_fields:
+            if values.get(field) is None:
+                values[field] = ""  # 将 None 转换为空字符串
+        
+        return values
     
     class Config:
         from_attributes = True
