@@ -213,9 +213,11 @@
         async function loadArticle() {
             try {
                 // 获取 API 服务器地址
-                const API_URL = location.hostname === 'localhost' 
-                    ? 'http://localhost:8000' 
-                    : location.origin.replace(/\/$/, '');
+                let API_URL = location.origin.replace(/\/$/, '');
+                // 如果前端运行在8000端口，重定向到后端8001端口
+                if (location.port === '8000') {
+                    API_URL = location.protocol + '//' + location.hostname + ':8001';
+                }
                 
                 // 从URL查询参数或路径获取 ID 或 slug
                 const urlParams = new URLSearchParams(window.location.search);
@@ -332,11 +334,54 @@
                 day: '2-digit'
             });
 
-            // 更新页面标题
-            document.title = `${article.title} - 股票杠杆平台排行榜单`;
+            // ✅ 动态更新SEO元数据
+            const pageTitle = `${article.title} - 股票杠杆平台排行榜单`;
+            document.title = pageTitle;
+            
+            // 更新meta标签
+            updateMetaTag('title', pageTitle);
+            updateMetaTag('og:title', pageTitle);
+            
+            // 描述：优先使用summary，其次使用content的前150字符
+            const description = article.summary || 
+                                (article.content || '').replace(/[#*_\[\]`~]/g, '').substring(0, 150).trim() ||
+                                `阅读关于"${article.title}"的详细文章，深入了解股票杠杆交易知识`;
+            updateMetaTag('description', description);
+            updateMetaTag('og:description', description);
+            
+            // 关键词：结合分类、标题、以及文章原有的关键词
+            const keywords = [
+                article.keywords || '',
+                article.title,
+                article.category_name || article.category || '',
+                '股票杠杆',
+                '平台',
+                '交易'
+            ].filter(Boolean).join(',');
+            updateMetaTag('keywords', keywords);
+            
+            // Open Graph元数据（用于社交媒体分享）
+            updateMetaTag('og:url', location.href);
+            updateMetaTag('og:type', 'article');
 
             // 显示文章
             document.getElementById('article').style.display = 'block';
+        }
+
+        /**
+         * 更新或创建meta标签
+         */
+        function updateMetaTag(name, content) {
+            let meta = document.querySelector(`meta[name="${name}"]`);
+            if (!meta) {
+                meta = document.querySelector(`meta[property="${name}"]`);
+            }
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.setAttribute(name.startsWith('og:') ? 'property' : 'name', name);
+                document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
         }
 
         /**
