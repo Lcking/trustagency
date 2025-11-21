@@ -60,6 +60,7 @@ def init_db():
     from app.models.article import Article
     from app.models.ai_task import AIGenerationTask
     from app.models.ai_config import AIConfig
+    from app.models.website_settings import WebsiteSettings
     from app.utils.security import hash_password
     from datetime import datetime
     from slugify import slugify
@@ -296,6 +297,40 @@ def init_db():
         
         db.commit()
         print("✅ 默认 AI 配置创建成功 (OpenAI GPT-4, DeepSeek, 中转链接)")
+        
+        # 5. 创建默认网站设置
+        website_settings = db.query(WebsiteSettings).first()
+        if not website_settings:
+            website_settings = WebsiteSettings(
+                # SEO 配置
+                site_title="TrustAgency - 专业的交易平台评测和指南",
+                site_description="TrustAgency 是一个专业的交易平台评测网站，提供最可靠的平台验证、交易指南和风险评估。",
+                site_keywords="交易平台,杠杆交易,外汇交易,平台评测,交易风险,投资指南",
+                
+                # 网站信息
+                site_name="TrustAgency",
+                site_author="TrustAgency Team",
+                site_favicon="/assets/favicon.ico",
+                site_logo="/assets/logo.png",
+                
+                # 分析和脚本
+                google_analytics="",  # 用户需要配置
+                baidu_analytics="",   # 用户需要配置
+                custom_scripts="",
+                
+                # 页脚信息
+                icp_number="",  # 中国备案号（如需要）
+                company_name="TrustAgency Ltd.",
+                company_address="",
+                contact_phone="",
+                contact_email="contact@trustagency.com",
+                footer_links="[]",  # 空 JSON 数组
+            )
+            db.add(website_settings)
+            db.commit()
+            print("✅ 默认网站设置创建成功")
+        else:
+            print("ℹ️ 网站设置已存在")
         
     except Exception as e:
         print(f"❌ 初始化错误: {e}")

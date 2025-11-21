@@ -1319,6 +1319,100 @@
                     <h2>⚙️ 系统设置</h2>
                 </div>
                 
+                <!-- 网站设置表单 -->
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                    <h3>🌐 网站全局设置</h3>
+                    <form id="websiteSettingsForm" style="margin-top: 20px;">
+                        <!-- SEO 设置 -->
+                        <div style="border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">📝 SEO 配置</h4>
+                            <div class="form-group">
+                                <label for="siteTitle">网站标题</label>
+                                <input type="text" id="siteTitle" name="site_title" placeholder="网站标题">
+                            </div>
+                            <div class="form-group">
+                                <label for="siteDescription">网站描述</label>
+                                <textarea id="siteDescription" name="site_description" placeholder="网站描述（用于搜索引擎）" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="siteKeywords">网站关键词</label>
+                                <input type="text" id="siteKeywords" name="site_keywords" placeholder="关键词，用逗号分隔">
+                            </div>
+                        </div>
+
+                        <!-- 网站信息 -->
+                        <div style="border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">ℹ️ 网站信息</h4>
+                            <div class="form-group">
+                                <label for="siteName">网站名称</label>
+                                <input type="text" id="siteName" name="site_name" placeholder="网站名称">
+                            </div>
+                            <div class="form-group">
+                                <label for="siteAuthor">网站作者</label>
+                                <input type="text" id="siteAuthor" name="site_author" placeholder="网站作者">
+                            </div>
+                            <div class="form-group">
+                                <label for="siteFavicon">Favicon 地址</label>
+                                <input type="text" id="siteFavicon" name="site_favicon" placeholder="/assets/favicon.ico">
+                            </div>
+                            <div class="form-group">
+                                <label for="siteLogo">Logo 地址</label>
+                                <input type="text" id="siteLogo" name="site_logo" placeholder="/assets/logo.png">
+                            </div>
+                        </div>
+
+                        <!-- 分析代码 -->
+                        <div style="border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">📊 分析代码</h4>
+                            <div class="form-group">
+                                <label for="googleAnalytics">Google Analytics 代码</label>
+                                <textarea id="googleAnalytics" name="google_analytics" placeholder="粘贴 Google Analytics 追踪代码" rows="2"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="baiduAnalytics">百度统计代码</label>
+                                <textarea id="baiduAnalytics" name="baidu_analytics" placeholder="粘贴百度统计代码" rows="2"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="customScripts">自定义脚本</label>
+                                <textarea id="customScripts" name="custom_scripts" placeholder="自定义脚本（放在 &lt;/head&gt; 前）" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 页脚设置 -->
+                        <div style="border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">🔗 页脚设置</h4>
+                            <div class="form-group">
+                                <label for="icpNumber">ICP 备案号</label>
+                                <input type="text" id="icpNumber" name="icp_number" placeholder="ICP 备案号">
+                            </div>
+                            <div class="form-group">
+                                <label for="companyName">公司名称</label>
+                                <input type="text" id="companyName" name="company_name" placeholder="公司名称">
+                            </div>
+                            <div class="form-group">
+                                <label for="companyAddress">公司地址</label>
+                                <input type="text" id="companyAddress" name="company_address" placeholder="公司地址">
+                            </div>
+                            <div class="form-group">
+                                <label for="contactPhone">联系电话</label>
+                                <input type="text" id="contactPhone" name="contact_phone" placeholder="联系电话">
+                            </div>
+                            <div class="form-group">
+                                <label for="contactEmail">联系邮箱</label>
+                                <input type="email" id="contactEmail" name="contact_email" placeholder="联系邮箱">
+                            </div>
+                            <div class="form-group">
+                                <label for="footerLinks">友情链接 (JSON)</label>
+                                <textarea id="footerLinks" name="footer_links" placeholder="友情链接 JSON 格式，例：[{&quot;name&quot;:&quot;链接&quot;,&quot;url&quot;:&quot;https://&quot;}]" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div id="websiteSettingsError" style="color: #e74c3c; margin-bottom: 10px; display: none;"></div>
+                        <div id="websiteSettingsSuccess" style="color: #27ae60; margin-bottom: 10px; display: none;"></div>
+                        <button type="button" class="btn btn-primary" onclick="saveWebsiteSettings()">💾 保存设置</button>
+                    </form>
+                </div>
+                
                 <!-- 密码修改表单 -->
                 <div style="background: white; padding: 20px; border-radius: 8px; max-width: 500px;">
                     <h3>修改管理员密码</h3>
@@ -3542,8 +3636,120 @@
             }
         }
 
+        // 加载网站设置
+        async function loadWebsiteSettings() {
+            try {
+                const response = await fetch(`${API_URL}/api/website-settings/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // 填充表单
+                document.getElementById('siteTitle').value = data.site_title || '';
+                document.getElementById('siteDescription').value = data.site_description || '';
+                document.getElementById('siteKeywords').value = data.site_keywords || '';
+                document.getElementById('siteName').value = data.site_name || '';
+                document.getElementById('siteAuthor').value = data.site_author || '';
+                document.getElementById('siteFavicon').value = data.site_favicon || '';
+                document.getElementById('siteLogo').value = data.site_logo || '';
+                document.getElementById('googleAnalytics').value = data.google_analytics || '';
+                document.getElementById('baiduAnalytics').value = data.baidu_analytics || '';
+                document.getElementById('customScripts').value = data.custom_scripts || '';
+                document.getElementById('icpNumber').value = data.icp_number || '';
+                document.getElementById('companyName').value = data.company_name || '';
+                document.getElementById('companyAddress').value = data.company_address || '';
+                document.getElementById('contactPhone').value = data.contact_phone || '';
+                document.getElementById('contactEmail').value = data.contact_email || '';
+                document.getElementById('footerLinks').value = data.footer_links || '[]';
+
+                console.log('网站设置加载成功:', data);
+            } catch (error) {
+                console.error('加载网站设置失败:', error);
+            }
+        }
+
+        // 保存网站设置
+        async function saveWebsiteSettings() {
+            const errorDiv = document.getElementById('websiteSettingsError');
+            const successDiv = document.getElementById('websiteSettingsSuccess');
+
+            // 清除之前的提示
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            try {
+                // 收集表单数据
+                const formData = {
+                    site_title: document.getElementById('siteTitle').value,
+                    site_description: document.getElementById('siteDescription').value,
+                    site_keywords: document.getElementById('siteKeywords').value,
+                    site_name: document.getElementById('siteName').value,
+                    site_author: document.getElementById('siteAuthor').value,
+                    site_favicon: document.getElementById('siteFavicon').value,
+                    site_logo: document.getElementById('siteLogo').value,
+                    google_analytics: document.getElementById('googleAnalytics').value,
+                    baidu_analytics: document.getElementById('baiduAnalytics').value,
+                    custom_scripts: document.getElementById('customScripts').value,
+                    icp_number: document.getElementById('icpNumber').value,
+                    company_name: document.getElementById('companyName').value,
+                    company_address: document.getElementById('companyAddress').value,
+                    contact_phone: document.getElementById('contactPhone').value,
+                    contact_email: document.getElementById('contactEmail').value,
+                    footer_links: document.getElementById('footerLinks').value
+                };
+
+                // 验证 footer_links 是有效的 JSON
+                if (formData.footer_links.trim()) {
+                    try {
+                        JSON.parse(formData.footer_links);
+                    } catch (e) {
+                        errorDiv.textContent = '友情链接必须是有效的 JSON 格式';
+                        errorDiv.style.display = 'block';
+                        return;
+                    }
+                }
+
+                const response = await fetch(`${API_URL}/api/website-settings/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || '保存失败');
+                }
+
+                const data = await response.json();
+                successDiv.textContent = '✅ 网站设置保存成功！';
+                successDiv.style.display = 'block';
+
+                console.log('网站设置保存成功:', data);
+
+                // 3秒后隐藏提示
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            } catch (error) {
+                console.error('保存网站设置失败:', error);
+                errorDiv.textContent = '保存失败: ' + error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
         // 修改密码
-        async function changePassword() {
+
             const oldPassword = document.getElementById('oldPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
@@ -3615,7 +3821,8 @@
 
         // 初始化设置页面
         function initializeSettings() {
-            // 可以在这里添加初始化逻辑
+            // 加载网站设置
+            loadWebsiteSettings();
         }
 
         // 退出登录
