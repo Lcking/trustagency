@@ -56,6 +56,7 @@ def init_db():
     from app.models.admin_user import AdminUser
     from app.models.platform import Platform
     from app.models.section import Section
+    from app.models.category import Category
     from app.models.article import Article
     from app.models.ai_task import AIGenerationTask
     from app.models.ai_config import AIConfig
@@ -133,6 +134,46 @@ def init_db():
         
         db.commit()
         print("✅ 默认栏目创建成功 (FAQ, Wiki, Guide, Review)")
+        
+        # 2.5. 创建默认分类
+        categories_data = [
+            # FAQ 栏目的分类
+            {"section_id": 1, "name": "基础知识", "description": "交易基础知识", "sort_order": 1},
+            {"section_id": 1, "name": "账户管理", "description": "账户相关问题", "sort_order": 2},
+            {"section_id": 1, "name": "交易问题", "description": "交易相关问题", "sort_order": 3},
+            {"section_id": 1, "name": "安全", "description": "安全相关问题", "sort_order": 4},
+            {"section_id": 1, "name": "其他", "description": "其他常见问题", "sort_order": 5},
+            # Wiki 栏目的分类
+            {"section_id": 2, "name": "基础概念", "description": "基础概念", "sort_order": 1},
+            {"section_id": 2, "name": "交易对", "description": "交易对", "sort_order": 2},
+            {"section_id": 2, "name": "技术分析", "description": "技术分析", "sort_order": 3},
+            {"section_id": 2, "name": "风险管理", "description": "风险管理", "sort_order": 4},
+            {"section_id": 2, "name": "法规", "description": "法规", "sort_order": 5},
+            # Guide 栏目的分类
+            {"section_id": 3, "name": "新手教程", "description": "新手教程", "sort_order": 1},
+            {"section_id": 3, "name": "交易策略", "description": "交易策略", "sort_order": 2},
+            {"section_id": 3, "name": "风险管理", "description": "风险管理", "sort_order": 3},
+            {"section_id": 3, "name": "资金管理", "description": "资金管理", "sort_order": 4},
+            {"section_id": 3, "name": "高级技巧", "description": "高级技巧", "sort_order": 5},
+            # Review 栏目的分类
+            {"section_id": 4, "name": "安全评估", "description": "安全评估", "sort_order": 1},
+            {"section_id": 4, "name": "功能评测", "description": "功能评测", "sort_order": 2},
+            {"section_id": 4, "name": "用户评价", "description": "用户评价", "sort_order": 3},
+            {"section_id": 4, "name": "监管许可", "description": "监管许可", "sort_order": 4},
+            {"section_id": 4, "name": "服务评分", "description": "服务评分", "sort_order": 5},
+        ]
+        
+        for cat_data in categories_data:
+            existing = db.query(Category).filter(
+                Category.section_id == cat_data["section_id"],
+                Category.name == cat_data["name"]
+            ).first()
+            if not existing:
+                category = Category(**cat_data)
+                db.add(category)
+        
+        db.commit()
+        print("✅ 默认分类创建成功 (20 个分类)")
         
         # 3. 创建默认平台
         platforms_data = [
