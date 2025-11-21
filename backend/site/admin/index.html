@@ -885,22 +885,113 @@
         <div class="login-card">
             <h1>🔐 后台登录</h1>
             <div id="loginError" class="error" style="display: none;"></div>
-            <form id="loginForm" method="POST" action="javascript:void(0);">
+            <form id="loginForm" method="POST" action="javascript:void(0);" onsubmit="handleLoginSubmit(event); return false;">
                 <div class="form-group">
                     <label for="username">用户名</label>
-                    <input type="text" id="username" name="username" required>
+                    <input type="text" id="username" name="username" required autocomplete="username">
                 </div>
                 <div class="form-group">
                     <label for="password">密码</label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
                 </div>
                 <button type="submit" class="btn btn-primary">登 录</button>
             </form>
+            <script>
+                // 紧急救援脚本：直接处理登录表单
+                window.handleLoginSubmit = async function(e) {
+                    e.preventDefault();
+                    console.log('✅ handleLoginSubmit called');
+                    
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+                    const loginError = document.getElementById('loginError');
+                    
+                    if (loginError) {
+                        loginError.textContent = '';
+                        loginError.style.display = 'none';
+                    }
+                    
+                    try {
+                        const apiUrl = window.location.port === '8000' ? 
+                            'http://localhost:8001' : 
+                            window.location.origin;
+                        const loginUrl = apiUrl + '/api/admin/login';
+                        
+                        console.log('🔗 Login URL:', loginUrl);
+                        console.log('👤 Username:', username);
+                        
+                        const response = await fetch(loginUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ username, password })
+                        });
+                        
+                        console.log('📡 Response status:', response.status);
+                        const data = await response.json();
+                        console.log('📦 Response data:', data);
+                        
+                        if (response.ok) {
+                            console.log('🎉 Login success!');
+                            localStorage.setItem('token', data.access_token);
+                            localStorage.setItem('currentUser', JSON.stringify(data.user));
+                            window.location.href = window.location.href;  // 刷新页面
+                        } else {
+                            const errorMsg = data.detail || data.message || '登录失败';
+                            console.error('❌ Login failed:', errorMsg);
+                            if (loginError) {
+                                loginError.textContent = '❌ ' + errorMsg;
+                                loginError.style.display = 'block';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('💥 Error:', error);
+                        if (loginError) {
+                            loginError.textContent = '❌ 网络错误: ' + error.message;
+                            loginError.style.display = 'block';
+                        }
+                    }
+                };
+            </script>
         </div>
     </div>
 
     <!-- 主页面 -->
     <div id="mainPage" class="container" style="display: none;">
+    <script>
+        // 立即执行的初始化脚本，检查登录状态
+        (function() {
+            const token = localStorage.getItem('token');
+            const currentUserStr = localStorage.getItem('currentUser');
+            
+            console.log('🔐 Token check:', !!token);
+            console.log('👤 CurrentUser check:', !!currentUserStr);
+            
+            if (token && currentUserStr) {
+                try {
+                    const currentUser = JSON.parse(currentUserStr);
+                    console.log('✅ User logged in:', currentUser.username);
+                    
+                    // 显示主页面并隐藏登录页面
+                    const loginPage = document.getElementById('loginPage');
+                    const mainPage = document.getElementById('mainPage');
+                    
+                    if (loginPage) loginPage.style.display = 'none';
+                    if (mainPage) mainPage.style.display = 'flex';
+                    
+                    // 设置用户名
+                    const usernameEl = document.getElementById('currentUsername');
+                    if (usernameEl) {
+                        usernameEl.textContent = currentUser.username;
+                        console.log('✅ Username set to:', currentUser.username);
+                    }
+                } catch (e) {
+                    console.error('❌ Failed to parse currentUser:', e);
+                }
+            }
+        })();
+    </script>
         <!-- 侧边栏 -->
         <div class="sidebar">
             <h1>TrustAgency</h1>
@@ -1560,22 +1651,38 @@
 
         // 页面加载
 
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🔍 DOMContentLoaded fired');
-            // 登录表单处理 - 必须在 DOMContentLoaded 内，确保 DOM 已加载
+        // 延迟初始化，确保所有变量都已定义
+        setTimeout(() => {
+            console.log('🔍 Init fired, API_URL:', typeof API_URL !== 'undefined' ? API_URL : 'UNDEFINED');
+            
+            // 登录表单处理
             const loginForm = document.getElementById('loginForm');
-            console.log('📋 LoginForm element:', loginForm);
+            console.log('📋 LoginForm element:', !!loginForm);
             
             if (loginForm) {
                 loginForm.addEventListener('submit', async (e) => {
                     console.log('📨 Form submitted');
                     e.preventDefault();
+                    
                     const username = document.getElementById('username').value;
                     const password = document.getElementById('password').value;
-                    console.log('👤 Attempting login with:', username);
+                    const loginError = document.getElementById('loginError');
+                    
+                    // 清空之前的错误信息
+                    if (loginError) {
+                        loginError.textContent = '';
+                        loginError.style.display = 'none';
+                    }
+                    
+                    console.log('👤 Attempting login with username:', username);
 
                     try {
-                        const response = await fetch(`${API_URL}/api/admin/login`, {
+                        // 确定正确的 API URL
+                        let apiUrl = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:8001';
+                        const loginUrl = apiUrl + '/api/admin/login';
+                        console.log('🔗 Using login URL:', loginUrl);
+                        
+                        const response = await fetch(loginUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1583,43 +1690,55 @@
                             body: JSON.stringify({ username, password })
                         });
 
+                        console.log('📡 Response status:', response.status);
                         const data = await response.json();
-                        console.log('✅ Response:', response.ok, data);
+                        console.log('📦 Response data:', data);
 
                         if (response.ok) {
                             token = data.access_token;
                             currentUser = data.user;
                             localStorage.setItem('token', token);
                             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                            console.log('🎉 Login success');
+                            console.log('🎉 Login success!');
                             showMainPage();
                             loadDashboard();
-                            // 初始化批量生成表单和AI配置
                             loadTaskSections();
                             loadAIConfigsToSelect();
                         } else {
-                            console.error('❌ Login failed:', data.detail);
-                            showError('loginError', data.detail || '登录失败');
+                            const errorMsg = data.detail || data.message || '登录失败';
+                            console.error('❌ Login failed:', errorMsg);
+                            if (loginError) {
+                                loginError.textContent = '❌ ' + errorMsg;
+                                loginError.style.display = 'block';
+                            }
+                            alert('登录失败: ' + errorMsg);
                         }
                     } catch (error) {
-                        console.error('💥 Error:', error);
-                        showError('loginError', '网络错误: ' + error.message);
+                        console.error('💥 Fetch error:', error);
+                        if (loginError) {
+                            loginError.textContent = '❌ 网络错误: ' + error.message;
+                            loginError.style.display = 'block';
+                        }
+                        alert('网络错误: ' + error.message);
                     }
                 });
+            } else {
+                console.error('❌ LoginForm not found!');
             }
 
             // 检查是否已登录
-            if (token && currentUser.username) {
+            console.log('🔐 Token present:', !!token, 'Username:', currentUser?.username);
+            if (token && currentUser?.username) {
+                console.log('✅ Already logged in, showing main page');
                 showMainPage();
                 loadDashboard();
-                // 初始化批量生成表单
                 loadTaskSections();
-                // 初始化 AI 配置
                 loadAIConfigsToSelect();
             } else {
+                console.log('⬜ Not logged in, showing login page');
                 showLoginPage();
             }
-        });
+        }, 100);
 
         // 显示页面
         function showLoginPage() {
