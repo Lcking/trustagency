@@ -1353,8 +1353,13 @@
             const host = window.location.hostname;
             const port = window.location.port;
             
+            // 如果前端运行在 8000（静态文件服务器），后端在 8001
+            if (port === '8000') {
+                return `${protocol}//${host}:8001`;
+            }
+            
             // 如果有显式端口（开发环境通常是 8001），直接连接到后端
-            if (port === '8001' || port === '8000') {
+            if (port === '8001') {
                 return `${protocol}//${host}:${port}`;
             }
             
@@ -2393,25 +2398,9 @@
                 // 添加字段
                 if (section.fields && Array.isArray(section.fields)) {
                     section.fields.forEach(field => {
-                        // 检查是否应该显示该字段：必填项或有值的字段
-                        let shouldShow = field.required === true; // 必填项总是显示
-                        
-                        // 如果不是必填项，检查是否有值
-                        if (!shouldShow && existingData) {
-                            const value = existingData[field.name];
-                            shouldShow = value !== null && value !== undefined && value !== '';
-                        }
-                        
-                        // 如果在新增模式（没有existingData），显示所有必填项
-                        if (!existingData) {
-                            shouldShow = true; // 新增时显示所有字段
-                        }
-                        
+                        // 始终显示所有字段，无论是新增还是编辑模式
                         const fieldGroup = document.createElement('div');
                         fieldGroup.className = 'form-group';
-                        if (!shouldShow) {
-                            fieldGroup.style.display = 'none';
-                        }
                         
                         let input;
                         
@@ -3404,7 +3393,21 @@
                             
                             <div style="margin-bottom:15px;">
                                 <label style="display:block;margin-bottom:5px;font-weight:bold;">模型名称</label>
-                                <input type="text" id="editModelName" value="${config.model_name}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" />
+                                <select id="editModelName" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                                    <option value="${config.model_name}">${config.model_name} (当前)</option>
+                                    ${config.provider === 'OpenAI' ? `
+                                        <option value="gpt-4">GPT-4</option>
+                                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                        <option value="gpt-4o">GPT-4o</option>
+                                    ` : config.provider === 'DeepSeek' ? `
+                                        <option value="deepseek-chat">DeepSeek Chat</option>
+                                        <option value="deepseek-coder">DeepSeek Coder</option>
+                                    ` : `
+                                        <option value="${config.model_name}">${config.model_name}</option>
+                                    `}
+                                </select>
+                                <small style="color:#666;">选择已测试的模型</small>
                             </div>
                             
                             <div style="margin-bottom:15px;">
