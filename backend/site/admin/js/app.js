@@ -5,6 +5,10 @@
 // 导入配置
 import { API_CONFIG } from './config.js';
 
+// 导入认证和UI管理器
+import authManager from './modules/auth.js';
+import uiManager from './modules/ui.js';
+
 // 导入API服务
 import authAPI from './api/auth.js';
 import articlesAPI from './api/articles.js';
@@ -33,9 +37,7 @@ class App {
         
         // 绑定this
         this.init = this.init.bind(this);
-        this.checkAuth = this.checkAuth.bind(this);
-        this.showLoginPage = this.showLoginPage.bind(this);
-        this.showMainPage = this.showMainPage.bind(this);
+        this.handleLogin = this.handleLogin.bind(this);
         this.logout = this.logout.bind(this);
     }
     
@@ -45,52 +47,35 @@ class App {
     async init() {
         console.log('🚀 应用初始化...');
         
-        // 检查认证状态
-        const isAuthenticated = await this.checkAuth();
-        
-        if (isAuthenticated) {
-            this.showMainPage();
-        } else {
-            this.showLoginPage();
-        }
+        // 初始化认证和UI管理器
+        authManager.initialize();
+        uiManager.initialize();
         
         // 设置全局错误处理
         this.setupErrorHandling();
+        
+        // 如果已登录,显示主页面并加载初始数据
+        if (authManager.isLoggedIn()) {
+            uiManager.showMainPage();
+            this.loadInitialData();
+        } else {
+            // 绑定登录表单
+            this.bindLoginForm();
+            uiManager.showLoginPage();
+        }
         
         console.log('✅ 应用初始化完成');
     }
     
     /**
-     * 检查认证状态
+     * 绑定登录表单
      */
-    async checkAuth() {
-        try {
-            if (!authAPI.isAuthenticated()) {
-                return false;
-            }
-            
-            // 获取当前用户信息
-            this.currentUser = await authAPI.getCurrentUser();
-            return true;
-        } catch (error) {
-            console.error('认证检查失败:', error);
-            return false;
-        }
-    }
-    
-    /**
-     * 显示登录页面
-     */
-    showLoginPage() {
-        show($('#loginPage'));
-        hide($('#mainPage'));
-        
-        // 绑定登录表单提交
+    bindLoginForm() {
         const loginForm = $('#loginForm');
         if (loginForm) {
-            loginForm.onsubmit = async (e) => {
+            loginForm.onsubmit = (e) => {
                 e.preventDefault();
-                await this.handleLogin();
+                this.handleLogin();
             };
         }
     }
@@ -110,218 +95,43 @@ class App {
         
         if (!validation.valid) {
             const firstError = Object.values(validation.errors)[0];
-            showToast(firstError, 'error');
+            uiManager.showError('loginError', firstError);
             return;
         }
         
         try {
             showLoading('登录中...');
             
-            await authAPI.login(data.username, data.password);
-            this.currentUser = await authAPI.getCurrentUser();
+            const result = await authManager.login(data.username, data.password);
             
             hideLoading();
-            showToast('登录成功！', 'success');
             
-            // 延迟跳转以显示提示
-            setTimeout(() => {
-                this.showMainPage();
-            }, 500);
-        } catch (error) {
-            hideLoading();
-            showToast(error.message || '登录失败', 'error');
-        }
-    }
-    
-    /**
-     * 显示主页面
-     */
-    showMainPage() {
-        hide($('#loginPage'));
-        show($('#mainPage'));
-        
-        // 显示用户信息
-        this.updateUserInfo();
-        
-        // 绑定导航事件
-        this.bindNavigation();
-        
-        // 绑定登出事件
-        const logoutBtn = $('#logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.onclick = () => this.logout();
-        }
-        
-        // 默认显示文章管理页面
-        this.navigateTo('articles');
-    }
-    
-    /**
-     * 更新用户信息显示
-     */
-    updateUserInfo() {
-        const userNameEl = $('#userName');
-        const userRoleEl = $('#userRole');
-        
-        if (userNameEl && this.currentUser) {
-            userNameEl.textContent = this.currentUser.username;
-        }
-        
-        if (userRoleEl && this.currentUser) {
-            const roleText = this.currentUser.is_superadmin ? '超级管理员' : '普通用户';
-            userRoleEl.textContent = roleText;
-        }
-    }
-    
-    /**
-     * 绑定导航事件
-     */
-    bindNavigation() {
-        delegate($('.sidebar'), 'click', '.nav-item', (e) => {
-            e.preventDefault();
-            const page = e.target.dataset.page;
-            if (page) {
-                this.navigateTo(page);
+            if (result.success) {
+                showToast('登录成功！', 'success');
+                
+                // 延迟跳转以显示提示
+                setTimeout(() => {
+                    uiManager.showMainPage();
+                    this.loadInitialData();
+                }, 500);
+            } else {
+                uiManager.showError('loginError', result.error);
             }
-        });
-    }
-    
-    /**
-     * 导航到指定页面
-     */
-    navigateTo(page) {
-        // 移除所有active类
-        $$('.nav-item').forEach(item => item.classList.remove('active'));
-        
-        // 添加active类到当前项
-        const currentItem = $(`.nav-item[data-page="${page}"]`);
-        if (currentItem) {
-            currentItem.classList.add('active');
-        }
-        
-        // 隐藏所有页面
-        $$('.page').forEach(p => hide(p));
-        
-        // 显示当前页面
-        const currentPage = $(`#${page}Page`);
-        if (currentPage) {
-            show(currentPage);
-            this.currentPage = page;
-            
-            // 加载页面数据
-            this.loadPageData(page);
-        }
-    }
-    
-    /**
-     * 加载页面数据
-     */
-    async loadPageData(page) {
-        switch (page) {
-            case 'articles':
-                await this.loadArticles();
-                break;
-            case 'tasks':
-                await this.loadTasks();
-                break;
-            case 'platforms':
-                await this.loadPlatforms();
-                break;
-            case 'sections':
-                await this.loadSections();
-                break;
-            case 'categories':
-                await this.loadCategories();
-                break;
-            case 'ai-configs':
-                await this.loadAIConfigs();
-                break;
-        }
-    }
-    
-    /**
-     * 加载文章列表
-     */
-    async loadArticles() {
-        try {
-            showLoading('加载文章列表...');
-            const data = await articlesAPI.getList({ page: 1, per_page: 20 });
-            hideLoading();
-            
-            // TODO: 渲染文章列表
-            console.log('文章列表:', data);
         } catch (error) {
             hideLoading();
-            showToast('加载文章列表失败', 'error');
+            uiManager.showError('loginError', '网络错误: ' + error.message);
         }
     }
     
     /**
-     * 加载任务列表
+     * 加载初始数据
      */
-    async loadTasks() {
+    async loadInitialData() {
         try {
-            showLoading('加载任务列表...');
-            const data = await tasksAPI.getList({ page: 1, per_page: 20 });
-            hideLoading();
-            
-            // TODO: 渲染任务列表
-            console.log('任务列表:', data);
+            // 触发app:ready事件,让各功能模块加载数据
+            window.dispatchEvent(new CustomEvent('app:ready'));
         } catch (error) {
-            hideLoading();
-            showToast('加载任务列表失败', 'error');
-        }
-    }
-    
-    /**
-     * 加载平台列表
-     */
-    async loadPlatforms() {
-        try {
-            const data = await platformsAPI.getList();
-            // TODO: 渲染平台列表
-            console.log('平台列表:', data);
-        } catch (error) {
-            showToast('加载平台列表失败', 'error');
-        }
-    }
-    
-    /**
-     * 加载栏目列表
-     */
-    async loadSections() {
-        try {
-            const data = await sectionsAPI.getList();
-            // TODO: 渲染栏目列表
-            console.log('栏目列表:', data);
-        } catch (error) {
-            showToast('加载栏目列表失败', 'error');
-        }
-    }
-    
-    /**
-     * 加载分类列表
-     */
-    async loadCategories() {
-        try {
-            const data = await categoriesAPI.getList();
-            // TODO: 渲染分类列表
-            console.log('分类列表:', data);
-        } catch (error) {
-            showToast('加载分类列表失败', 'error');
-        }
-    }
-    
-    /**
-     * 加载AI配置列表
-     */
-    async loadAIConfigs() {
-        try {
-            const data = await aiConfigsAPI.getList();
-            // TODO: 渲染AI配置列表
-            console.log('AI配置列表:', data);
-        } catch (error) {
-            showToast('加载AI配置列表失败', 'error');
+            console.error('加载初始数据失败:', error);
         }
     }
     
@@ -333,10 +143,10 @@ class App {
         if (!confirmed) return;
         
         try {
-            await authAPI.logout();
-            this.currentUser = null;
+            authManager.logout();
             showToast('已退出登录', 'success');
-            this.showLoginPage();
+            uiManager.showLoginPage();
+            this.bindLoginForm();
         } catch (error) {
             showToast('退出失败', 'error');
         }
