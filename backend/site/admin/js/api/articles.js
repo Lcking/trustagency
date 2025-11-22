@@ -1,5 +1,5 @@
 /**
- * API 服务模块 - 文章相关
+ * API 服务模块 - 文章管理
  */
 
 import apiClient from '../api-client.js';

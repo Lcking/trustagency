@@ -2,8 +2,8 @@
  * API 服务模块 - 认证相关
  */
 
-import apiClient from './api-client.js';
-import { STORAGE_KEYS } from './config.js';
+import apiClient from '../api-client.js';
+import { STORAGE_KEYS } from '../config.js';
 
 class AuthAPI {
     /**

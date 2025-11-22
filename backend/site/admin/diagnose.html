@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块加载诊断</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .log {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .error { border-left-color: #e74c3c; background: #fee; }
+        .success { border-left-color: #27ae60; background: #efe; }
+        .warning { border-left-color: #f39c12; background: #ffe; }
+    </style>
+</head>
+<body>
+    <h1>🔍 模块加载诊断</h1>
+    <div id="logs"></div>
+    
+    <script>
+        const logs = document.getElementById('logs');
+        
+        function log(message, type = 'log') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(div);
+            console.log(message);
+        }
+        
+        log('开始测试...', 'log');
+        log(`当前URL: ${window.location.href}`, 'log');
+        log(`协议: ${window.location.protocol}`, 'log');
+        log(`主机: ${window.location.host}`, 'log');
+        
+        // 测试导入模块
+        async function testModules() {
+            try {
+                log('尝试导入 config.js...', 'log');
+                const config = await import('./js/config.js');
+                log('✅ config.js 加载成功!', 'success');
+                log(`API_CONFIG.BASE_URL = ${config.API_CONFIG.BASE_URL}`, 'success');
+                
+                log('尝试导入 api-client.js...', 'log');
+                const apiClientModule = await import('./js/api-client.js');
+                log('✅ api-client.js 加载成功!', 'success');
+                
+                log('尝试导入 api/auth.js...', 'log');
+                const authModule = await import('./js/api/auth.js');
+                log('✅ api/auth.js 加载成功!', 'success');
+                
+                log('尝试导入 utils/dom.js...', 'log');
+                const domModule = await import('./js/utils/dom.js');
+                log('✅ utils/dom.js 加载成功!', 'success');
+                
+                log('尝试导入 utils/ui.js...', 'log');
+                const uiModule = await import('./js/utils/ui.js');
+                log('✅ utils/ui.js 加载成功!', 'success');
+                
+                log('===== 所有模块加载成功! =====', 'success');
+                
+                // 测试API调用
+                log('测试健康检查API...', 'log');
+                const response = await apiClientModule.default.get('/api/health');
+                log(`✅ API响应: ${JSON.stringify(response)}`, 'success');
+                
+            } catch (error) {
+                log(`❌ 错误: ${error.message}`, 'error');
+                log(`错误堆栈: ${error.stack}`, 'error');
+                
+                // 检查是否是CORS错误
+                if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+                    log('⚠️ 这可能是CORS问题', 'warning');
+                }
+                
+                // 检查是否是路径错误
+                if (error.message.includes('Failed to fetch') || error.message.includes('404')) {
+                    log('⚠️ 这可能是文件路径问题', 'warning');
+                }
+            }
+        }
+        
+        // 延迟执行以确保DOM加载完成
+        setTimeout(testModules, 100);
+    </script>
+</body>
+</html>

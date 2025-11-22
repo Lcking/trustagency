@@ -2565,19 +2565,11 @@
                 // 添加字段
                 if (section.fields && Array.isArray(section.fields)) {
                     section.fields.forEach(field => {
-                        // 检查是否应该显示该字段：必填项或有值的字段
-                        let shouldShow = field.required === true; // 必填项总是显示
-                        
-                        // 如果不是必填项，检查是否有值
-                        if (!shouldShow && existingData) {
-                            const value = existingData[field.name];
-                            shouldShow = value !== null && value !== undefined && value !== '';
-                        }
-                        
-                        // 如果在新增模式（没有existingData），显示所有必填项
-                        if (!existingData) {
-                            shouldShow = true; // 新增时显示所有字段
-                        }
+                        // 决定是否显示该字段：
+                        // 1. 必填字段总是显示
+                        // 2. 新增模式（没有existingData）显示所有字段
+                        // 3. 编辑模式：显示所有字段（不再隐藏空字段）
+                        const shouldShow = true; // 始终显示所有字段
                         
                         const fieldGroup = document.createElement('div');
                         fieldGroup.className = 'form-group';
