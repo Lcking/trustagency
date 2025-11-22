@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块加载测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+        .warning { color: #f39c12; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 前端模块加载测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 模块加载状态</h2>
+        <div id="moduleStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. API配置测试</h2>
+        <div id="apiConfigTest"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. API客户端测试</h2>
+        <button onclick="testHealthAPI()">测试健康检查</button>
+        <button onclick="testLoginAPI()">测试登录</button>
+        <div id="apiTestResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 工具函数测试</h2>
+        <button onclick="testDOMUtils()">测试DOM工具</button>
+        <button onclick="testFormatUtils()">测试格式化工具</button>
+        <button onclick="testUIUtils()">测试UI组件</button>
+        <div id="utilsTestResult"></div>
+    </div>
+    
+    <script type="module">
+        // 导入所有模块进行测试
+        import { API_CONFIG, STORAGE_KEYS, USER_ROLES } from './js/config.js';
+        import apiClient from './js/api-client.js';
+        import authAPI from './js/api/auth.js';
+        import articlesAPI from './js/api/articles.js';
+        import { $, show, hide } from './js/utils/dom.js';
+        import { showToast, showConfirm } from './js/utils/ui.js';
+        import { formatDate, formatFileSize } from './js/utils/format.js';
+        import { validateForm, validators } from './js/utils/validation.js';
+        
+        // 暴露到全局作用域供按钮调用
+        window.API_CONFIG = API_CONFIG;
+        window.apiClient = apiClient;
+        window.authAPI = authAPI;
+        window.articlesAPI = articlesAPI;
+        window.showToast = showToast;
+        window.showConfirm = showConfirm;
+        window.formatDate = formatDate;
+        window.formatFileSize = formatFileSize;
+        
+        // 1. 检查模块加载状态
+        const moduleStatus = $('#moduleStatus');
+        const modules = {
+            'config.js': !!API_CONFIG,
+            'api-client.js': !!apiClient,
+            'api/auth.js': !!authAPI,
+            'api/articles.js': !!articlesAPI,
+            'utils/dom.js': typeof $ === 'function',
+            'utils/ui.js': typeof showToast === 'function',
+            'utils/format.js': typeof formatDate === 'function',
+            'utils/validation.js': typeof validateForm === 'function'
+        };
+        
+        let statusHTML = '<ul>';
+        for (const [name, loaded] of Object.entries(modules)) {
+            const icon = loaded ? '✅' : '❌';
+            const className = loaded ? 'success' : 'error';
+            statusHTML += `<li class="${className}">${icon} ${name}</li>`;
+        }
+        statusHTML += '</ul>';
+        moduleStatus.innerHTML = statusHTML;
+        
+        // 2. 显示API配置
+        const apiConfigTest = $('#apiConfigTest');
+        apiConfigTest.innerHTML = `
+            <pre>${JSON.stringify({
+                BASE_URL: API_CONFIG.BASE_URL,
+                TIMEOUT: API_CONFIG.TIMEOUT,
+                RETRY_TIMES: API_CONFIG.RETRY_TIMES
+            }, null, 2)}</pre>
+        `;
+        
+        // 3. API测试函数
+        window.testHealthAPI = async function() {
+            const result = $('#apiTestResult');
+            try {
+                result.innerHTML = '<p class="warning">⏳ 正在测试...</p>';
+                const response = await apiClient.get('/api/health');
+                result.innerHTML = `
+                    <p class="success">✅ 健康检查成功</p>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                `;
+            } catch (error) {
+                result.innerHTML = `<p class="error">❌ 测试失败: ${error.message}</p>`;
+            }
+        };
+        
+        window.testLoginAPI = async function() {
+            const result = $('#apiTestResult');
+            try {
+                result.innerHTML = '<p class="warning">⏳ 正在测试登录...</p>';
+                const response = await authAPI.login('admin', 'admin123');
+                result.innerHTML = `
+                    <p class="success">✅ 登录成功</p>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                `;
+            } catch (error) {
+                result.innerHTML = `<p class="error">❌ 登录失败: ${error.message}</p>`;
+            }
+        };
+        
+        // 4. 工具函数测试
+        window.testDOMUtils = function() {
+            const result = $('#utilsTestResult');
+            const tests = [];
+            
+            // 测试选择器
+            tests.push(`$ 函数: ${typeof $ === 'function' ? '✅' : '❌'}`);
+            tests.push(`选择器测试: ${$('#utilsTestResult') === result ? '✅' : '❌'}`);
+            
+            result.innerHTML = `<ul>${tests.map(t => `<li>${t}</li>`).join('')}</ul>`;
+        };
+        
+        window.testFormatUtils = function() {
+            const result = $('#utilsTestResult');
+            const now = new Date();
+            const tests = [
+                `日期格式化: ${formatDate(now, 'YYYY-MM-DD HH:mm:ss')}`,
+                `文件大小: ${formatFileSize(1024 * 1024 * 5.5)} (5.5MB)`,
+            ];
+            
+            result.innerHTML = `<ul>${tests.map(t => `<li class="success">✅ ${t}</li>`).join('')}</ul>`;
+        };
+        
+        window.testUIUtils = async function() {
+            showToast('这是一个成功提示！', 'success');
+            setTimeout(() => showToast('这是一个警告提示', 'warning'), 1000);
+            setTimeout(() => showToast('这是一个错误提示', 'error'), 2000);
+            
+            const result = $('#utilsTestResult');
+            result.innerHTML = '<p class="success">✅ 查看右上角的Toast提示</p>';
+            
+            // 测试确认对话框
+            setTimeout(async () => {
+                const confirmed = await showConfirm('测试确认对话框，是否继续？');
+                result.innerHTML += `<p class="success">用户选择: ${confirmed ? '确定' : '取消'}</p>`;
+            }, 3000);
+        };
+        
+        console.log('✅ 所有模块加载完成');
+        console.log('API配置:', API_CONFIG);
+    </script>
+</body>
+</html>

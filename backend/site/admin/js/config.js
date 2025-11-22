@@ -23,8 +23,11 @@ export const API_CONFIG = {
 export const STORAGE_KEYS = {
     TOKEN: 'token',
     USER: 'currentUser',
+    USER_INFO: 'userInfo',
     THEME: 'theme',
-    LANGUAGE: 'language'
+    LANGUAGE: 'language',
+    SEARCH_HISTORY: 'searchHistory',
+    PAGE_SIZE: 'pageSize'
 };
 
 // 用户角色

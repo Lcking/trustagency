@@ -1,5 +1,5 @@
 /**
- * API 服务模块 - AI任务相关
+ * API 服务模块 - AI任务管理
  */
 
 import apiClient from '../api-client.js';
