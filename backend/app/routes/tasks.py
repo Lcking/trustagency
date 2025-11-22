@@ -350,12 +350,22 @@ def list_tasks(
         "items": [
             {
                 "task_id": task.batch_id,
+                "batch_id": task.batch_id,  # 保持兼容性
                 "batch_name": task.batch_name,
                 "status": task.status.value if hasattr(task.status, 'value') else task.status,
                 "progress": task.progress,
                 "total_count": task.total_count,
                 "completed_count": task.completed_count,
+                "failed_count": task.failed_count,
                 "celery_status": task.celery_status,
+                "has_error": task.has_error,
+                "error_message": task.error_message,
+                "section_id": task.section_id,
+                "section_name": task.section.name if task.section else None,
+                "category_id": task.category_id,
+                "category_name": task.category.name if task.category else None,
+                "platform_id": task.platform_id,
+                "platform_name": task.platform.name if task.platform else None,
                 "created_at": task.created_at,
                 "updated_at": task.last_progress_update
             }
@@ -385,6 +395,7 @@ def get_task_details(
 
     return {
         "task_id": task.batch_id,
+        "batch_id": task.batch_id,  # 保持兼容性
         "batch_name": task.batch_name,
         "status": task.status.value if hasattr(task.status, 'value') else task.status,
         "progress": task.progress,
@@ -392,8 +403,17 @@ def get_task_details(
         "completed_count": task.completed_count,
         "failed_count": task.failed_count,
         "titles": task.titles,
+        "failed_titles": task.failed_titles,
         "generated_articles": task.generated_articles,
+        "has_error": task.has_error,
         "error_message": task.error_message,
+        "error_details": task.error_details,
+        "section_id": task.section_id,
+        "section_name": task.section.name if task.section else None,
+        "category_id": task.category_id,
+        "category_name": task.category.name if task.category else None,
+        "platform_id": task.platform_id,
+        "platform_name": task.platform.name if task.platform else None,
         "celery_status": task.celery_status,
         "celery_task_id": task.celery_task_id,
         "created_at": task.created_at,

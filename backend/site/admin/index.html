@@ -2212,9 +2212,10 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    let html = '<table><thead><tr><th>批次ID</th><th>状态</th><th>进度</th><th>创建时间</th><th>错误</th><th>操作</th></tr></thead><tbody>';
+                    let html = '<table><thead><tr><th>批次ID</th><th>栏目/分类</th><th>状态</th><th>进度</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
 
-                    data.data.forEach(task => {
+                    if (data.items && data.items.length > 0) {
+                        data.items.forEach(task => {
                         const statusBadge = {
                             'pending': '<span class="badge badge-warning">待处理</span>',
                             'processing': '<span class="badge badge-info">处理中</span>',
@@ -2222,23 +2223,35 @@
                             'failed': '<span class="badge badge-danger">已失败</span>'
                         }[task.status] || task.status;
 
-                        const errorBadge = task.has_error ? 
-                            '<span class="badge badge-danger" style="cursor: pointer;" onclick="viewTaskErrors(\'' + task.batch_id + '\')">⚠️ 有错误</span>' : 
+                        const sectionCategory = task.section_name && task.category_name ? 
+                            `${task.section_name} / ${task.category_name}` : 
                             '<span style="color: #999;">—</span>';
+
+                        const progressBar = `
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="flex: 1; background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden;">
+                                    <div style="width: ${task.progress || 0}%; background: #4CAF50; height: 100%;"></div>
+                                </div>
+                                <span style="font-size: 12px; color: #666;">${task.completed_count || 0}/${task.total_count || 0}</span>
+                            </div>
+                        `;
 
                         html += `
                             <tr>
-                                <td><code>${task.batch_id}</code></td>
+                                <td><code style="font-size: 11px;">${task.task_id}</code></td>
+                                <td>${sectionCategory}</td>
                                 <td>${statusBadge}</td>
-                                <td>${task.progress || 0}%</td>
+                                <td>${progressBar}</td>
                                 <td>${new Date(task.created_at).toLocaleString('zh-CN')}</td>
-                                <td>${errorBadge}</td>
                                 <td>
-                                    <button class="btn btn-info btn-small" onclick="viewTaskDetails('${task.batch_id}')">详情</button>
+                                    <button class="btn btn-info btn-small" onclick="viewTaskDetails('${task.task_id}')">详情</button>
                                 </td>
                             </tr>
                         `;
-                    });
+                        });
+                    } else {
+                        html += '<tr><td colspan="6" style="text-align: center; color: #999; padding: 20px;">暂无任务记录</td></tr>';
+                    }
 
                     html += '</tbody></table>';
                     document.getElementById('tasksContent').innerHTML = html;
@@ -2250,49 +2263,94 @@
 
         async function viewTaskDetails(batchId) {
             try {
-                const response = await fetch(`${API_URL}/api/tasks/${batchId}`, {
+                const response = await fetch(`${API_URL}/api/tasks/${batchId}/details`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
                     const task = await response.json();
-                    let details = `批次: ${task.batch_id}\n状态: ${task.status}\n进度: ${task.progress}%\n完成数: ${task.completed_count}/${task.total_count}`;
                     
-                    if (task.has_error && task.error_details) {
-                        details += `\n\n错误信息:\n${task.error_details}`;
+                    // 构建详细信息模态框HTML
+                    let modalHTML = `
+                        <div class="modal" id="taskDetailsModal" style="display: block;">
+                            <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto;">
+                                <span class="close" onclick="closeTaskDetailsModal()">&times;</span>
+                                <h2>📋 任务详情</h2>
+                                
+                                <div style="background: #f5f5f5; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                                    <p><strong>批次ID:</strong> <code>${task.batch_id}</code></p>
+                                    <p><strong>栏目:</strong> ${task.section_name || '未知'}</p>
+                                    <p><strong>分类:</strong> ${task.category_name || '未知'}</p>
+                                    ${task.platform_name ? `<p><strong>平台:</strong> ${task.platform_name}</p>` : ''}
+                                    <p><strong>状态:</strong> 
+                                        ${task.status === 'PENDING' ? '<span class="badge badge-warning">待处理</span>' : 
+                                          task.status === 'PROCESSING' ? '<span class="badge badge-info">处理中</span>' :
+                                          task.status === 'COMPLETED' ? '<span class="badge badge-success">已完成</span>' :
+                                          '<span class="badge badge-danger">已失败</span>'}
+                                    </p>
+                                    <p><strong>进度:</strong> ${task.completed_count || 0} / ${task.total_count || 0} (${task.progress || 0}%)</p>
+                                    <p><strong>创建时间:</strong> ${new Date(task.created_at).toLocaleString('zh-CN')}</p>
+                                </div>
+
+                                <h3>📝 生成的文章 (${task.total_count || 0}篇)</h3>
+                                ${task.titles && task.titles.length > 0 ? `
+                                    <table style="width: 100%; margin-top: 10px;">
+                                        <thead>
+                                            <tr>
+                                                <th style="text-align: left; padding: 8px; background: #f0f0f0;">#</th>
+                                                <th style="text-align: left; padding: 8px; background: #f0f0f0;">标题</th>
+                                                <th style="text-align: left; padding: 8px; background: #f0f0f0;">状态</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${task.titles.map((title, index) => {
+                                                const isCompleted = index < (task.completed_count || 0);
+                                                const isFailed = task.failed_titles && task.failed_titles.includes(title);
+                                                const statusText = isFailed ? '❌ 失败' : isCompleted ? '✅ 完成' : '⏳ 待处理';
+                                                const statusColor = isFailed ? '#f44336' : isCompleted ? '#4CAF50' : '#999';
+                                                return `
+                                                    <tr>
+                                                        <td style="padding: 8px;">${index + 1}</td>
+                                                        <td style="padding: 8px;">${title}</td>
+                                                        <td style="padding: 8px; color: ${statusColor};">${statusText}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                ` : '<p style="color: #999; text-align: center; padding: 20px;">无文章信息</p>'}
+
+                                ${task.has_error && task.error_message ? `
+                                    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin-top: 20px;">
+                                        <h4 style="color: #856404; margin-top: 0;">⚠️ 错误信息</h4>
+                                        <pre style="background: white; padding: 10px; border-radius: 4px; overflow-x: auto;">${task.error_message}</pre>
+                                    </div>
+                                ` : ''}
+
+                                <div style="margin-top: 20px; text-align: right;">
+                                    <button class="btn btn-secondary" onclick="closeTaskDetailsModal()">关闭</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 将模态框添加到页面
+                    const existingModal = document.getElementById('taskDetailsModal');
+                    if (existingModal) {
+                        existingModal.remove();
                     }
-                    
-                    if (task.has_error && task.failed_titles && task.failed_titles.length > 0) {
-                        details += `\n\n失败的标题:\n${task.failed_titles.join('\n')}`;
-                    }
-                    
-                    alert(details);
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                } else {
+                    alert('获取详情失败: ' + response.statusText);
                 }
             } catch (error) {
                 alert('获取详情失败: ' + error.message);
             }
         }
 
-        async function viewTaskErrors(batchId) {
-            try {
-                const response = await fetch(`${API_URL}/api/tasks/${batchId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const task = await response.json();
-                    let errorInfo = `🔴 批次 ${task.batch_id} 错误详情\n\n`;
-                    
-                    if (task.error_details) {
-                        errorInfo += `错误信息:\n${task.error_details}\n\n`;
-                    }
-                    
-                    if (task.failed_titles && task.failed_titles.length > 0) {
-                        errorInfo += `失败的标题 (${task.failed_titles.length}):\n${task.failed_titles.join('\n')}`;
-                    }
-                    
-                    alert(errorInfo);
-                }
-            } catch (error) {
-                alert('获取错误详情失败: ' + error.message);
+        function closeTaskDetailsModal() {
+            const modal = document.getElementById('taskDetailsModal');
+            if (modal) {
+                modal.remove();
             }
         }
 
