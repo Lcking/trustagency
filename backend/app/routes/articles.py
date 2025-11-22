@@ -1,8 +1,13 @@
 """
 文章管理 API 路由
 提供文章的 CRUD 端点、发布、搜索、分类等功能
+
+改进:
+- 统一的异常处理 (使用 app.utils.exceptions)
+- 标准化的响应格式 (使用 app.schemas.response)
+- 清晰的错误消息
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -14,6 +19,11 @@ from app.schemas.article import (
     ArticleUpdate,
     ArticleResponse,
     ArticleListResponse,
+)
+from app.utils.exceptions import (
+    ResourceNotFound,
+    ValidationError,
+    raise_resource_not_found,
 )
 from typing import Optional
 import os

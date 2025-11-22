@@ -42,6 +42,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ==================== 异常处理中间件 ====================
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
+
+class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
+    """全局异常处理中间件"""
+    async def dispatch(self, request, call_next):
+        from app.utils.exceptions import APIException
+        
+        try:
+            response = await call_next(request)
+            return response
+        except APIException as exc:
+            http_exc = exc.to_http_exception()
+            return JSONResponse(
+                status_code=http_exc.status_code,
+                content=http_exc.detail,
+            )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            # 记录未预期的异常
+            import traceback
+            if os.getenv("DEBUG", "False") == "True":
+                print(f"[ERROR] Unhandled exception: {exc}", file=sys.stderr)
+                traceback.print_exc()
+            
+            # 返回通用错误响应
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error_code": "INTERNAL_SERVER_ERROR",
+                    "message": "An unexpected error occurred",
+                    "status_code": 500,
+                },
+            )
+
+
+# 注册异常处理中间件
+app.add_middleware(ExceptionHandlerMiddleware)
+
 # 🔥 IMPORTANT: 挂载静态文件必须在注册路由之前！
 # StaticFiles 挂载必须最先执行，否则后续路由会拦截请求
 import os

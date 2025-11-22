@@ -1,8 +1,13 @@
 """
 平台管理 API 路由
 提供平台的 CRUD 端点、搜索、排序、分页功能
+
+改进:
+- 统一的异常处理 (使用 app.utils.exceptions)
+- 标准化的响应格式 (使用 app.schemas.response)
+- 清晰的错误消息
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import AdminUser
@@ -14,6 +19,12 @@ from app.schemas.platform import (
     PlatformResponse,
     PlatformListResponse,
 )
+from app.utils.exceptions import (
+    ResourceNotFound,
+    ValidationError,
+    raise_resource_not_found,
+)
+from app.schemas.response import ListResponse, success_response, list_response
 from typing import Optional
 
 router = APIRouter(prefix="/api/platforms", tags=["platforms"])
@@ -93,7 +104,7 @@ async def create_platform(
         platform = PlatformService.create_platform(db, platform_data)
         return PlatformResponse.model_validate(platform)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise ValidationError(message=str(e))
 
 
 @router.get("/{platform_id}", response_model=PlatformResponse)
@@ -114,7 +125,7 @@ async def get_platform(
     """
     platform = PlatformService.get_platform(db, platform_id)
     if not platform:
-        raise HTTPException(status_code=404, detail=f"平台 ID {platform_id} 不存在")
+        raise_resource_not_found("Platform", platform_id)
     return PlatformResponse.model_validate(platform)
 
 
@@ -142,10 +153,10 @@ async def update_platform(
     try:
         platform = PlatformService.update_platform(db, platform_id, platform_data)
         if not platform:
-            raise HTTPException(status_code=404, detail=f"平台 ID {platform_id} 不存在")
+            raise_resource_not_found("Platform", platform_id)
         return PlatformResponse.model_validate(platform)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise ValidationError(message=str(e))
 
 
 @router.delete("/{platform_id}", status_code=204)
@@ -161,7 +172,7 @@ async def delete_platform(
     """
     success = PlatformService.delete_platform(db, platform_id)
     if not success:
-        raise HTTPException(status_code=404, detail=f"平台 ID {platform_id} 不存在")
+        raise_resource_not_found("Platform", platform_id)
     return None
 
 
@@ -183,7 +194,7 @@ async def toggle_platform_status(
     """
     platform = PlatformService.toggle_platform_status(db, platform_id)
     if not platform:
-        raise HTTPException(status_code=404, detail=f"平台 ID {platform_id} 不存在")
+        raise_resource_not_found("Platform", platform_id)
     return PlatformResponse.model_validate(platform)
 
 
@@ -205,7 +216,7 @@ async def toggle_platform_featured(
     """
     platform = PlatformService.toggle_platform_featured(db, platform_id)
     if not platform:
-        raise HTTPException(status_code=404, detail=f"平台 ID {platform_id} 不存在")
+        raise_resource_not_found("Platform", platform_id)
     return PlatformResponse.model_validate(platform)
 
 
@@ -247,7 +258,7 @@ async def bulk_update_ranks(
             "message": f"成功更新 {updated_count} 个平台的排名"
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise ValidationError(message=str(e))
 
 
 @router.get("/featured/list", response_model=list[PlatformResponse])

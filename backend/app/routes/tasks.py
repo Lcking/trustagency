@@ -150,7 +150,10 @@ def submit_article_generation_task(
             total_count=len(request.titles),
             status="pending",
             creator_id=current_user.id,
-            ai_config_id=request.ai_config_id  # 保存AI配置ID
+            ai_config_id=request.ai_config_id,  # 保存AI配置ID
+            section_id=request.section_id,      # 保存栏目ID
+            category_id=request.category_id,    # 保存分类ID
+            platform_id=request.platform_id     # 保存平台ID（可选）
         )
         db.add(task)
         db.commit()

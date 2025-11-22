@@ -30,6 +30,11 @@ class AIGenerationTask(Base):
     titles = Column(JSON, nullable=False)  # 标题列表
     generated_articles = Column(JSON, nullable=True)  # 生成的文章列表
 
+    # 目标配置 - 栏目/分类/平台
+    section_id = Column(Integer, ForeignKey("sections.id"), nullable=False, index=True)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False, index=True)
+    platform_id = Column(Integer, ForeignKey("platforms.id"), nullable=True, index=True)  # 仅验证栏目时必填
+
     # 任务状态
     status = Column(SQLEnum(TaskStatus), default=TaskStatus.PENDING, index=True)
     progress = Column(Integer, default=0)  # 0-100
@@ -63,6 +68,9 @@ class AIGenerationTask(Base):
 
     # 关系
     creator = relationship("AdminUser", back_populates="ai_tasks")
+    section = relationship("Section")
+    category = relationship("Category")
+    platform = relationship("Platform")
 
     def __repr__(self):
         return f"<AIGenerationTask(id={self.id}, batch_id={self.batch_id}, status={self.status})>"
