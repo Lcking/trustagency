@@ -73,8 +73,7 @@ async def list_articles(
     skip: int = Query(0, ge=0, description="跳过的记录数"),
     limit: int = Query(10, ge=1, le=100, description="每页记录数，最多 100"),
     search: Optional[str] = Query(None, description="搜索关键词（标题、内容、摘要、标签）"),
-    category: Optional[str] = Query(None, description="分类过滤（传统字符串格式）"),
-    category_id: Optional[int] = Query(None, description="分类 ID 过滤（推荐使用）"),
+    category_id: Optional[int] = Query(None, description="分类 ID 过滤"),
     platform_id: Optional[int] = Query(None, description="平台 ID 过滤"),
     author_id: Optional[int] = Query(None, description="作者 ID 过滤"),
     is_published: Optional[bool] = Query(None, description="发布状态：true/false/null(全部)"),
@@ -88,7 +87,7 @@ async def list_articles(
     
     支持以下功能：
     - **搜索**: 按标题、内容、摘要、标签搜索
-    - **分类过滤**: 按分类过滤（支持 category 字符串或 category_id 数字）
+    - **分类过滤**: 按分类ID过滤
     - **平台过滤**: 按平台过滤
     - **排序**: 按多个字段排序
     - **分页**: 支持分页查询
@@ -96,7 +95,6 @@ async def list_articles(
     示例:
     ```
     GET /api/articles?search=bitcoin&category_id=5&sort_by=like_count&sort_order=desc&limit=20
-    GET /api/articles?category=交易指南  (向后兼容)
     ```
     """
     articles, total = ArticleService.get_articles(
@@ -104,7 +102,6 @@ async def list_articles(
         skip=skip,
         limit=limit,
         search=search,
-        category=category,
         category_id=category_id,
         platform_id=platform_id,
         author_id=author_id,
@@ -371,24 +368,6 @@ async def get_trending_articles(
     ```
     """
     articles = ArticleService.get_trending_articles(db, limit)
-    return [ArticleResponse.model_validate(a) for a in articles]
-
-
-@router.get("/by-category/{category}", response_model=list[ArticleResponse])
-async def get_articles_by_category(
-    category: str,
-    limit: int = Query(10, ge=1, le=100, description="最大返回数"),
-    db: Session = Depends(get_db),
-):
-    """
-    获取特定分类的文章
-    
-    示例:
-    ```
-    GET /api/articles/by-category/教程?limit=20
-    ```
-    """
-    articles = ArticleService.get_articles_by_category(db, category, limit=limit)
     return [ArticleResponse.model_validate(a) for a in articles]
 
 

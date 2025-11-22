@@ -17,11 +17,9 @@ class Article(Base):
     content = Column(Text, nullable=False)
     summary = Column(Text, nullable=True)
 
-    # 栏目和分类 (新增)
+    # 栏目和分类
     section_id = Column(Integer, ForeignKey("sections.id"), nullable=False, index=True)
-    # 分类 (改为 FK，保持向后兼容: 暂时保留 category VARCHAR，后续可删除)
-    category = Column(String(100), index=True, nullable=True)  # 弃用字段，向后兼容用
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True, index=True)  # 后续使用
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True, index=True)
     tags = Column(String(500), nullable=True)  # 逗号分隔
 
     # 作者和平台
@@ -56,9 +54,10 @@ class Article(Base):
     # 便于接口序列化输出分类名称（优先使用外键关系名称，其次向后兼容的字符串字段）
     @property
     def category_name(self) -> str | None:
+        """获取分类名称"""
         try:
             if self.category_obj and getattr(self.category_obj, 'name', None):
                 return self.category_obj.name
         except Exception:
             pass
-        return self.category
+        return None

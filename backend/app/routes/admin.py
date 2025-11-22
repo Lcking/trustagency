@@ -99,7 +99,7 @@ async def list_articles(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
+    category_id: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ) -> PaginationResponse[ArticleResponse]:
     """获取文章列表"""
@@ -112,8 +112,8 @@ async def list_articles(
             (Article.slug.ilike(f"%{search}%"))
         )
     
-    if category:
-        query = query.filter(Article.category == category)
+    if category_id:
+        query = query.filter(Article.category_id == category_id)
     
     total = query.count()
     articles = query.offset(skip).limit(limit).all()

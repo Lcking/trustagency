@@ -14,6 +14,9 @@ from app.database import get_db
 from app.models import AIGenerationTask, AdminUser
 from app.tasks.ai_generation import generate_article_batch, monitor_task_progress
 from app.routes.auth import get_current_user
+from app.utils.task_monitor import TaskMonitor
+from app.utils.backup import BackupManager
+from app.utils.cache import cache_manager
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -30,7 +33,7 @@ class TaskGenerationRequest(BaseModel):
     ai_config_id: Optional[int] = Field(None, description="AI配置ID")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "titles": ["Python 入门指南", "FastAPI 最佳实践"],
                 "category": "guide",
@@ -83,7 +86,7 @@ class TaskSubmitResponse(BaseModel):
     message: str
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "task_id": "550e8400-e29b-41d4-a716-446655440000",
                 "celery_task_id": "abc123def456",
@@ -420,4 +423,240 @@ def get_task_details(
         "started_at": task.started_at,
         "completed_at": task.completed_at,
         "last_update": task.last_progress_update
+    }
+
+
+# ============= 任务监控端点 =============
+
+@router.get("/health")
+async def get_tasks_health(
+    current_user: AdminUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    获取任务系统健康状态
+    
+    返回:
+    - 各状态任务统计
+    - 卡住/超时任务检测
+    - 成功率统计
+    """
+    health_status = TaskMonitor.get_task_health_status(db)
+    return health_status
+
+
+@router.post("/recovery/stuck")
+async def recover_stuck_tasks(
+    current_user: AdminUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    恢复卡住的任务
+    
+    自动将卡住超过10分钟的任务标记为失败
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    recovered_count = TaskMonitor.auto_recover_stuck_tasks(db)
+    
+    return {
+        "status": "success",
+        "recovered_count": recovered_count,
+        "message": f"已恢复 {recovered_count} 个卡住的任务"
+    }
+
+
+@router.post("/recovery/timeout")
+async def recover_timeout_tasks(
+    current_user: AdminUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    恢复超时的任务
+    
+    自动将超过30分钟的任务标记为失败
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    recovered_count = TaskMonitor.auto_recover_timeout_tasks(db)
+    
+    return {
+        "status": "success",
+        "recovered_count": recovered_count,
+        "message": f"已恢复 {recovered_count} 个超时的任务"
+    }
+
+
+# ============= 数据库备份端点 =============
+
+@router.post("/backup/create")
+async def create_database_backup(
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """
+    创建数据库备份
+    
+    需要管理员权限
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    backup_manager = BackupManager()
+    result = backup_manager.create_backup()
+    
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result.get("error", "备份失败"))
+    
+    return result
+
+
+@router.get("/backup/list")
+async def list_backups(
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """
+    列出所有备份
+    
+    需要管理员权限
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    backup_manager = BackupManager()
+    backups = backup_manager.list_backups()
+    stats = backup_manager.get_backup_stats()
+    
+    return {
+        "backups": backups,
+        "stats": stats
+    }
+
+
+@router.post("/backup/restore/{backup_name}")
+async def restore_backup(
+    backup_name: str,
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """
+    恢复数据库备份
+    
+    需要超级管理员权限,恢复前会自动备份当前数据库
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    backup_manager = BackupManager()
+    result = backup_manager.restore_backup(backup_name)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result.get("error", "恢复失败"))
+    
+    return result
+
+
+@router.delete("/backup/{backup_name}")
+async def delete_backup(
+    backup_name: str,
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """
+    删除指定备份
+    
+    需要超级管理员权限
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    backup_manager = BackupManager()
+    result = backup_manager.delete_backup(backup_name)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=404, detail=result.get("error", "删除失败"))
+    
+    return result
+
+
+@router.post("/backup/cleanup")
+async def cleanup_old_backups(
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """
+    清理旧备份
+    
+    - 删除7天前的备份
+    - 最多保留30个备份
+    
+    需要超级管理员权限
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    backup_manager = BackupManager()
+    result = backup_manager.cleanup_old_backups()
+    
+    return result
+
+
+# ============= 缓存管理端点 =============
+
+@router.get("/cache/stats")
+async def get_cache_stats(
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """
+    获取缓存统计信息
+    
+    需要管理员权限
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    stats = cache_manager.get_stats()
+    
+    return {
+        "status": "success",
+        "stats": stats
+    }
+
+
+@router.post("/cache/clear")
+async def clear_cache(
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """
+    清空所有缓存
+    
+    需要超级管理员权限
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    cache_manager.clear()
+    
+    return {
+        "status": "success",
+        "message": "缓存已清空"
+    }
+
+
+@router.post("/cache/cleanup")
+async def cleanup_expired_cache(
+    current_user: AdminUser = Depends(get_current_user)
+):
+    """
+    清理过期缓存
+    
+    需要管理员权限
+    """
+    if not current_user.is_superadmin:
+        raise HTTPException(status_code=403, detail="需要超级管理员权限")
+    
+    cleaned_count = cache_manager.cleanup_expired()
+    
+    return {
+        "status": "success",
+        "cleaned_count": cleaned_count,
+        "message": f"已清理 {cleaned_count} 个过期缓存"
     }

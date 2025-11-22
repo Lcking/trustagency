@@ -240,16 +240,12 @@ def generate_single_article(
                 # 添加时间戳以确保唯一性
                 slug = f"{slug}-{datetime.utcnow().timestamp()}"
             
-            # 获取分类名称（使用category_id作为分类）
-            category_name = f"Category_{category_id}"
-            
             # 创建文章对象
             article = Article(
                 title=title,
                 slug=slug,
                 content=content,
                 section_id=section_id,
-                category=category_name,
                 category_id=category_id,
                 platform_id=platform_id,  # 可能为 None
                 author_id=creator_id or 1,  # 使用传入的creator_id或默认为1

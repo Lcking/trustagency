@@ -20,11 +20,10 @@ class ArticleBase(BaseModel):
     title: str
     content: str
     summary: Optional[str] = None
-    section_id: int  # 新增: 栏目 ID
-    category: Optional[str] = None  # 改为可选: 向后兼容
-    category_id: Optional[int] = None  # 新增: 分类 ID (后续使用)
+    section_id: int
+    category_id: Optional[int] = None
     tags: Optional[str] = None
-    platform_id: Optional[int] = None  # 改为可选: 不是所有栏目都需要
+    platform_id: Optional[int] = None
     is_featured: bool = False
     meta_description: Optional[str] = None
     meta_keywords: Optional[str] = None
@@ -40,7 +39,7 @@ class ArticleUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     summary: Optional[str] = None
-    category: Optional[str] = None
+    category_id: Optional[int] = None
     tags: Optional[str] = None
     platform_id: Optional[int] = None
     is_published: Optional[bool] = None
@@ -65,16 +64,10 @@ class ArticleResponse(ArticleBase):
     category_name: Optional[str] = None
 
     @root_validator(pre=False, skip_on_failure=True)
-    def _populate_category_name(cls, values):
-        # 在Pydantic验证后调用，只处理转换后的值
-        # 如果category_id已填充，尝试从关系对象获取category_name
-        if not values.get('category_name'):
-            # 如果直接有category字段，使用它
-            values['category_name'] = values.get('category')
-        
+    def _populate_names(cls, values):
+        """填充section_name和category_name"""
         # 填充section_name
         if not values.get('section_name'):
-            # 如果有section关系对象，尝试从中获取name
             section = values.get('section')
             if section:
                 if isinstance(section, dict):

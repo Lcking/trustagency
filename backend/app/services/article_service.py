@@ -147,12 +147,9 @@ class ArticleService:
                 )
             )
 
-        # 应用分类过滤（新：按 category_id）
+        # 应用分类过滤
         if category_id:
             query = query.filter(Article.category_id == category_id)
-        # 应用分类过滤（旧：按 category 字符串，用于向后兼容）
-        elif category:
-            query = query.filter(Article.category == category)
 
         # 应用平台过滤
         if platform_id:
@@ -371,31 +368,7 @@ class ArticleService:
         
         return query.order_by(Article.created_at.desc()).limit(limit).all()
 
-    @staticmethod
-    def get_articles_by_category(
-        db: Session,
-        category: str,
-        is_published: bool = True,
-        limit: int = 10
-    ) -> List[Article]:
-        """
-        获取特定分类的文章
-        
-        Args:
-            db: 数据库会话
-            category: 分类名称
-            is_published: 只显示已发布文章
-            limit: 最大返回数
-            
-        Returns:
-            文章列表
-        """
-        query = db.query(Article).filter(Article.category == category)
-        
-        if is_published:
-            query = query.filter(Article.is_published == True)
-        
-        return query.order_by(Article.created_at.desc()).limit(limit).all()
+
 
     @staticmethod
     def get_featured_articles(

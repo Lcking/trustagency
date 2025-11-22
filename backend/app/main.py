@@ -11,6 +11,10 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
+# 初始化日志系统
+from app.utils.logging_setup import setup_logging
+setup_logging()
+
 # 加载环境变量
 load_dotenv()
 
@@ -45,40 +49,44 @@ app.add_middleware(
 # ==================== 异常处理中间件 ====================
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from pydantic import ValidationError as PydanticValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
     """全局异常处理中间件"""
     async def dispatch(self, request, call_next):
+        from app.utils.error_handlers import (
+            AppError, handle_app_error, handle_validation_error,
+            handle_database_error, handle_general_error
+        )
         from app.utils.exceptions import APIException
         
         try:
             response = await call_next(request)
             return response
+        except AppError as exc:
+            # 处理自定义应用错误
+            return handle_app_error(exc)
         except APIException as exc:
+            # 兼容旧的异常处理
             http_exc = exc.to_http_exception()
             return JSONResponse(
                 status_code=http_exc.status_code,
                 content=http_exc.detail,
             )
+        except PydanticValidationError as exc:
+            # 处理Pydantic验证错误
+            return handle_validation_error(exc)
+        except SQLAlchemyError as exc:
+            # 处理数据库错误
+            return handle_database_error(exc)
         except HTTPException:
+            # FastAPI HTTP异常直接抛出
             raise
         except Exception as exc:
-            # 记录未预期的异常
-            import traceback
-            if os.getenv("DEBUG", "False") == "True":
-                print(f"[ERROR] Unhandled exception: {exc}", file=sys.stderr)
-                traceback.print_exc()
-            
-            # 返回通用错误响应
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "error_code": "INTERNAL_SERVER_ERROR",
-                    "message": "An unexpected error occurred",
-                    "status_code": 500,
-                },
-            )
+            # 处理其他未捕获的异常
+            return handle_general_error(exc)
 
 
 # 注册异常处理中间件
@@ -355,12 +363,10 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     html_content = article_view_html.read_text(encoding='utf-8')
     
     # 准备文章数据JSON（与API响应格式一致）
-    # 获取分类名称，使用 category_name 属性
-    category_name = ""
+    # 获取分类名称
+    category_name = "未分类"
     if article.category_obj:
         category_name = article.category_obj.name
-    elif article.category:
-        category_name = article.category
     
     article_data = {
         "id": article.id,
