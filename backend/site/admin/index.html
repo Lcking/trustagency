@@ -1225,15 +1225,31 @@
 
                 <!-- 任务列表 -->
                 <h3>📋 任务历史</h3>
-                <div>
-                    <select id="taskStatus">
-                        <option value="">全部状态</option>
-                        <option value="pending">待处理</option>
-                        <option value="processing">处理中</option>
-                        <option value="completed">已完成</option>
-                        <option value="failed">已失败</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="loadTasks()">刷新</button>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>状态筛选</label>
+                            <select id="taskStatus" style="width: 150px;">
+                                <option value="">全部状态</option>
+                                <option value="PENDING">待处理</option>
+                                <option value="PROCESSING">处理中</option>
+                                <option value="COMPLETED">已完成</option>
+                                <option value="FAILED">已失败</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>开始日期</label>
+                            <input type="date" id="taskStartDate" style="width: 150px;">
+                        </div>
+                        <div class="form-group">
+                            <label>结束日期</label>
+                            <input type="date" id="taskEndDate" style="width: 150px;">
+                        </div>
+                        <div class="form-group" style="padding-top: 22px;">
+                            <button class="btn btn-primary" onclick="loadTasks()">🔍 查询</button>
+                            <button class="btn btn-secondary" onclick="resetTaskFilters()" style="margin-left: 10px;">重置</button>
+                        </div>
+                    </div>
                 </div>
                 <div id="tasksContent"></div>
             </div>
@@ -2200,15 +2216,21 @@
         // 加载任务列表
         async function loadTasks() {
             const status = document.getElementById('taskStatus').value;
+            const startDate = document.getElementById('taskStartDate').value;
+            const endDate = document.getElementById('taskEndDate').value;
+            
             try {
-                const response = await fetch(
-                    `${API_URL}/api/tasks?skip=0&limit=20${status ? '&status=' + status : ''}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
+                // BUG_015修复: 添加日期范围查询参数
+                let apiUrl = `${API_URL}/api/tasks?skip=0&limit=100`;
+                if (status) apiUrl += '&status=' + status;
+                if (startDate) apiUrl += '&start_date=' + startDate;
+                if (endDate) apiUrl += '&end_date=' + endDate;
+                
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
-                );
+                });
 
                 if (response.ok) {
                     const data = await response.json();
@@ -2217,6 +2239,10 @@
                     if (data.items && data.items.length > 0) {
                         data.items.forEach(task => {
                         const statusBadge = {
+                            'PENDING': '<span class="badge badge-warning">待处理</span>',
+                            'PROCESSING': '<span class="badge badge-info">处理中</span>',
+                            'COMPLETED': '<span class="badge badge-success">已完成</span>',
+                            'FAILED': '<span class="badge badge-danger">已失败</span>',
                             'pending': '<span class="badge badge-warning">待处理</span>',
                             'processing': '<span class="badge badge-info">处理中</span>',
                             'completed': '<span class="badge badge-success">已完成</span>',
@@ -2260,6 +2286,14 @@
                 console.error('加载任务失败:', error);
             }
         }
+        
+        // BUG_015修复: 添加重置筛选条件的函数
+        function resetTaskFilters() {
+            document.getElementById('taskStatus').value = '';
+            document.getElementById('taskStartDate').value = '';
+            document.getElementById('taskEndDate').value = '';
+            loadTasks();
+        }
 
         async function viewTaskDetails(batchId) {
             try {
@@ -2271,12 +2305,13 @@
                     
                     // 构建详细信息模态框HTML
                     let modalHTML = `
-                        <div class="modal" id="taskDetailsModal" style="display: block;">
-                            <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto;">
-                                <span class="close" onclick="closeTaskDetailsModal()">&times;</span>
-                                <h2>📋 任务详情</h2>
-                                
-                                <div style="background: #f5f5f5; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <div class="modal" id="taskDetailsModal" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000;">
+                            <div class="modal-content" style="max-width: 900px; width: 90%; max-height: 85vh; overflow-y: auto; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                                <div style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                    <h2 style="margin: 0;">📋 任务详情</h2>
+                                    <span class="close" onclick="closeTaskDetailsModal()" style="cursor: pointer; font-size: 24px; color: #999;">&times;</span>
+                                </div>
+                                <div style="padding: 20px;">
                                     <p><strong>批次ID:</strong> <code>${task.batch_id}</code></p>
                                     <p><strong>栏目:</strong> ${task.section_name || '未知'}</p>
                                     <p><strong>分类:</strong> ${task.category_name || '未知'}</p>
@@ -2326,8 +2361,9 @@
                                     </div>
                                 ` : ''}
 
-                                <div style="margin-top: 20px; text-align: right;">
+                                <div style="margin-top: 20px; text-align: right; border-top: 1px solid #eee; padding-top: 20px;">
                                     <button class="btn btn-secondary" onclick="closeTaskDetailsModal()">关闭</button>
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -2451,19 +2487,9 @@
                 // 添加字段
                 if (section.fields && Array.isArray(section.fields)) {
                     section.fields.forEach(field => {
-                        // 检查是否应该显示该字段：必填项或有值的字段
-                        let shouldShow = field.required === true; // 必填项总是显示
-                        
-                        // 如果不是必填项，检查是否有值
-                        if (!shouldShow && existingData) {
-                            const value = existingData[field.name];
-                            shouldShow = value !== null && value !== undefined && value !== '';
-                        }
-                        
-                        // 如果在新增模式（没有existingData），显示所有必填项
-                        if (!existingData) {
-                            shouldShow = true; // 新增时显示所有字段
-                        }
+                        // BUG_014修复: 编辑模式下显示所有字段，无论是否有值
+                        // 修改逻辑: 在编辑模式下，总是显示所有字段；在新增模式下，也显示所有字段
+                        let shouldShow = true; // 改为始终显示所有字段
                         
                         const fieldGroup = document.createElement('div');
                         fieldGroup.className = 'form-group';
