@@ -2213,6 +2213,74 @@
             }
         }
 
+        // ============ BUG_015 CLEAN CODE重构 ============
+        // 原问题：字符串拼接、缺少验证、代码重复、硬编码
+        // 改进：配置对象 + URLSearchParams + 验证函数 + 单一职责原则
+        
+        // 配置管理
+        const TASK_QUERY_CONFIG = {
+            DEFAULT_SKIP: 0,
+            DEFAULT_LIMIT: 100,
+            DATE_FORMAT: 'YYYY-MM-DD'
+        };
+        
+        // 集中的状态映射管理（解决重复定义问题）
+        const TASK_STATUS_DISPLAY = {
+            'PENDING': { class: 'badge-warning', label: '待处理' },
+            'PROCESSING': { class: 'badge-info', label: '处理中' },
+            'COMPLETED': { class: 'badge-success', label: '已完成' },
+            'FAILED': { class: 'badge-danger', label: '已失败' },
+            'pending': { class: 'badge-warning', label: '待处理' },
+            'processing': { class: 'badge-info', label: '处理中' },
+            'completed': { class: 'badge-success', label: '已完成' },
+            'failed': { class: 'badge-danger', label: '已失败' }
+        };
+        
+        // 验证函数：日期格式检查
+        function isValidDate(dateStr) {
+            if (!dateStr) return true; // 空值有效（表示不筛选）
+            const regex = /^\d{4}-\d{2}-\d{2}$/;
+            return regex.test(dateStr) && !isNaN(Date.parse(dateStr));
+        }
+        
+        // 构建查询URL - 使用URLSearchParams避免字符串拼接
+        function buildTaskQueryUrl(filters) {
+            const params = new URLSearchParams({
+                skip: TASK_QUERY_CONFIG.DEFAULT_SKIP,
+                limit: TASK_QUERY_CONFIG.DEFAULT_LIMIT
+            });
+            
+            // 添加可选筛选条件
+            if (filters.status && filters.status.trim()) {
+                params.append('status', filters.status.trim());
+            }
+            if (filters.startDate) {
+                if (!isValidDate(filters.startDate)) {
+                    console.warn('Invalid start date format:', filters.startDate);
+                    return null;
+                }
+                params.append('start_date', filters.startDate);
+            }
+            if (filters.endDate) {
+                if (!isValidDate(filters.endDate)) {
+                    console.warn('Invalid end date format:', filters.endDate);
+                    return null;
+                }
+                params.append('end_date', filters.endDate);
+            }
+            
+            return `${API_URL}/api/tasks?${params.toString()}`;
+        }
+        
+        // 获取状态显示HTML
+        function getStatusBadgeHTML(status) {
+            const statusConfig = TASK_STATUS_DISPLAY[status];
+            if (!statusConfig) {
+                return `<span class="badge">${status}</span>`;
+            }
+            return `<span class="badge ${statusConfig.class}">${statusConfig.label}</span>`;
+        }
+        
         // 加载任务列表
         async function loadTasks() {
             const status = document.getElementById('taskStatus').value;
@@ -2220,11 +2288,15 @@
             const endDate = document.getElementById('taskEndDate').value;
             
             try {
-                // BUG_015修复: 添加日期范围查询参数
-                let apiUrl = `${API_URL}/api/tasks?skip=0&limit=100`;
-                if (status) apiUrl += '&status=' + status;
-                if (startDate) apiUrl += '&start_date=' + startDate;
-                if (endDate) apiUrl += '&end_date=' + endDate;
+                // 收集筛选条件
+                const filters = { status, startDate, endDate };
+                const apiUrl = buildTaskQueryUrl(filters);
+                
+                // 验证URL生成是否成功
+                if (!apiUrl) {
+                    alert('筛选条件格式不正确');
+                    return;
+                }
                 
                 const response = await fetch(apiUrl, {
                     headers: {
@@ -2238,16 +2310,7 @@
 
                     if (data.items && data.items.length > 0) {
                         data.items.forEach(task => {
-                        const statusBadge = {
-                            'PENDING': '<span class="badge badge-warning">待处理</span>',
-                            'PROCESSING': '<span class="badge badge-info">处理中</span>',
-                            'COMPLETED': '<span class="badge badge-success">已完成</span>',
-                            'FAILED': '<span class="badge badge-danger">已失败</span>',
-                            'pending': '<span class="badge badge-warning">待处理</span>',
-                            'processing': '<span class="badge badge-info">处理中</span>',
-                            'completed': '<span class="badge badge-success">已完成</span>',
-                            'failed': '<span class="badge badge-danger">已失败</span>'
-                        }[task.status] || task.status;
+                        const statusBadge = getStatusBadgeHTML(task.status);
 
                         const sectionCategory = task.section_name && task.category_name ? 
                             `${task.section_name} / ${task.category_name}` : 
@@ -2287,7 +2350,7 @@
             }
         }
         
-        // BUG_015修复: 添加重置筛选条件的函数
+        // 重置筛选条件 - Clean Code：单一职责原则
         function resetTaskFilters() {
             document.getElementById('taskStatus').value = '';
             document.getElementById('taskStartDate').value = '';
@@ -2472,9 +2535,28 @@
             modal.classList.add('active');
         }
         
+        // ============ BUG_014 CLEAN CODE重构 ============
+        // 原问题：直接 shouldShow=true 是"头疼医头"的临时补丁
+        // 改进：使用策略模式，清晰区分编辑和新增模式，考虑字段必填性
+        const FIELD_VISIBILITY_RULES = {
+            edit: (field, data) => field.required || (data && hasFieldValue(data, field.name)),
+            create: () => true
+        };
+        
+        function hasFieldValue(data, fieldName) {
+            const val = data[fieldName];
+            return val !== null && val !== undefined && val !== '';
+        }
+        
+        function shouldDisplayField(field, existingData, isEditMode) {
+            const rule = FIELD_VISIBILITY_RULES[isEditMode ? 'edit' : 'create'];
+            return rule ? rule(field, existingData) : true;
+        }
+        
         function renderDynamicPlatformForm(formDefinition, existingData = null) {
             const formContainer = document.getElementById('platformForm');
             formContainer.innerHTML = '';
+            const isEditMode = existingData !== null;
             
             // 为每个 section 生成表单字段
             formDefinition.sections.forEach(section => {
@@ -2487,9 +2569,7 @@
                 // 添加字段
                 if (section.fields && Array.isArray(section.fields)) {
                     section.fields.forEach(field => {
-                        // BUG_014修复: 编辑模式下显示所有字段，无论是否有值
-                        // 修改逻辑: 在编辑模式下，总是显示所有字段；在新增模式下，也显示所有字段
-                        let shouldShow = true; // 改为始终显示所有字段
+                        const shouldShow = shouldDisplayField(field, existingData, isEditMode);
                         
                         const fieldGroup = document.createElement('div');
                         fieldGroup.className = 'form-group';
