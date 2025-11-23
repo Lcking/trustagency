@@ -4,6 +4,7 @@ FastAPI 应用主文件
 import os
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 from pathlib import Path
@@ -44,6 +45,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# ==================== Gzip 压缩中间件 ====================
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size=1000,
 )
 
 # ==================== 异常处理中间件 ====================
