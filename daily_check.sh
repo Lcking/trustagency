@@ -64,10 +64,10 @@ echo
 # 检查 2: 数据库完整性
 # ====================
 check_header "检查数据库完整性"
-SECTIONS=$(sqlite3 trustagency.db "SELECT COUNT(*) FROM sections 2>/dev/null" || echo "0")
-CATEGORIES=$(sqlite3 trustagency.db "SELECT COUNT(*) FROM categories 2>/dev/null" || echo "0")
-PLATFORMS=$(sqlite3 trustagency.db "SELECT COUNT(*) FROM platforms 2>/dev/null" || echo "0")
-ARTICLES=$(sqlite3 trustagency.db "SELECT COUNT(*) FROM articles 2>/dev/null" || echo "0")
+SECTIONS=$(sqlite3 trustagency.db "SELECT COUNT(*) FROM sections" 2>/dev/null || echo "0")
+CATEGORIES=$(sqlite3 trustagency.db "SELECT COUNT(*) FROM categories" 2>/dev/null || echo "0")
+PLATFORMS=$(sqlite3 trustagency.db "SELECT COUNT(*) FROM platforms" 2>/dev/null || echo "0")
+ARTICLES=$(sqlite3 trustagency.db "SELECT COUNT(*) FROM articles" 2>/dev/null || echo "0")
 
 echo "  📊 栏目: $SECTIONS | 分类: $CATEGORIES | 平台: $PLATFORMS | 文章: $ARTICLES"
 
@@ -147,10 +147,10 @@ echo
 # 检查 6: 系统资源
 # ====================
 check_header "检查系统资源占用"
-MEM_TOTAL=$(vm_stat | grep "Pages free" | awk '{print $3}' | tr -d '.')
+MEM_TOTAL=$(vm_stat 2>/dev/null | grep "Pages free" | awk '{print $3}' | tr -d '.' | tr -d ',')
 MEM_FREE=$((MEM_TOTAL / 256))  # 粗略转换为 MB
 
-PS_MEM=$(ps aux | grep -E "Code|Chrome|python|uvicorn" | grep -v grep | awk '{sum+=$6} END {print int(sum/1024)}')
+PS_MEM=$(ps aux | grep -E "Code|Chrome|python|uvicorn" | grep -v grep | awk '{sum+=$6} END {print int(sum/1024)}' || echo "0")
 echo "  💾 相关进程内存: ~${PS_MEM} MB"
 
 if [[ $PS_MEM -lt 300 ]]; then
@@ -225,7 +225,9 @@ echo "  🔄 最后提交: $LAST_COMMIT"
 echo "     时间: $LAST_COMMIT_TIME"
 
 # 计算天数 (粗略)
-LAST_COMMIT_TIMESTAMP=$(date -j -f "%Y-%m-%d %H:%M:%S" "${LAST_COMMIT_TIME%+*}" +%s 2>/dev/null || echo 0)
+# 提取日期部分（格式: 2025-11-23）并转换为时间戳
+COMMIT_DATE=$(echo "$LAST_COMMIT_TIME" | cut -d' ' -f1)
+LAST_COMMIT_TIMESTAMP=$(date -j -f "%Y-%m-%d" "$COMMIT_DATE" +%s 2>/dev/null || echo 0)
 CURRENT_TIMESTAMP=$(date +%s)
 if [[ $LAST_COMMIT_TIMESTAMP -gt 0 ]]; then
     DAYS_SINCE=$(( (CURRENT_TIMESTAMP - LAST_COMMIT_TIMESTAMP) / 86400 ))
