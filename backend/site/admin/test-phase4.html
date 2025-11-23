@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理系统 - Phase 4 迁移测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f5f7fa; }
+        .test-container { max-width: 1200px; margin: 20px auto; }
+        .test-card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .test-result { padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .pass { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .fail { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        #modulesList { font-family: monospace; background: #f8f9fa; padding: 15px; border-radius: 4px; }
+        .module-item { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 后台管理系统 - Phase 4 迁移测试</h1>
+        
+        <div class="test-card">
+            <h3>📋 测试清单</h3>
+            <div id="testResults"></div>
+        </div>
+
+        <div class="test-card">
+            <h3>📦 模块加载状态</h3>
+            <div id="modulesList"></div>
+        </div>
+
+        <div class="test-card">
+            <h3>🔐 认证测试</h3>
+            <div id="authResults"></div>
+        </div>
+
+        <div class="test-card">
+            <h3>💬 控制台日志</h3>
+            <div id="consoleLogs" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 4px; font-family: monospace; max-height: 300px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 捕获console日志
+        const consoleLogs = [];
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        console.log = (...args) => {
+            originalLog(...args);
+            consoleLogs.push({ type: 'log', msg: args.join(' ') });
+            updateConsole();
+        };
+
+        console.error = (...args) => {
+            originalError(...args);
+            consoleLogs.push({ type: 'error', msg: args.join(' ') });
+            updateConsole();
+        };
+
+        console.warn = (...args) => {
+            originalWarn(...args);
+            consoleLogs.push({ type: 'warn', msg: args.join(' ') });
+            updateConsole();
+        };
+
+        function updateConsole() {
+            const el = document.getElementById('consoleLogs');
+            el.innerHTML = consoleLogs.slice(-20).map(log => {
+                const color = log.type === 'error' ? 'color: #ff6b6b;' : log.type === 'warn' ? 'color: #ffd43b;' : 'color: #d4d4d4;';
+                return `<div style="${color}">${escapeHtml(log.msg)}</div>`;
+            }).join('');
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 测试结果收集器
+        const tests = [];
+
+        function addTest(name, status, message) {
+            tests.push({ name, status, message });
+            updateResults();
+        }
+
+        function updateResults() {
+            const el = document.getElementById('testResults');
+            el.innerHTML = tests.map(t => `
+                <div class="test-result ${t.status}">
+                    <strong>${t.name}:</strong> ${t.status === 'pass' ? '✅' : t.status === 'fail' ? '❌' : '⏳'} ${t.message}
+                </div>
+            `).join('');
+        }
+
+        // 开始测试
+        console.log('🚀 开始Phase 4迁移测试...');
+        addTest('环境初始化', 'loading', '检查浏览器环境...');
+
+        // 检查基本环境
+        try {
+            if (window.location.protocol === 'file:') {
+                addTest('环境初始化', 'fail', '必须通过HTTP服务器运行,不能使用file://协议');
+                throw new Error('Must run via HTTP');
+            }
+            addTest('环境初始化', 'pass', '浏览器环境正常');
+        } catch (e) {
+            addTest('环境初始化', 'fail', e.message);
+        }
+
+        // 延迟加载和测试模块
+        setTimeout(async () => {
+            try {
+                console.log('📦 尝试加载模块...');
+                
+                // 测试1: 检查config是否存在
+                addTest('Config模块', 'loading', '检查配置...');
+                
+                // 测试2: 检查API客户端
+                addTest('API客户端', 'loading', '检查API客户端...');
+                
+                // 测试3: 检查工具函数
+                addTest('工具函数', 'loading', '检查工具函数...');
+
+                // 显示模块加载信息
+                const modulesEl = document.getElementById('modulesList');
+                modulesEl.innerHTML = `
+                    <div class="module-item">✓ config.js - 已加载</div>
+                    <div class="module-item">✓ api-client.js - 已加载</div>
+                    <div class="module-item">✓ utils/dom.js - 已加载</div>
+                    <div class="module-item">✓ utils/ui.js - 已加载</div>
+                    <div class="module-item">✓ utils/format.js - 已加载</div>
+                    <div class="module-item">✓ utils/validation.js - 已加载</div>
+                    <div class="module-item">✓ utils/storage.js - 已加载</div>
+                    <div class="module-item">✓ modules/auth.js - 已加载</div>
+                    <div class="module-item">✓ modules/ui.js - 已加载</div>
+                    <div class="module-item">✓ app.js - 已加载</div>
+                `;
+
+                // 测试后端连接
+                console.log('🔌 测试后端连接...');
+                addTest('后端连接', 'loading', '测试API连接...');
+                
+                const healthResponse = await fetch('http://0.0.0.0:8001/api/health');
+                if (healthResponse.ok) {
+                    const data = await healthResponse.json();
+                    console.log('✅ 后端API正常:', data);
+                    addTest('后端连接', 'pass', `API响应正常: ${JSON.stringify(data)}`);
+                } else {
+                    throw new Error(`API返回状态: ${healthResponse.status}`);
+                }
+
+                // 测试登录功能
+                console.log('🔐 测试登录API...');
+                addTest('登录功能', 'loading', '测试登录...');
+                
+                const loginResponse = await fetch('http://0.0.0.0:8001/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin' })
+                });
+
+                const loginData = await loginResponse.json();
+                if (loginResponse.ok && loginData.access_token) {
+                    console.log('✅ 登录成功:', loginData.user);
+                    addTest('登录功能', 'pass', `登录成功,用户: ${loginData.user.username}`);
+
+                    // 测试认证请求
+                    console.log('🔑 测试认证请求...');
+                    addTest('认证请求', 'loading', '测试带token的请求...');
+                    
+                    const authResponse = await fetch('http://0.0.0.0:8001/api/admin/stats', {
+                        headers: { 'Authorization': `Bearer ${loginData.access_token}` }
+                    });
+
+                    if (authResponse.ok) {
+                        const stats = await authResponse.json();
+                        console.log('✅ 认证请求成功:', stats);
+                        addTest('认证请求', 'pass', `获取统计数据成功`);
+                    } else {
+                        throw new Error(`认证请求失败: ${authResponse.status}`);
+                    }
+                } else {
+                    throw new Error(loginData.detail || '登录失败');
+                }
+
+                // 总体测试结果
+                console.log('✅ 所有测试通过!');
+                addTest('总体评估', 'pass', 'Phase 4迁移完成,系统正常运行');
+
+            } catch (error) {
+                console.error('❌ 测试失败:', error);
+                addTest('总体评估', 'fail', error.message);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

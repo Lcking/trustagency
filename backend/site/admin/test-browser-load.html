@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 4 浏览器加载测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+        }
+        .test-section h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .test-result {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .test-result.pass {
+            border-left: 4px solid #4caf50;
+            background: #f1f8f4;
+        }
+        .test-result.fail {
+            border-left: 4px solid #f44336;
+            background: #fdf1f0;
+        }
+        .test-result.loading {
+            border-left: 4px solid #ff9800;
+            background: #fff8f1;
+        }
+        .status-icon {
+            margin-right: 12px;
+            font-size: 18px;
+            min-width: 20px;
+        }
+        .status-text {
+            flex: 1;
+        }
+        .code-block {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow-x: auto;
+            border: 1px solid #e0e0e0;
+        }
+        .code-block code {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #333;
+        }
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #1565c0;
+        }
+        .footer {
+            background: #f9f9f9;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        .module-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+        .module-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+        .module-list li code {
+            font-family: 'Courier New', monospace;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Phase 4 浏览器加载测试</h1>
+            <p>验证模块化迁移的前端代码能否正确加载和初始化</p>
+        </div>
+
+        <div class="content">
+            <!-- 测试进度 -->
+            <div class="test-section">
+                <h2>📊 测试进度</h2>
+                <div id="progress"></div>
+            </div>
+
+            <!-- 模块加载测试 -->
+            <div class="test-section">
+                <h2>📦 模块加载测试</h2>
+                <div id="modules-test"></div>
+            </div>
+
+            <!-- 全局对象测试 -->
+            <div class="test-section">
+                <h2>🌍 全局对象可用性</h2>
+                <div id="globals-test"></div>
+            </div>
+
+            <!-- API客户端测试 -->
+            <div class="test-section">
+                <h2>🔌 API客户端测试</h2>
+                <div id="api-test"></div>
+            </div>
+
+            <!-- 详细日志 -->
+            <div class="test-section">
+                <h2>📝 详细日志</h2>
+                <div class="code-block">
+                    <code id="detailed-log" style="white-space: pre-wrap; word-break: break-all;"></code>
+                </div>
+            </div>
+
+            <!-- 结论 -->
+            <div class="test-section">
+                <h2>🎯 测试结论</h2>
+                <div id="conclusion"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Phase 4迁移前端代码质量验证 | 生成时间: <span id="timestamp"></span></p>
+        </div>
+    </div>
+
+    <script type="module">
+        // 日志系统
+        const logs = [];
+        const log = (type, message) => {
+            const timestamp = new Date().toLocaleTimeString('zh-CN');
+            logs.push(`[${timestamp}] ${type}: ${message}`);
+            updateLog();
+        };
+
+        const updateLog = () => {
+            const logElement = document.getElementById('detailed-log');
+            logElement.textContent = logs.join('\n');
+            logElement.parentElement.scrollTop = logElement.parentElement.scrollHeight;
+        };
+
+        const addTestResult = (elementId, pass, title, message = '') => {
+            const container = document.getElementById(elementId);
+            const result = document.createElement('div');
+            result.className = `test-result ${pass ? 'pass' : 'fail'}`;
+            result.innerHTML = `
+                <span class="status-icon">${pass ? '✅' : '❌'}</span>
+                <span class="status-text">
+                    <strong>${title}</strong>
+                    ${message ? `<br/><small>${message}</small>` : ''}
+                </span>
+            `;
+            container.appendChild(result);
+            log(pass ? 'PASS' : 'FAIL', `${title}${message ? ': ' + message : ''}`);
+        };
+
+        // 开始测试
+        log('INFO', '开始Phase 4浏览器加载测试...');
+        document.getElementById('timestamp').textContent = new Date().toLocaleString('zh-CN');
+
+        // 测试1: 模块加载
+        log('INFO', '测试1: 开始模块加载...');
+        try {
+            // 动态导入所有关键模块
+            const imports = [
+                { name: 'authManager', path: './js/modules/auth.js' },
+                { name: 'uiManager', path: './js/modules/ui.js' },
+                { name: 'apiClient', path: './js/api-client.js' },
+                { name: 'config', path: './js/config.js' },
+            ];
+
+            const importPromises = imports.map(async (imp) => {
+                try {
+                    const module = await import(imp.path);
+                    const exported = module.default || module;
+                    window[imp.name] = exported;
+                    addTestResult('modules-test', true, `✓ ${imp.name}`, `来自 ${imp.path}`);
+                    log('SUCCESS', `模块 ${imp.name} 加载成功`);
+                    return true;
+                } catch (e) {
+                    addTestResult('modules-test', false, `✗ ${imp.name}`, `错误: ${e.message}`);
+                    log('ERROR', `模块 ${imp.name} 加载失败: ${e.message}`);
+                    return false;
+                }
+            });
+
+            // 等待所有导入完成
+            Promise.all(importPromises).then((results) => {
+                // 测试2: 全局对象
+                log('INFO', '测试2: 检查全局对象...');
+                const globalObjects = [
+                    { name: 'window.authManager', exists: !!window.authManager, type: 'AuthManager' },
+                    { name: 'window.uiManager', exists: !!window.uiManager, type: 'UIManager' },
+                    { name: 'window.apiClient', exists: !!window.apiClient, type: 'APIClient' },
+                ];
+
+                globalObjects.forEach(obj => {
+                    addTestResult('globals-test', obj.exists, 
+                        `${obj.name}`, 
+                        obj.exists ? `已初始化 (${obj.type})` : '未定义');
+                });
+
+                // 测试3: API客户端方法
+                log('INFO', '测试3: 检查API客户端方法...');
+                const apiMethods = [
+                    { name: 'get', check: () => typeof window.apiClient?.get === 'function' },
+                    { name: 'post', check: () => typeof window.apiClient?.post === 'function' },
+                    { name: 'put', check: () => typeof window.apiClient?.put === 'function' },
+                    { name: 'delete', check: () => typeof window.apiClient?.delete === 'function' },
+                ];
+
+                if (window.apiClient) {
+                    apiMethods.forEach(method => {
+                        const hasMethod = method.check();
+                        addTestResult('api-test', hasMethod,
+                            `apiClient.${method.name}`,
+                            hasMethod ? '方法存在' : '方法缺失');
+                    });
+                }
+
+                // 最终结论
+                log('INFO', '生成测试结论...');
+                const allPass = results.every(r => r);
+                const conclusion = document.getElementById('conclusion');
+                
+                if (allPass) {
+                    conclusion.innerHTML = `
+                        <div class="info-box" style="background: #e8f5e9; border-left-color: #4caf50; color: #2e7d32;">
+                            <strong>✅ 测试全部通过!</strong><br/>
+                            所有关键模块已成功加载和初始化。Phase 4迁移的前端代码架构完整且可用。
+                            <ul class="module-list" style="margin-top: 15px;">
+                                <li><code>authManager</code> - 认证管理模块 ✓</li>
+                                <li><code>uiManager</code> - UI管理模块 ✓</li>
+                                <li><code>apiClient</code> - API客户端 ✓</li>
+                                <li><code>config</code> - 配置模块 ✓</li>
+                            </ul>
+                        </div>
+                    `;
+                    log('SUCCESS', '所有测试通过!');
+                } else {
+                    conclusion.innerHTML = `
+                        <div class="info-box" style="background: #ffebee; border-left-color: #f44336; color: #c62828;">
+                            <strong>⚠️ 部分测试失败</strong><br/>
+                            请检查上方的测试结果,修复失败的模块加载。
+                        </div>
+                    `;
+                    log('WARNING', '存在测试失败');
+                }
+
+                // 更新进度
+                const passCount = results.filter(r => r).length;
+                const progressHtml = `
+                    <div class="test-result ${allPass ? 'pass' : 'fail'}">
+                        <span class="status-icon">${allPass ? '✅' : '⚠️'}</span>
+                        <span class="status-text">
+                            <strong>进度: ${passCount}/${results.length} 模块成功加载</strong>
+                            <br/><small>${allPass ? '所有关键模块已正确初始化' : '部分模块未能加载'}</small>
+                        </span>
+                    </div>
+                `;
+                document.getElementById('progress').innerHTML = progressHtml;
+            });
+
+        } catch (e) {
+            log('ERROR', `测试执行失败: ${e.message}`);
+            addTestResult('modules-test', false, '测试执行', e.message);
+        }
+    </script>
+</body>
+</html>

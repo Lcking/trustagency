@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrustAgency 后台管理系统</title>
-    
-    <!-- 引入模块化CSS -->
-    <link rel="stylesheet" href="css/main.css">
-    
     <!-- Tiptap 编辑器 CDN -->
     <link rel="stylesheet" href="https://unpkg.com/tiptap-default-styles@1.0.0/style.css">
     <style>
@@ -444,55 +440,6 @@
         .modal-content.modal-large {
             max-width: 1040px;
             max-height: 95vh;
-        }
-
-        /* 任务详情弹窗样式 */
-        .task-details-modal {
-            max-width: 800px;
-            max-height: 85vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .task-details-modal .modal-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0 20px 20px 20px;
-        }
-
-        .task-articles-table-container {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-
-        .task-articles-table-container table {
-            margin: 0;
-            border-radius: 0;
-        }
-
-        .task-articles-table-container thead th {
-            position: sticky;
-            top: 0;
-            background: #f5f5f5;
-            z-index: 1;
-            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .expand-toggle {
-            color: #667eea;
-            cursor: pointer;
-            text-decoration: underline;
-            font-size: 14px;
-            margin-top: 10px;
-            display: inline-block;
-        }
-
-        .expand-toggle:hover {
-            color: #764ba2;
         }
 
         .modal-header {
@@ -1278,15 +1225,31 @@
 
                 <!-- 任务列表 -->
                 <h3>📋 任务历史</h3>
-                <div>
-                    <select id="taskStatus">
-                        <option value="">全部状态</option>
-                        <option value="pending">待处理</option>
-                        <option value="processing">处理中</option>
-                        <option value="completed">已完成</option>
-                        <option value="failed">已失败</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="loadTasks()">刷新</button>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>状态筛选</label>
+                            <select id="taskStatus" style="width: 150px;">
+                                <option value="">全部状态</option>
+                                <option value="PENDING">待处理</option>
+                                <option value="PROCESSING">处理中</option>
+                                <option value="COMPLETED">已完成</option>
+                                <option value="FAILED">已失败</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>开始日期</label>
+                            <input type="date" id="taskStartDate" style="width: 150px;">
+                        </div>
+                        <div class="form-group">
+                            <label>结束日期</label>
+                            <input type="date" id="taskEndDate" style="width: 150px;">
+                        </div>
+                        <div class="form-group" style="padding-top: 22px;">
+                            <button class="btn btn-primary" onclick="loadTasks()">🔍 查询</button>
+                            <button class="btn btn-secondary" onclick="resetTaskFilters()" style="margin-left: 10px;">重置</button>
+                        </div>
+                    </div>
                 </div>
                 <div id="tasksContent"></div>
             </div>
@@ -2253,15 +2216,21 @@
         // 加载任务列表
         async function loadTasks() {
             const status = document.getElementById('taskStatus').value;
+            const startDate = document.getElementById('taskStartDate').value;
+            const endDate = document.getElementById('taskEndDate').value;
+            
             try {
-                const response = await fetch(
-                    `${API_URL}/api/tasks?skip=0&limit=20${status ? '&status=' + status : ''}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
+                // BUG_015修复: 添加日期范围查询参数
+                let apiUrl = `${API_URL}/api/tasks?skip=0&limit=100`;
+                if (status) apiUrl += '&status=' + status;
+                if (startDate) apiUrl += '&start_date=' + startDate;
+                if (endDate) apiUrl += '&end_date=' + endDate;
+                
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
-                );
+                });
 
                 if (response.ok) {
                     const data = await response.json();
@@ -2270,6 +2239,10 @@
                     if (data.items && data.items.length > 0) {
                         data.items.forEach(task => {
                         const statusBadge = {
+                            'PENDING': '<span class="badge badge-warning">待处理</span>',
+                            'PROCESSING': '<span class="badge badge-info">处理中</span>',
+                            'COMPLETED': '<span class="badge badge-success">已完成</span>',
+                            'FAILED': '<span class="badge badge-danger">已失败</span>',
                             'pending': '<span class="badge badge-warning">待处理</span>',
                             'processing': '<span class="badge badge-info">处理中</span>',
                             'completed': '<span class="badge badge-success">已完成</span>',
@@ -2313,6 +2286,14 @@
                 console.error('加载任务失败:', error);
             }
         }
+        
+        // BUG_015修复: 添加重置筛选条件的函数
+        function resetTaskFilters() {
+            document.getElementById('taskStatus').value = '';
+            document.getElementById('taskStartDate').value = '';
+            document.getElementById('taskEndDate').value = '';
+            loadTasks();
+        }
 
         async function viewTaskDetails(batchId) {
             try {
@@ -2322,110 +2303,67 @@
                 if (response.ok) {
                     const task = await response.json();
                     
-                    // 判断是否需要折叠显示
-                    const totalArticles = task.titles ? task.titles.length : 0;
-                    const shouldCollapse = totalArticles > 10;
-                    const displayLimit = shouldCollapse ? 10 : totalArticles;
-                    
-                    // 构建文章列表HTML
-                    let articlesHTML = '';
-                    if (task.titles && task.titles.length > 0) {
-                        const displayTitles = task.titles.slice(0, displayLimit);
-                        const hiddenTitles = task.titles.slice(displayLimit);
-                        
-                        articlesHTML = `
-                            <div class="task-articles-table-container">
-                                <table style="width: 100%;">
-                                    <thead>
-                                        <tr>
-                                            <th style="text-align: left; padding: 10px; width: 50px;">#</th>
-                                            <th style="text-align: left; padding: 10px;">标题</th>
-                                            <th style="text-align: left; padding: 10px; width: 100px;">状态</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="taskArticlesTableBody">
-                                        ${displayTitles.map((title, index) => {
-                                            const isCompleted = index < (task.completed_count || 0);
-                                            const isFailed = task.failed_titles && task.failed_titles.includes(title);
-                                            const statusText = isFailed ? '❌ 失败' : isCompleted ? '✅ 完成' : '⏳ 待处理';
-                                            const statusColor = isFailed ? '#f44336' : isCompleted ? '#4CAF50' : '#999';
-                                            return `
-                                                <tr>
-                                                    <td style="padding: 10px;">${index + 1}</td>
-                                                    <td style="padding: 10px;">${title}</td>
-                                                    <td style="padding: 10px; color: ${statusColor}; font-weight: 500;">${statusText}</td>
-                                                </tr>
-                                            `;
-                                        }).join('')}
-                                        ${shouldCollapse ? `
-                                            <tbody id="taskArticlesHidden" style="display: none;">
-                                                ${hiddenTitles.map((title, index) => {
-                                                    const actualIndex = displayLimit + index;
-                                                    const isCompleted = actualIndex < (task.completed_count || 0);
-                                                    const isFailed = task.failed_titles && task.failed_titles.includes(title);
-                                                    const statusText = isFailed ? '❌ 失败' : isCompleted ? '✅ 完成' : '⏳ 待处理';
-                                                    const statusColor = isFailed ? '#f44336' : isCompleted ? '#4CAF50' : '#999';
-                                                    return `
-                                                        <tr>
-                                                            <td style="padding: 10px;">${actualIndex + 1}</td>
-                                                            <td style="padding: 10px;">${title}</td>
-                                                            <td style="padding: 10px; color: ${statusColor}; font-weight: 500;">${statusText}</td>
-                                                        </tr>
-                                                    `;
-                                                }).join('')}
-                                            </tbody>
-                                        ` : ''}
-                                    </tbody>
-                                </table>
-                            </div>
-                            ${shouldCollapse ? `
-                                <a class="expand-toggle" id="expandToggle" onclick="toggleArticlesList()">
-                                    ▼ 展开查看全部 ${totalArticles} 篇文章 (当前显示 ${displayLimit} 篇)
-                                </a>
-                            ` : ''}
-                        `;
-                    } else {
-                        articlesHTML = '<p style="color: #999; text-align: center; padding: 20px;">无文章信息</p>';
-                    }
-                    
                     // 构建详细信息模态框HTML
                     let modalHTML = `
-                        <div class="modal active" id="taskDetailsModal">
-                            <div class="modal-content task-details-modal">
-                                <div class="modal-header">
-                                    <h2>📋 任务详情</h2>
-                                    <button class="close-btn" onclick="closeTaskDetailsModal()">&times;</button>
+                        <div class="modal" id="taskDetailsModal" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000;">
+                            <div class="modal-content" style="max-width: 900px; width: 90%; max-height: 85vh; overflow-y: auto; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                                <div style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                    <h2 style="margin: 0;">📋 任务详情</h2>
+                                    <span class="close" onclick="closeTaskDetailsModal()" style="cursor: pointer; font-size: 24px; color: #999;">&times;</span>
                                 </div>
-                                
-                                <div class="modal-body">
-                                    <div style="background: #f5f5f5; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                                        <p><strong>批次ID:</strong> <code style="background: white; padding: 2px 6px; border-radius: 3px;">${task.batch_id}</code></p>
-                                        <p><strong>栏目:</strong> ${task.section_name || '未知'}</p>
-                                        <p><strong>分类:</strong> ${task.category_name || '未知'}</p>
-                                        ${task.platform_name ? `<p><strong>平台:</strong> ${task.platform_name}</p>` : ''}
-                                        <p><strong>状态:</strong> 
-                                            ${task.status === 'PENDING' ? '<span class="badge badge-warning">待处理</span>' : 
-                                              task.status === 'PROCESSING' ? '<span class="badge badge-info">处理中</span>' :
-                                              task.status === 'COMPLETED' ? '<span class="badge badge-success">已完成</span>' :
-                                              '<span class="badge badge-danger">已失败</span>'}
-                                        </p>
-                                        <p><strong>进度:</strong> ${task.completed_count || 0} / ${task.total_count || 0} (${task.progress || 0}%)</p>
-                                        <p><strong>创建时间:</strong> ${new Date(task.created_at).toLocaleString('zh-CN')}</p>
+                                <div style="padding: 20px;">
+                                    <p><strong>批次ID:</strong> <code>${task.batch_id}</code></p>
+                                    <p><strong>栏目:</strong> ${task.section_name || '未知'}</p>
+                                    <p><strong>分类:</strong> ${task.category_name || '未知'}</p>
+                                    ${task.platform_name ? `<p><strong>平台:</strong> ${task.platform_name}</p>` : ''}
+                                    <p><strong>状态:</strong> 
+                                        ${task.status === 'PENDING' ? '<span class="badge badge-warning">待处理</span>' : 
+                                          task.status === 'PROCESSING' ? '<span class="badge badge-info">处理中</span>' :
+                                          task.status === 'COMPLETED' ? '<span class="badge badge-success">已完成</span>' :
+                                          '<span class="badge badge-danger">已失败</span>'}
+                                    </p>
+                                    <p><strong>进度:</strong> ${task.completed_count || 0} / ${task.total_count || 0} (${task.progress || 0}%)</p>
+                                    <p><strong>创建时间:</strong> ${new Date(task.created_at).toLocaleString('zh-CN')}</p>
+                                </div>
+
+                                <h3>📝 生成的文章 (${task.total_count || 0}篇)</h3>
+                                ${task.titles && task.titles.length > 0 ? `
+                                    <table style="width: 100%; margin-top: 10px;">
+                                        <thead>
+                                            <tr>
+                                                <th style="text-align: left; padding: 8px; background: #f0f0f0;">#</th>
+                                                <th style="text-align: left; padding: 8px; background: #f0f0f0;">标题</th>
+                                                <th style="text-align: left; padding: 8px; background: #f0f0f0;">状态</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${task.titles.map((title, index) => {
+                                                const isCompleted = index < (task.completed_count || 0);
+                                                const isFailed = task.failed_titles && task.failed_titles.includes(title);
+                                                const statusText = isFailed ? '❌ 失败' : isCompleted ? '✅ 完成' : '⏳ 待处理';
+                                                const statusColor = isFailed ? '#f44336' : isCompleted ? '#4CAF50' : '#999';
+                                                return `
+                                                    <tr>
+                                                        <td style="padding: 8px;">${index + 1}</td>
+                                                        <td style="padding: 8px;">${title}</td>
+                                                        <td style="padding: 8px; color: ${statusColor};">${statusText}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                ` : '<p style="color: #999; text-align: center; padding: 20px;">无文章信息</p>'}
+
+                                ${task.has_error && task.error_message ? `
+                                    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin-top: 20px;">
+                                        <h4 style="color: #856404; margin-top: 0;">⚠️ 错误信息</h4>
+                                        <pre style="background: white; padding: 10px; border-radius: 4px; overflow-x: auto;">${task.error_message}</pre>
                                     </div>
+                                ` : ''}
 
-                                    <h3 style="margin-bottom: 10px;">📝 生成的文章 (${task.total_count || 0}篇)</h3>
-                                    ${articlesHTML}
-
-                                    ${task.has_error && task.error_message ? `
-                                        <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 6px; margin-top: 20px;">
-                                            <h4 style="color: #856404; margin-top: 0;">⚠️ 错误信息</h4>
-                                            <pre style="background: white; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px;">${task.error_message}</pre>
-                                        </div>
-                                    ` : ''}
-                                </div>
-
-                                <div class="modal-footer">
+                                <div style="margin-top: 20px; text-align: right; border-top: 1px solid #eee; padding-top: 20px;">
                                     <button class="btn btn-secondary" onclick="closeTaskDetailsModal()">关闭</button>
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -2449,22 +2387,6 @@
             const modal = document.getElementById('taskDetailsModal');
             if (modal) {
                 modal.remove();
-            }
-        }
-
-        function toggleArticlesList() {
-            const hiddenSection = document.getElementById('taskArticlesHidden');
-            const toggleBtn = document.getElementById('expandToggle');
-            
-            if (hiddenSection && toggleBtn) {
-                const isHidden = hiddenSection.style.display === 'none';
-                hiddenSection.style.display = isHidden ? 'table-row-group' : 'none';
-                
-                if (isHidden) {
-                    toggleBtn.innerHTML = toggleBtn.innerHTML.replace('▼ 展开', '▲ 收起');
-                } else {
-                    toggleBtn.innerHTML = toggleBtn.innerHTML.replace('▲ 收起', '▼ 展开');
-                }
             }
         }
 
@@ -2565,11 +2487,9 @@
                 // 添加字段
                 if (section.fields && Array.isArray(section.fields)) {
                     section.fields.forEach(field => {
-                        // 决定是否显示该字段：
-                        // 1. 必填字段总是显示
-                        // 2. 新增模式（没有existingData）显示所有字段
-                        // 3. 编辑模式：显示所有字段（不再隐藏空字段）
-                        const shouldShow = true; // 始终显示所有字段
+                        // BUG_014修复: 编辑模式下显示所有字段，无论是否有值
+                        // 修改逻辑: 在编辑模式下，总是显示所有字段；在新增模式下，也显示所有字段
+                        let shouldShow = true; // 改为始终显示所有字段
                         
                         const fieldGroup = document.createElement('div');
                         fieldGroup.className = 'form-group';
@@ -4267,9 +4187,40 @@
             }
         }
     </script>
-    
-    <!-- 引入模块化JavaScript -->
-    <script type="module" src="js/app.js"></script>
+
+    <!-- Tiptap 编辑器初始化诊断 -->
+    <script>
+        // 诊断脚本：检查Tiptap是否正确加载
+        window.TiptapDiagnostics = {
+            check: function() {
+                const checks = {
+                    '@tiptap/core': !!window['@tiptap/core'],
+                    '@tiptap/starter-kit': !!window['@tiptap/starter-kit'],
+                    '@tiptap/extension-image': !!window['@tiptap/extension-image'],
+                    '@tiptap/extension-link': !!window['@tiptap/extension-link'],
+                };
+                
+                console.group('🔍 Tiptap 诊断信息');
+                console.log('加载状态:', checks);
+                
+                if (window['@tiptap/core'] && window['@tiptap/core'].Editor) {
+                    console.log('✅ Tiptap Editor 类可用');
+                } else {
+                    console.warn('❌ Tiptap Editor 类不可用');
+                }
+                
+                console.table(checks);
+                console.groupEnd();
+                
+                return checks;
+            }
+        };
+        
+        // 页面加载完毕后自动诊断
+        window.addEventListener('load', function() {
+            setTimeout(() => TiptapDiagnostics.check(), 1000);
+        });
+    </script>
     
     <!-- 隐藏的文件上传输入 -->
     <input type="file" id="imageFileInput" accept="image/*" style="display: none;">

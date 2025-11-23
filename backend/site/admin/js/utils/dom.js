@@ -3,6 +3,13 @@
  */
 
 /**
+ * 按ID获取元素
+ */
+export function getById(id) {
+    return document.getElementById(id);
+}
+
+/**
  * 查询单个元素
  */
 export function $(selector, parent = document) {
