@@ -1397,10 +1397,53 @@
         </div>
     </div>
 
-    <!-- 旧的内联JavaScript已迁移到js/modules/auth.js和js/modules/ui.js -->
-    
     <!-- 引入模块化JavaScript -->
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/app.js?v=20251123"></script>
+    
+    <!-- 备用登录处理 - 直接监听表单提交 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+                    const errorDiv = document.getElementById('loginError');
+                    
+                    // 清空错误
+                    errorDiv.style.display = 'none';
+                    errorDiv.textContent = '';
+                    
+                    try {
+                        const response = await fetch('/api/admin/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username, password })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            // 存储token
+                            localStorage.setItem('token', data.access_token);
+                            localStorage.setItem('currentUser', JSON.stringify(data.user));
+                            
+                            // 重新加载页面以初始化app
+                            setTimeout(() => location.reload(), 300);
+                        } else {
+                            errorDiv.textContent = data.detail || '登录失败';
+                            errorDiv.style.display = 'block';
+                        }
+                    } catch (error) {
+                        errorDiv.textContent = '网络错误: ' + error.message;
+                        errorDiv.style.display = 'block';
+                    }
+                });
+            }
+        });
+    </script>
     
     <!-- 隐藏的文件上传输入 -->
     <input type="file" id="imageFileInput" accept="image/*" style="display: none;">

@@ -1,0 +1,35 @@
+{
+  "timestamp": "2025-11-23T08:23:32.014640",
+  "project": "trustagency - Phase 4 后台管理界面重构",
+  "status": "GOOD",
+  "scores": {
+    "files_completeness": 100.0,
+    "html_optimization": 80,
+    "code_reduction": 87.33333333333333,
+    "test_coverage": 100.0
+  },
+  "details": {
+    "html": {
+      "size_bytes": 47285,
+      "lines": 1408,
+      "inline_scripts": -2,
+      "cleaned": false
+    },
+    "modules": {
+      "total_new_size_bytes": 8521
+    },
+    "git": {
+      "latest_commit": "184003b refactor: 后台管理界面Phase 4 - 迁移登录和UI逻辑到独立模块",
+      "branch": "refactor/admin-panel-phase4"
+    },
+    "metrics": {
+      "deleted_lines": 2870,
+      "added_lines": 250,
+      "net_reduction": 2620,
+      "html_reduction_percent": 67,
+      "before_html_lines": 4278,
+      "after_html_lines": 1408
+    }
+  },
+  "overall_score": 91.83333333333333
+}
