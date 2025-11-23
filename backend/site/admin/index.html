@@ -2539,7 +2539,7 @@
         // 原问题：直接 shouldShow=true 是"头疼医头"的临时补丁
         // 改进：使用策略模式，清晰区分编辑和新增模式，考虑字段必填性
         const FIELD_VISIBILITY_RULES = {
-            edit: (field, data) => field.required || (data && hasFieldValue(data, field.name)),
+            edit: (field, data) => true, // 编辑模式显示所有字段（包括空值），让用户可以编辑
             create: () => true
         };
         

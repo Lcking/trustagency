@@ -88,11 +88,11 @@ class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
         except SQLAlchemyError as exc:
             # 处理数据库错误
             return handle_database_error(exc)
-        except HTTPException:
-            # FastAPI HTTP异常直接抛出
-            raise
         except Exception as exc:
-            # 处理其他未捕获的异常
+            # 处理其他未捕获的异常（包括 HTTPException）
+            # HTTPException 会被 FastAPI 自动处理
+            if isinstance(exc, HTTPException):
+                raise
             return handle_general_error(exc)
 
 
