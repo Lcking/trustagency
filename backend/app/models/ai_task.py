@@ -1,11 +1,18 @@
 """
 AI 内容生成任务模型
 """
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 from sqlalchemy import Column, Integer, String, Text, DateTime, Enum as SQLEnum, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+# 东八区（UTC+8）时区
+CST = timezone(timedelta(hours=8))
+
+def get_cst_now():
+    """获取东八区当前时间"""
+    return datetime.now(CST)
 
 
 class TaskStatus(str, Enum):
@@ -61,7 +68,7 @@ class AIGenerationTask(Base):
     creator_id = Column(Integer, ForeignKey("admin_users.id"), nullable=False)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_cst_now)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     is_current_batch = Column(Boolean, default=True, index=True)  # 是否为当前批次任务

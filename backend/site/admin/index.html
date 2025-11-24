@@ -1165,6 +1165,26 @@
                             <!-- 隐藏字段存储HTML内容 -->
                             <input type="hidden" id="articleContent" />
                         </div>
+                        <!-- SEO 优化部分 -->
+                        <div style="background: #f9f9fa; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #27ae60;">
+                            <h4 style="margin-top: 0; color: #27ae60;">🔍 SEO 优化</h4>
+                            <div class="form-group">
+                                <label>SEO 标题 (推荐 50-60 字)</label>
+                                <input type="text" id="articleSeoTitle" placeholder="不填则使用文章标题" maxlength="80">
+                                <small style="color: #999;">用于浏览器标签栏和搜索引擎结果</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Meta 描述 (推荐 120-160 字)</label>
+                                <textarea id="articleSeoDescription" rows="2" placeholder="用于搜索引擎结果摘要" maxlength="160"></textarea>
+                                <small style="color: #999;">字数: <span id="seoDescCounter">0</span>/160</small>
+                            </div>
+                            <div class="form-group">
+                                <label>关键词 (逗号分隔，推荐 3-5 个)</label>
+                                <input type="text" id="articleSeoKeywords" placeholder="例: Python,交易,机器人" maxlength="200">
+                                <small style="color: #999;">用于搜索引擎索引和相关性判断</small>
+                            </div>
+                        </div>
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label>
@@ -2213,6 +2233,74 @@
             }
         }
 
+        // ============ BUG_015 CLEAN CODE重构 ============
+        // 原问题：字符串拼接、缺少验证、代码重复、硬编码
+        // 改进：配置对象 + URLSearchParams + 验证函数 + 单一职责原则
+        
+        // 配置管理
+        const TASK_QUERY_CONFIG = {
+            DEFAULT_SKIP: 0,
+            DEFAULT_LIMIT: 100,
+            DATE_FORMAT: 'YYYY-MM-DD'
+        };
+        
+        // 集中的状态映射管理（解决重复定义问题）
+        const TASK_STATUS_DISPLAY = {
+            'PENDING': { class: 'badge-warning', label: '待处理' },
+            'PROCESSING': { class: 'badge-info', label: '处理中' },
+            'COMPLETED': { class: 'badge-success', label: '已完成' },
+            'FAILED': { class: 'badge-danger', label: '已失败' },
+            'pending': { class: 'badge-warning', label: '待处理' },
+            'processing': { class: 'badge-info', label: '处理中' },
+            'completed': { class: 'badge-success', label: '已完成' },
+            'failed': { class: 'badge-danger', label: '已失败' }
+        };
+        
+        // 验证函数：日期格式检查
+        function isValidDate(dateStr) {
+            if (!dateStr) return true; // 空值有效（表示不筛选）
+            const regex = /^\d{4}-\d{2}-\d{2}$/;
+            return regex.test(dateStr) && !isNaN(Date.parse(dateStr));
+        }
+        
+        // 构建查询URL - 使用URLSearchParams避免字符串拼接
+        function buildTaskQueryUrl(filters) {
+            const params = new URLSearchParams({
+                skip: TASK_QUERY_CONFIG.DEFAULT_SKIP,
+                limit: TASK_QUERY_CONFIG.DEFAULT_LIMIT
+            });
+            
+            // 添加可选筛选条件
+            if (filters.status && filters.status.trim()) {
+                params.append('status', filters.status.trim());
+            }
+            if (filters.startDate) {
+                if (!isValidDate(filters.startDate)) {
+                    console.warn('Invalid start date format:', filters.startDate);
+                    return null;
+                }
+                params.append('start_date', filters.startDate);
+            }
+            if (filters.endDate) {
+                if (!isValidDate(filters.endDate)) {
+                    console.warn('Invalid end date format:', filters.endDate);
+                    return null;
+                }
+                params.append('end_date', filters.endDate);
+            }
+            
+            return `${API_URL}/api/tasks?${params.toString()}`;
+        }
+        
+        // 获取状态显示HTML
+        function getStatusBadgeHTML(status) {
+            const statusConfig = TASK_STATUS_DISPLAY[status];
+            if (!statusConfig) {
+                return `<span class="badge">${status}</span>`;
+            }
+            return `<span class="badge ${statusConfig.class}">${statusConfig.label}</span>`;
+        }
+        
         // 加载任务列表
         async function loadTasks() {
             const status = document.getElementById('taskStatus').value;
@@ -2220,74 +2308,107 @@
             const endDate = document.getElementById('taskEndDate').value;
             
             try {
-                // BUG_015修复: 添加日期范围查询参数
-                let apiUrl = `${API_URL}/api/tasks?skip=0&limit=100`;
-                if (status) apiUrl += '&status=' + status;
-                if (startDate) apiUrl += '&start_date=' + startDate;
-                if (endDate) apiUrl += '&end_date=' + endDate;
+ refactor/admin-panel-phase5
+                // 验证 token 是否存在
+                if (!token) {
+                    showNotification('⚠️ 尚未登录，请先登录', 'error');
+                    document.getElementById('tasksContent').innerHTML = '<div style="text-align: center; color: #f44336; padding: 20px;">❌ 尚未登录或 Token 已过期，请刷新页面重新登录</div>';
+                    return;
+                }
+                
+                // 收集筛选条件
+                const filters = { status, startDate, endDate };
+                const apiUrl = buildTaskQueryUrl(filters);
+                
+                // 验证URL生成是否成功
+                if (!apiUrl) {
+                    showNotification('❌ 筛选条件格式不正确', 'error');
+                    document.getElementById('tasksContent').innerHTML = '<div style="text-align: center; color: #f44336; padding: 20px;">❌ 日期格式错误，请使用 YYYY-MM-DD 格式</div>';
+                    return;
+                }
+                
+                // 显示加载状态
+                document.getElementById('tasksContent').innerHTML = '<div style="text-align: center; padding: 20px;"><p>📍 加载任务中...</p></div>';
+                
+                console.log('📍 正在查询任务:', apiUrl);
+
+main
                 
                 const response = await fetch(apiUrl, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
+ refactor/admin-panel-phase5
+
+                console.log('📌 API 响应状态:', response.status, response.ok);
+
+ main
 
                 if (response.ok) {
                     const data = await response.json();
-                    let html = '<table><thead><tr><th>批次ID</th><th>栏目/分类</th><th>状态</th><th>进度</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+                    console.log('✅ 任务数据:', data);
+                    
+                    let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;"><th style="padding: 10px; text-align: left;">批次ID</th><th style="padding: 10px;">栏目/分类</th><th style="padding: 10px;">状态</th><th style="padding: 10px;">进度</th><th style="padding: 10px;">创建时间</th><th style="padding: 10px;">操作</th></tr></thead><tbody>';
 
                     if (data.items && data.items.length > 0) {
                         data.items.forEach(task => {
-                        const statusBadge = {
-                            'PENDING': '<span class="badge badge-warning">待处理</span>',
-                            'PROCESSING': '<span class="badge badge-info">处理中</span>',
-                            'COMPLETED': '<span class="badge badge-success">已完成</span>',
-                            'FAILED': '<span class="badge badge-danger">已失败</span>',
-                            'pending': '<span class="badge badge-warning">待处理</span>',
-                            'processing': '<span class="badge badge-info">处理中</span>',
-                            'completed': '<span class="badge badge-success">已完成</span>',
-                            'failed': '<span class="badge badge-danger">已失败</span>'
-                        }[task.status] || task.status;
+ refactor/admin-panel-phase5
+                            const statusBadge = getStatusBadgeHTML(task.status);
+                            const sectionCategory = task.section_name && task.category_name ? 
+                                `${task.section_name} / ${task.category_name}` : 
+                                '<span style="color: #999;">—</span>';
+                            const progressBar = `
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="flex: 1; background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden; min-width: 80px;">
+                                        <div style="width: ${task.progress || 0}%; background: #4CAF50; height: 100%;"></div>
+                                    </div>
+                                    <span style="font-size: 12px; color: #666; min-width: 50px;">${task.completed_count || 0}/${task.total_count || 0}</span>
 
-                        const sectionCategory = task.section_name && task.category_name ? 
-                            `${task.section_name} / ${task.category_name}` : 
-                            '<span style="color: #999;">—</span>';
 
-                        const progressBar = `
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="flex: 1; background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden;">
-                                    <div style="width: ${task.progress || 0}%; background: #4CAF50; height: 100%;"></div>
+ main
                                 </div>
-                                <span style="font-size: 12px; color: #666;">${task.completed_count || 0}/${task.total_count || 0}</span>
-                            </div>
-                        `;
+                            `;
 
-                        html += `
-                            <tr>
-                                <td><code style="font-size: 11px;">${task.task_id}</code></td>
-                                <td>${sectionCategory}</td>
-                                <td>${statusBadge}</td>
-                                <td>${progressBar}</td>
-                                <td>${new Date(task.created_at).toLocaleString('zh-CN')}</td>
-                                <td>
-                                    <button class="btn btn-info btn-small" onclick="viewTaskDetails('${task.task_id}')">详情</button>
-                                </td>
-                            </tr>
-                        `;
+                            html += `
+                                <tr style="border-bottom: 1px solid #eee; hover: background: #f9f9f9;">
+                                    <td style="padding: 10px;"><code style="font-size: 11px;">${task.task_id}</code></td>
+                                    <td style="padding: 10px;">${sectionCategory}</td>
+                                    <td style="padding: 10px;">${statusBadge}</td>
+                                    <td style="padding: 10px;">${progressBar}</td>
+                                    <td style="padding: 10px;">${new Date(task.created_at).toLocaleString('zh-CN')}</td>
+                                    <td style="padding: 10px;">
+                                        <button class="btn btn-info btn-small" onclick="viewTaskDetails('${task.task_id}')">详情</button>
+                                    </td>
+                                </tr>
+                            `;
                         });
+                        showNotification(`✅ 加载成功 (${data.items.length} 个任务)`, 'success');
                     } else {
                         html += '<tr><td colspan="6" style="text-align: center; color: #999; padding: 20px;">暂无任务记录</td></tr>';
                     }
 
                     html += '</tbody></table>';
                     document.getElementById('tasksContent').innerHTML = html;
+                } else {
+                    // 处理 API 错误响应
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMsg = errorData.detail || `API 错误: ${response.status}`;
+                    console.error('❌ API 错误:', response.status, errorMsg);
+                    showNotification(`❌ 加载失败: ${errorMsg}`, 'error');
+                    document.getElementById('tasksContent').innerHTML = `<div style="text-align: center; color: #f44336; padding: 20px;">❌ 加载任务失败<br/><small>${errorMsg}</small></div>`;
                 }
             } catch (error) {
-                console.error('加载任务失败:', error);
+                console.error('💥 加载任务异常:', error);
+                showNotification(`❌ 网络错误: ${error.message}`, 'error');
+                document.getElementById('tasksContent').innerHTML = `<div style="text-align: center; color: #f44336; padding: 20px;">❌ 网络错误<br/><small>${error.message}</small></div>`;
             }
         }
         
-        // BUG_015修复: 添加重置筛选条件的函数
+ refactor/admin-panel-phase5
+        // 重置筛选条件 - Clean Code：单一职责原则
+
+ main
         function resetTaskFilters() {
             document.getElementById('taskStatus').value = '';
             document.getElementById('taskStartDate').value = '';
@@ -2472,9 +2593,28 @@
             modal.classList.add('active');
         }
         
+        // ============ BUG_014 CLEAN CODE重构 ============
+        // 原问题：直接 shouldShow=true 是"头疼医头"的临时补丁
+        // 改进：使用策略模式，清晰区分编辑和新增模式，考虑字段必填性
+        const FIELD_VISIBILITY_RULES = {
+            edit: (field, data) => true, // 编辑模式显示所有字段（包括空值），让用户可以编辑
+            create: () => true
+        };
+        
+        function hasFieldValue(data, fieldName) {
+            const val = data[fieldName];
+            return val !== null && val !== undefined && val !== '';
+        }
+        
+        function shouldDisplayField(field, existingData, isEditMode) {
+            const rule = FIELD_VISIBILITY_RULES[isEditMode ? 'edit' : 'create'];
+            return rule ? rule(field, existingData) : true;
+        }
+        
         function renderDynamicPlatformForm(formDefinition, existingData = null) {
             const formContainer = document.getElementById('platformForm');
             formContainer.innerHTML = '';
+            const isEditMode = existingData !== null;
             
             // 为每个 section 生成表单字段
             formDefinition.sections.forEach(section => {
@@ -2487,9 +2627,11 @@
                 // 添加字段
                 if (section.fields && Array.isArray(section.fields)) {
                     section.fields.forEach(field => {
-                        // BUG_014修复: 编辑模式下显示所有字段，无论是否有值
-                        // 修改逻辑: 在编辑模式下，总是显示所有字段；在新增模式下，也显示所有字段
-                        let shouldShow = true; // 改为始终显示所有字段
+ refactor/admin-panel-phase5
+                        const shouldShow = shouldDisplayField(field, existingData, isEditMode);
+
+
+ main
                         
                         const fieldGroup = document.createElement('div');
                         fieldGroup.className = 'form-group';
@@ -2900,6 +3042,12 @@
                     }
                     document.getElementById('articlePlatform').value = data.platform_id || '';
                     document.getElementById('articleSummary').value = data.summary || '';
+                    // 加载SEO字段
+                    document.getElementById('articleSeoTitle').value = data.seo_title || data.title || '';
+                    document.getElementById('articleSeoDescription').value = data.seo_description || data.meta_description || '';
+                    document.getElementById('articleSeoKeywords').value = data.seo_keywords || data.meta_keywords || '';
+                    // 更新SEO描述字数
+                    updateSeoDescCounter();
                     // 🔥 修复：确保等待编辑器初始化完成后再显示内容
                     await initArticleEditor(data.content || '');
                     document.getElementById('articlePublished').checked = data.is_published;
@@ -2927,6 +3075,23 @@
             }
             currentArticleId = null;
         }
+
+        // SEO字数统计
+        function updateSeoDescCounter() {
+            const desc = document.getElementById('articleSeoDescription').value;
+            const counter = document.getElementById('seoDescCounter');
+            if (counter) {
+                counter.textContent = desc.length;
+            }
+        }
+
+        // 为SEO描述框添加字数统计监听
+        document.addEventListener('DOMContentLoaded', () => {
+            const seoDescField = document.getElementById('articleSeoDescription');
+            if (seoDescField) {
+                seoDescField.addEventListener('input', updateSeoDescCounter);
+            }
+        });
 
         async function saveArticle(e) {
             e.preventDefault();
@@ -2982,8 +3147,9 @@
                 content: content,
                 is_featured: document.getElementById('articleFeatured').checked,
                 tags: "",
-                meta_description: "",
-                meta_keywords: "",
+                meta_description: document.getElementById('articleSeoDescription').value || "",
+                meta_keywords: document.getElementById('articleSeoKeywords').value || "",
+                seo_title: document.getElementById('articleSeoTitle').value || "",
                 platform_id: platformId,  // 可能为 null
                 // 若为编辑模式，允许直接更新发布状态；新建则后续调用发布接口
                 is_published: currentArticleId ? publishChecked : undefined

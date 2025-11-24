@@ -7,7 +7,7 @@
 - 标准化的响应格式 (使用 app.schemas.response)
 - 清晰的错误消息
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from app.database import get_db

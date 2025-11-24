@@ -59,7 +59,6 @@ class ArticleService:
             title=article_data.title,
             content=article_data.content,
             summary=article_data.summary,
-            category=article_data.category,
             category_id=article_data.category_id,
             tags=article_data.tags,
             meta_description=article_data.meta_description,

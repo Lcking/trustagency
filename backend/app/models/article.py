@@ -31,6 +31,7 @@ class Article(Base):
     is_featured = Column(Boolean, default=False)
 
     # SEO
+    seo_title = Column(String(80), nullable=True)
     meta_description = Column(String(160), nullable=True)
     meta_keywords = Column(String(500), nullable=True)
 
