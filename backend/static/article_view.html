@@ -75,9 +75,11 @@
     
     async function loadArticle() {
       let data = null;
+      let isSSRPage = false;  // 标记是否是SSR页面
       
       if (embeddedArticleData) {
         data = embeddedArticleData;
+        isSSRPage = true;  // 如果有嵌入数据，说明这是SSR页面
       } else {
         const urlParams = new URLSearchParams(location.search);
         const id = urlParams.get('id');
@@ -98,10 +100,10 @@
         }
       }
       
-      renderArticle(data);
+      renderArticle(data, isSSRPage);
     }
     
-    function renderArticle(data) {
+    function renderArticle(data, isSSRPage = false) {
       const temp = document.createElement('div');
       temp.innerHTML = data.content || '';
       const plainText = temp.textContent ? temp.textContent.replace(/\s+/g,' ').trim() : '';
@@ -112,12 +114,16 @@
       const images = Array.from(temp.querySelectorAll('img')).map(img => img.getAttribute('src')).filter(Boolean);
       const firstImage = images[0] || null;
       
-      // 更新 SEO 元标签
-      const seoDescription = data.seo_description && data.seo_description.trim() ? data.seo_description : summaryText;
-      const seoKeywords = data.seo_keywords && data.seo_keywords.trim() ? data.seo_keywords : '';
-      document.getElementById('seo-description').content = seoDescription;
-      document.getElementById('seo-keywords').content = seoKeywords;
-      document.title = (data.seo_title || data.title) + ' - TrustAgency';
+      // 计算SEO描述和关键词
+      const seoDescription = data.meta_description && data.meta_description.trim() ? data.meta_description : summaryText;
+      const seoKeywords = data.meta_keywords && data.meta_keywords.trim() ? data.meta_keywords : '';
+      
+      // 更新 SEO 元标签（仅在非SSR页面时更新，因为SSR页面已经在服务端设置好了）
+      if (!isSSRPage) {
+        document.getElementById('seo-description').content = seoDescription;
+        document.getElementById('seo-keywords').content = seoKeywords;
+      }
+      document.title = (data.title) + ' - TrustAgency';
       
       const container = document.getElementById('articleContainer');
       
@@ -154,7 +160,7 @@
         '@type':'Article',
         '@id': `/article/${data.slug}#article`,
         'identifier': data.id,
-        'headline': data.seo_title || data.title,
+        'headline': data.title,
         'description': seoDescription || undefined,
         'articleBody': articleBodyHTML || undefined,
         'articleSection': data.category_name || data.category || '',

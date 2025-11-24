@@ -395,7 +395,7 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "created_at": article.created_at.isoformat() if article.created_at else None,
         "published_at": article.published_at.isoformat() if article.published_at else None,
         "is_published": article.is_published,
-        "seo_title": article.title or "",
+        "seo_title": article.seo_title or article.title or "",
         "seo_keywords": article.meta_keywords or "",
         "seo_description": article.meta_description or "",
     }
@@ -471,6 +471,31 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
 {schema_json}
 </script>
 <script>window.__ARTICLE_DATA__ = {article_json};</script>'''
+    
+    # 替换HTML头部标签以支持SSR SEO
+    seo_title = article.seo_title or article.title or "文章预览 - TrustAgency"
+    seo_description = article.meta_description or summary_text or article.summary or ""
+    seo_keywords = article.meta_keywords or ""
+    
+    # 替换title标签
+    html_content = html_content.replace(
+        '<title>文章预览 - TrustAgency</title>',
+        f'<title>{seo_title} - TrustAgency</title>'
+    )
+    
+    # 替换meta description标签
+    desc_escaped = seo_description.replace('"', '&quot;')
+    html_content = html_content.replace(
+        '<meta id="seo-description" name="description" content="" />',
+        f'<meta id="seo-description" name="description" content="{desc_escaped}" />'
+    )
+    
+    # 替换meta keywords标签
+    keywords_escaped = seo_keywords.replace('"', '&quot;')
+    html_content = html_content.replace(
+        '<meta id="seo-keywords" name="keywords" content="" />',
+        f'<meta id="seo-keywords" name="keywords" content="{keywords_escaped}" />'
+    )
     
     html_content = html_content.replace('</head>', f'{schema_script}\n</head>')
     

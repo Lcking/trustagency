@@ -25,6 +25,7 @@ class ArticleBase(BaseModel):
     tags: Optional[str] = None
     platform_id: Optional[int] = None
     is_featured: bool = False
+    seo_title: Optional[str] = None
     meta_description: Optional[str] = None
     meta_keywords: Optional[str] = None
 
@@ -44,6 +45,7 @@ class ArticleUpdate(BaseModel):
     platform_id: Optional[int] = None
     is_published: Optional[bool] = None
     is_featured: Optional[bool] = None
+    seo_title: Optional[str] = None
     meta_description: Optional[str] = None
     meta_keywords: Optional[str] = None
 

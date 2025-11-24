@@ -1165,6 +1165,26 @@
                             <!-- 隐藏字段存储HTML内容 -->
                             <input type="hidden" id="articleContent" />
                         </div>
+                        <!-- SEO 优化部分 -->
+                        <div style="background: #f9f9fa; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #27ae60;">
+                            <h4 style="margin-top: 0; color: #27ae60;">🔍 SEO 优化</h4>
+                            <div class="form-group">
+                                <label>SEO 标题 (推荐 50-60 字)</label>
+                                <input type="text" id="articleSeoTitle" placeholder="不填则使用文章标题" maxlength="80">
+                                <small style="color: #999;">用于浏览器标签栏和搜索引擎结果</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Meta 描述 (推荐 120-160 字)</label>
+                                <textarea id="articleSeoDescription" rows="2" placeholder="用于搜索引擎结果摘要" maxlength="160"></textarea>
+                                <small style="color: #999;">字数: <span id="seoDescCounter">0</span>/160</small>
+                            </div>
+                            <div class="form-group">
+                                <label>关键词 (逗号分隔，推荐 3-5 个)</label>
+                                <input type="text" id="articleSeoKeywords" placeholder="例: Python,交易,机器人" maxlength="200">
+                                <small style="color: #999;">用于搜索引擎索引和相关性判断</small>
+                            </div>
+                        </div>
+                        
                         <div class="form-row">
                             <div class="form-group">
                                 <label>
@@ -3005,6 +3025,12 @@
                     }
                     document.getElementById('articlePlatform').value = data.platform_id || '';
                     document.getElementById('articleSummary').value = data.summary || '';
+                    // 加载SEO字段
+                    document.getElementById('articleSeoTitle').value = data.seo_title || data.title || '';
+                    document.getElementById('articleSeoDescription').value = data.seo_description || data.meta_description || '';
+                    document.getElementById('articleSeoKeywords').value = data.seo_keywords || data.meta_keywords || '';
+                    // 更新SEO描述字数
+                    updateSeoDescCounter();
                     // 🔥 修复：确保等待编辑器初始化完成后再显示内容
                     await initArticleEditor(data.content || '');
                     document.getElementById('articlePublished').checked = data.is_published;
@@ -3032,6 +3058,23 @@
             }
             currentArticleId = null;
         }
+
+        // SEO字数统计
+        function updateSeoDescCounter() {
+            const desc = document.getElementById('articleSeoDescription').value;
+            const counter = document.getElementById('seoDescCounter');
+            if (counter) {
+                counter.textContent = desc.length;
+            }
+        }
+
+        // 为SEO描述框添加字数统计监听
+        document.addEventListener('DOMContentLoaded', () => {
+            const seoDescField = document.getElementById('articleSeoDescription');
+            if (seoDescField) {
+                seoDescField.addEventListener('input', updateSeoDescCounter);
+            }
+        });
 
         async function saveArticle(e) {
             e.preventDefault();
@@ -3087,8 +3130,9 @@
                 content: content,
                 is_featured: document.getElementById('articleFeatured').checked,
                 tags: "",
-                meta_description: "",
-                meta_keywords: "",
+                meta_description: document.getElementById('articleSeoDescription').value || "",
+                meta_keywords: document.getElementById('articleSeoKeywords').value || "",
+                seo_title: document.getElementById('articleSeoTitle').value || "",
                 platform_id: platformId,  // 可能为 null
                 // 若为编辑模式，允许直接更新发布状态；新建则后续调用发布接口
                 is_published: currentArticleId ? publishChecked : undefined
