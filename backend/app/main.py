@@ -394,6 +394,10 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "view_count": article.view_count or 0,
         "created_at": article.created_at.isoformat() if article.created_at else None,
         "published_at": article.published_at.isoformat() if article.published_at else None,
+        "is_published": article.is_published,
+        "seo_title": article.title or "",
+        "seo_keywords": article.meta_keywords or "",
+        "seo_description": article.meta_description or "",
     }
     
     print(f">>> Article data created", file=sys.stderr)
