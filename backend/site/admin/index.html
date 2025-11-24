@@ -2288,15 +2288,28 @@
             const endDate = document.getElementById('taskEndDate').value;
             
             try {
+                // 验证 token 是否存在
+                if (!token) {
+                    showNotification('⚠️ 尚未登录，请先登录', 'error');
+                    document.getElementById('tasksContent').innerHTML = '<div style="text-align: center; color: #f44336; padding: 20px;">❌ 尚未登录或 Token 已过期，请刷新页面重新登录</div>';
+                    return;
+                }
+                
                 // 收集筛选条件
                 const filters = { status, startDate, endDate };
                 const apiUrl = buildTaskQueryUrl(filters);
                 
                 // 验证URL生成是否成功
                 if (!apiUrl) {
-                    alert('筛选条件格式不正确');
+                    showNotification('❌ 筛选条件格式不正确', 'error');
+                    document.getElementById('tasksContent').innerHTML = '<div style="text-align: center; color: #f44336; padding: 20px;">❌ 日期格式错误，请使用 YYYY-MM-DD 格式</div>';
                     return;
                 }
+                
+                // 显示加载状态
+                document.getElementById('tasksContent').innerHTML = '<div style="text-align: center; padding: 20px;"><p>📍 加载任务中...</p></div>';
+                
+                console.log('📍 正在查询任务:', apiUrl);
                 
                 const response = await fetch(apiUrl, {
                     headers: {
@@ -2304,49 +2317,61 @@
                     }
                 });
 
+                console.log('📌 API 响应状态:', response.status, response.ok);
+
                 if (response.ok) {
                     const data = await response.json();
-                    let html = '<table><thead><tr><th>批次ID</th><th>栏目/分类</th><th>状态</th><th>进度</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+                    console.log('✅ 任务数据:', data);
+                    
+                    let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;"><th style="padding: 10px; text-align: left;">批次ID</th><th style="padding: 10px;">栏目/分类</th><th style="padding: 10px;">状态</th><th style="padding: 10px;">进度</th><th style="padding: 10px;">创建时间</th><th style="padding: 10px;">操作</th></tr></thead><tbody>';
 
                     if (data.items && data.items.length > 0) {
                         data.items.forEach(task => {
-                        const statusBadge = getStatusBadgeHTML(task.status);
-
-                        const sectionCategory = task.section_name && task.category_name ? 
-                            `${task.section_name} / ${task.category_name}` : 
-                            '<span style="color: #999;">—</span>';
-
-                        const progressBar = `
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="flex: 1; background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden;">
-                                    <div style="width: ${task.progress || 0}%; background: #4CAF50; height: 100%;"></div>
+                            const statusBadge = getStatusBadgeHTML(task.status);
+                            const sectionCategory = task.section_name && task.category_name ? 
+                                `${task.section_name} / ${task.category_name}` : 
+                                '<span style="color: #999;">—</span>';
+                            const progressBar = `
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="flex: 1; background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden; min-width: 80px;">
+                                        <div style="width: ${task.progress || 0}%; background: #4CAF50; height: 100%;"></div>
+                                    </div>
+                                    <span style="font-size: 12px; color: #666; min-width: 50px;">${task.completed_count || 0}/${task.total_count || 0}</span>
                                 </div>
-                                <span style="font-size: 12px; color: #666;">${task.completed_count || 0}/${task.total_count || 0}</span>
-                            </div>
-                        `;
+                            `;
 
-                        html += `
-                            <tr>
-                                <td><code style="font-size: 11px;">${task.task_id}</code></td>
-                                <td>${sectionCategory}</td>
-                                <td>${statusBadge}</td>
-                                <td>${progressBar}</td>
-                                <td>${new Date(task.created_at).toLocaleString('zh-CN')}</td>
-                                <td>
-                                    <button class="btn btn-info btn-small" onclick="viewTaskDetails('${task.task_id}')">详情</button>
-                                </td>
-                            </tr>
-                        `;
+                            html += `
+                                <tr style="border-bottom: 1px solid #eee; hover: background: #f9f9f9;">
+                                    <td style="padding: 10px;"><code style="font-size: 11px;">${task.task_id}</code></td>
+                                    <td style="padding: 10px;">${sectionCategory}</td>
+                                    <td style="padding: 10px;">${statusBadge}</td>
+                                    <td style="padding: 10px;">${progressBar}</td>
+                                    <td style="padding: 10px;">${new Date(task.created_at).toLocaleString('zh-CN')}</td>
+                                    <td style="padding: 10px;">
+                                        <button class="btn btn-info btn-small" onclick="viewTaskDetails('${task.task_id}')">详情</button>
+                                    </td>
+                                </tr>
+                            `;
                         });
+                        showNotification(`✅ 加载成功 (${data.items.length} 个任务)`, 'success');
                     } else {
                         html += '<tr><td colspan="6" style="text-align: center; color: #999; padding: 20px;">暂无任务记录</td></tr>';
                     }
 
                     html += '</tbody></table>';
                     document.getElementById('tasksContent').innerHTML = html;
+                } else {
+                    // 处理 API 错误响应
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMsg = errorData.detail || `API 错误: ${response.status}`;
+                    console.error('❌ API 错误:', response.status, errorMsg);
+                    showNotification(`❌ 加载失败: ${errorMsg}`, 'error');
+                    document.getElementById('tasksContent').innerHTML = `<div style="text-align: center; color: #f44336; padding: 20px;">❌ 加载任务失败<br/><small>${errorMsg}</small></div>`;
                 }
             } catch (error) {
-                console.error('加载任务失败:', error);
+                console.error('💥 加载任务异常:', error);
+                showNotification(`❌ 网络错误: ${error.message}`, 'error');
+                document.getElementById('tasksContent').innerHTML = `<div style="text-align: center; color: #f44336; padding: 20px;">❌ 网络错误<br/><small>${error.message}</small></div>`;
             }
         }
         

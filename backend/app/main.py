@@ -63,6 +63,7 @@ from sqlalchemy.exc import SQLAlchemyError
 class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
     """全局异常处理中间件"""
     async def dispatch(self, request, call_next):
+        from fastapi import HTTPException as FastAPIHTTPException
         from app.utils.error_handlers import (
             AppError, handle_app_error, handle_validation_error,
             handle_database_error, handle_general_error
@@ -88,11 +89,15 @@ class ExceptionHandlerMiddleware(BaseHTTPMiddleware):
         except SQLAlchemyError as exc:
             # 处理数据库错误
             return handle_database_error(exc)
+        except FastAPIHTTPException:
+            # FastAPI HTTP异常直接抛出
+            raise
         except Exception as exc:
-            # 处理其他未捕获的异常（包括 HTTPException）
-            # HTTPException 会被 FastAPI 自动处理
-            if isinstance(exc, HTTPException):
-                raise
+            # 处理其他未捕获的异常
+            import traceback
+            error_msg = f"❌ Middleware caught: {exc.__class__.__name__}: {exc}\n{traceback.format_exc()}"
+            print(error_msg, file=sys.stderr)
+            sys.stderr.flush()
             return handle_general_error(exc)
 
 
@@ -335,45 +340,48 @@ async def health_check():
     }
 
 # 公开文章预览路由 - /article/:slug
-@app.get("/article/{slug}")
+@app.get("/article/{slug}", include_in_schema=False)
 async def view_article(slug: str, db: Session = Depends(get_db)):
-    """
-    公开文章查看页面
-    返回HTML页面，直接嵌入文章数据和Schema标签（服务端生成）
-    """
+    """公开文章查看页面 — 返回嵌入文章数据的HTML"""
+    print(f">>> ENTERING view_article with slug={slug}", file=sys.stderr)
+    sys.stderr.flush()
+    
     from sqlalchemy.orm import joinedload
     import json
     from bs4 import BeautifulSoup
     
-    # 查询已发布的文章，包含关联的section和category
+    # Step 1: 查询文章
     article = db.query(Article).options(
         joinedload(Article.section),
-        joinedload(Article.category_obj)  # 加载分类对象
+        joinedload(Article.category_obj)
     ).filter(
         and_(Article.slug == slug, Article.is_published == True)
     ).first()
     
+    print(f">>> Found article: {article is not None}", file=sys.stderr)
+    sys.stderr.flush()
+    
     if not article:
-        raise HTTPException(status_code=404, detail=f"文章 '{slug}' 不存在或未发布")
+        raise HTTPException(status_code=404, detail="文章不存在或未发布")
     
     # 增加浏览量
     article.view_count = (article.view_count or 0) + 1
     db.add(article)
     db.commit()
     
-    # 从article_view.html读取基础模板
+    # Step 2: 读取模板
     article_view_html = BACKEND_DIR / "static" / "article_view.html"
     if not article_view_html.exists():
-        raise HTTPException(status_code=500, detail="文章预览页面不存在")
+        raise HTTPException(status_code=500, detail="模板文件不存在")
     
-    # 读取HTML模板
     html_content = article_view_html.read_text(encoding='utf-8')
     
-    # 准备文章数据JSON（与API响应格式一致）
-    # 获取分类名称
-    category_name = "未分类"
-    if article.category_obj:
-        category_name = article.category_obj.name
+    print(f">>> Template read: {len(html_content)} bytes", file=sys.stderr)
+    sys.stderr.flush()
+    
+    # Step 3: 构建文章数据
+    category_name = article.category_obj.name if article.category_obj else "未分类"
+    section_name = article.section.name if article.section else "未分类"
     
     article_data = {
         "id": article.id,
@@ -381,53 +389,50 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "slug": article.slug,
         "content": article.content or "",
         "summary": article.summary or "",
-        "section_id": article.section_id,
-        "section_name": article.section.name if article.section else "未分类",
+        "section_name": section_name,
         "category_name": category_name,
-        "author_id": article.author_id,
-        "is_published": article.is_published,
         "view_count": article.view_count or 0,
-        "like_count": article.like_count or 0,
         "created_at": article.created_at.isoformat() if article.created_at else None,
         "published_at": article.published_at.isoformat() if article.published_at else None,
     }
     
-    # 生成Schema标签（服务端生成，而非客户端动态生成）
-    # 提取纯文本和图片
+    print(f">>> Article data created", file=sys.stderr)
+    sys.stderr.flush()
+    
+    # Step 4: 提取内容元素
     content_html = article.content or ""
+    
+    # 提取纯文本
     try:
         soup = BeautifulSoup(content_html, 'html.parser')
         plain_text = soup.get_text().replace('\n', ' ').strip()
-        plain_text = ' '.join(plain_text.split())  # 清理空白
-    except Exception:
+        plain_text = ' '.join(plain_text.split())
+    except:
         plain_text = ""
     
-    # 提取所有图片URL
+    # 提取图片
     images = []
     try:
         soup = BeautifulSoup(content_html, 'html.parser')
         for img in soup.find_all('img'):
             src = img.get('src')
             if src:
-                # 完整化URL
                 if src.startswith('http'):
                     images.append(src)
                 elif src.startswith('/'):
                     images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8000')}{src}")
                 else:
                     images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8000')}/{src}")
-    except Exception:
+    except:
         images = []
     
-    # 生成摘要
+    print(f">>> Content extracted: {len(plain_text)} text, {len(images)} images", file=sys.stderr)
+    sys.stderr.flush()
+    
+    # Step 5: 构建Schema数据
     auto_summary = plain_text[:160] + ('…' if len(plain_text) > 160 else '') if plain_text else ""
     summary_text = (article.summary and article.summary.strip()) or auto_summary
     
-    # 构建Schema.org Article 结构化数据（最新标准）
-    # 处理分类字段 - 优先使用category_name，否则使用section.name，最后默认为"未分类"
-    article_section = category_name or (article.section.name if article.section else "未分类")
-    
-    # 处理日期字段 - 使用published_at或created_at
     pub_date = article.published_at or article.created_at
     pub_date_str = pub_date.isoformat() if pub_date else None
     
@@ -435,34 +440,28 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "@context": "https://schema.org",
         "@type": "Article",
         "@id": f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}/article/{article.slug}#article",
-        "identifier": article.id,
         "headline": article.title,
         "description": summary_text,
-        "articleBody": article.content,  # 完整HTML内容
-        "articleSection": article_section,
+        "articleSection": category_name,
         "datePublished": pub_date_str,
-        "dateModified": pub_date_str,
-        "author": {
-            "@type": "Person",
-            "name": "Admin"
-        },
-        "publisher": {
-            "@type": "Organization",
-            "name": "TrustAgency"
-        },
+        "author": {"@type": "Person", "name": "Admin"},
+        "publisher": {"@type": "Organization", "name": "TrustAgency"},
         "inLanguage": "zh-CN",
-        "mainEntityOfPage": f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}/article/{article.slug}",
-        "image": images if images else None,  # 所有图片
+        "image": images if images else None,
         "wordCount": len(plain_text.split()) if plain_text else 0,
-        "isAccessibleForFree": True
     }
     
-    # 移除None值
     schema_data = {k: v for k, v in schema_data.items() if v is not None}
     
-    # 在HTML中嵌入文章数据和Schema标签（服务端生成）
+    print(f">>> Schema data created", file=sys.stderr)
+    sys.stderr.flush()
+    
+    # Step 6: 嵌入HTML
     article_json = json.dumps(article_data, ensure_ascii=False)
     schema_json = json.dumps(schema_data, ensure_ascii=False, indent=2)
+    
+    print(f">>> JSON serialized", file=sys.stderr)
+    sys.stderr.flush()
     
     schema_script = f'''<script type="application/ld+json">
 {schema_json}
@@ -471,7 +470,11 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     
     html_content = html_content.replace('</head>', f'{schema_script}\n</head>')
     
+    print(f">>> HTML generated, returning response", file=sys.stderr)
+    sys.stderr.flush()
+    
     return HTMLResponse(content=html_content, status_code=200)
+
 
 # 主前端路由 - 服务主站点的 index.html
 def get_site_dir():
