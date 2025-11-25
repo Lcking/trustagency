@@ -2593,8 +2593,9 @@
                 if (!field.name) {
                     return true;
                 }
-                // 根据字段值是否存在决定显示
-                return hasFieldValue(data, field.name);
+                // 修复BUG_003：编辑模式下显示所有已定义的字段，不论其是否有值
+                // 这样用户可以编辑/添加原本为空的字段
+                return true;
             },
             create: () => true // 新增模式显示所有字段
         };
