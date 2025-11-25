@@ -2593,8 +2593,9 @@
                 if (!field.name) {
                     return true;
                 }
-                // 根据字段值是否存在决定显示
-                return hasFieldValue(data, field.name);
+                // 修复BUG_003：编辑模式下显示所有已定义的字段，不论其是否有值
+                // 这样用户可以编辑/添加原本为空的字段
+                return true;
             },
             create: () => true // 新增模式显示所有字段
         };
@@ -4137,6 +4138,7 @@
             if (choice === '1') {
                 // 上传文件 - 使用预先创建的隐藏input元素
                 console.log('📁 用户选择上传本地文件');
+                console.log('✓ articleEditor状态:', !!articleEditor, '支持setImage:', typeof articleEditor?.commands?.setImage);
                 
                 // 获取隐藏的文件输入元素
                 let input = document.getElementById('imageFileInput');
@@ -4152,10 +4154,22 @@
                     console.log('⚠️ 文件输入元素不存在，已创建新的');
                 }
                 
-                // 清除之前的事件处理器
-                const newInput = input.cloneNode(true);
-                input.parentNode.replaceChild(newInput, input);
+                // 清除所有之前的事件处理器 - 创建全新的input元素
+                const oldInput = input;
+                const newInput = document.createElement('input');
+                newInput.type = 'file';
+                newInput.id = 'imageFileInput';
+                newInput.accept = 'image/*';
+                newInput.style.display = 'none';
+                
+                // 替换DOM中的元素
+                if (oldInput.parentNode) {
+                    oldInput.parentNode.replaceChild(newInput, oldInput);
+                } else {
+                    document.body.appendChild(newInput);
+                }
                 input = newInput;
+                console.log('✓ 已创建全新的文件输入元素，确保无缓存事件监听');
                 
                 // 定义文件选择处理器
                 async function handleFileSelect(e) {
@@ -4168,6 +4182,13 @@
                     console.log('📤 开始上传文件:', file.name, '大小:', file.size, 'bytes');
                     
                     try {
+                        // 再次检查编辑器是否仍然存在
+                        if (!articleEditor) {
+                            console.error('❌ 编辑器实例丢失，上传中止');
+                            alert('❌ 编辑器异常，请刷新页面后重试');
+                            return;
+                        }
+                        
                         // 上传文件
                         const formData = new FormData();
                         formData.append('file', file);
@@ -4186,14 +4207,19 @@
                             const data = await response.json();
                             console.log('✅ 图片上传成功:', data.url);
                             
-                            // 插入图片到编辑器
-                            if (articleEditor) {
-                                articleEditor.chain().focus().setImage({ 
-                                    src: data.url,
-                                    style: 'width: 100%; height: auto; display: block; max-width: 100%;'
-                                }).run();
-                                console.log('✅ 图片已插入编辑器');
+                            // 再次验证编辑器存在
+                            if (!articleEditor) {
+                                console.error('❌ 上传完成但编辑器实例丢失');
+                                alert('❌ 编辑器已关闭，图片上传已取消');
+                                return;
                             }
+                            
+                            // 插入图片到编辑器
+                            articleEditor.chain().focus().setImage({ 
+                                src: data.url,
+                                style: 'width: 100%; height: auto; display: block; max-width: 100%;'
+                            }).run();
+                            console.log('✅ 图片已插入编辑器');
                             alert('✅ 图片上传成功！');
                         } else {
                             const error = await response.json();
