@@ -27,8 +27,9 @@ nohup celery -A app.celery_app worker \
     --concurrency=4 \
     --pool=prefork \
     --autoscale=8,4 \
-    --time-limit=30m \
-    --soft-time-limit=25m \
+    --time-limit=1800 \
+    --soft-time-limit=1500 \
+    --queues=celery,ai_generation \
     --logfile=/tmp/celery_logs/worker.log \
     --pidfile=/tmp/celery_worker.pid \
     > /tmp/celery_logs/worker_output.log 2>&1 &
