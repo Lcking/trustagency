@@ -2581,14 +2581,29 @@
         }
         
         // ============ BUG_014 CLEAN CODE重构 ============
-        // 原问题：直接 shouldShow=true 是"头疼医头"的临时补丁
-        // 改进：使用策略模式，清晰区分编辑和新增模式，考虑字段必填性
+        // 原问题：直接 shouldShow=true 是"头疼医头"的临时补丁，且 hasFieldValue 函数未被使用
+        // 改进：使用策略模式，清晰区分编辑和新增模式，考虑字段必填性，充分利用 hasFieldValue
         const FIELD_VISIBILITY_RULES = {
-            edit: (field, data) => true, // 编辑模式显示所有字段（包括空值），让用户可以编辑
-            create: () => true
+            edit: (field = {}, data = {}) => {
+                // 必填字段在编辑模式下总是显示
+                if (field.required) {
+                    return true;
+                }
+                // 字段名缺失则显示（防止异常）
+                if (!field.name) {
+                    return true;
+                }
+                // 根据字段值是否存在决定显示
+                return hasFieldValue(data, field.name);
+            },
+            create: () => true // 新增模式显示所有字段
         };
         
         function hasFieldValue(data, fieldName) {
+            // 强化判空判断，防止缺失数据或字段名时抛异常
+            if (!data || !fieldName) {
+                return false;
+            }
             const val = data[fieldName];
             return val !== null && val !== undefined && val !== '';
         }
