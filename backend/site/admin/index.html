@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrustAgency 后台管理系统</title>
+    <!-- Marked.js - Markdown 解析器 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Tiptap 编辑器 CDN -->
     <link rel="stylesheet" href="https://unpkg.com/tiptap-default-styles@1.0.0/style.css">
     <style>
@@ -1042,6 +1044,85 @@
                 <div id="platformsContent"></div>
             </div>
 
+            <!-- Markdown 批量导入模态框 -->
+            <div id="markdownImportModal" class="modal">
+                <div class="modal-content" style="max-width: 700px;">
+                    <div class="modal-header">
+                        <h2>📁 批量导入 Markdown 文章</h2>
+                        <button class="close-btn" onclick="closeMarkdownImportModal()">&times;</button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <!-- 栏目和分类选择 -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>目标栏目 *</label>
+                                <select id="importSection" required onchange="onImportSectionChanged()">
+                                    <option value="">-- 选择栏目 --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>目标分类 *</label>
+                                <select id="importCategory" required>
+                                    <option value="">-- 先选择栏目 --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="importPlatformGroup" style="display: none;">
+                            <label>关联平台 *</label>
+                            <select id="importPlatform">
+                                <option value="">-- 选择平台 --</option>
+                            </select>
+                        </div>
+
+                        <!-- 文件上传区域 -->
+                        <div class="form-group">
+                            <label>选择 Markdown 文件</label>
+                            <div id="dropZone" style="border: 2px dashed #ccc; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; background: #fafafa; transition: all 0.3s;"
+                                 ondrop="handleFileDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('mdFileInput').click()">
+                                <div style="font-size: 48px; color: #999;">📄</div>
+                                <p style="color: #666; margin: 10px 0;">拖拽 .md 文件到此处，或点击选择</p>
+                                <p style="color: #999; font-size: 12px;">支持多选，单次最多 50 个文件</p>
+                            </div>
+                            <input type="file" id="mdFileInput" accept=".md,.markdown" multiple style="display: none;" onchange="handleFileSelect(event)">
+                        </div>
+
+                        <!-- 已选择的文件列表 -->
+                        <div id="selectedFilesList" style="display: none; margin-top: 15px;">
+                            <label>已选择的文件 (<span id="selectedFilesCount">0</span>个)</label>
+                            <div id="filesListContent" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px; padding: 10px; background: #f9f9f9;"></div>
+                        </div>
+
+                        <!-- 导入选项 -->
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="importAsPublished" checked>
+                                <span>导入后直接发布</span>
+                            </label>
+                        </div>
+
+                        <!-- 操作按钮 -->
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                            <button type="button" class="btn btn-secondary" onclick="closeMarkdownImportModal()">取消</button>
+                            <button type="button" class="btn btn-success" id="startImportBtn" onclick="startMarkdownImport()" disabled>
+                                开始导入 (<span id="importBtnCount">0</span>篇)
+                            </button>
+                        </div>
+
+                        <!-- 导入进度 -->
+                        <div id="importProgress" style="display: none; margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>导入进度</span>
+                                <span id="importProgressText">0/0</span>
+                            </div>
+                            <div style="background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden;">
+                                <div id="importProgressBar" style="width: 0%; background: #4CAF50; height: 100%; transition: width 0.3s;"></div>
+                            </div>
+                            <div id="importLog" style="margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 12px; color: #666;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 平台编辑模态框 -->
             <div id="platformModal" class="modal">
                 <div class="modal-content">
@@ -1110,7 +1191,10 @@
             <div id="articles" class="content-section">
                 <div class="header">
                     <h2>文章管理</h2>
-                    <button class="btn btn-success" onclick="showArticleForm()">+ 新增文章</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="showArticleForm()">+ 新增文章</button>
+                        <button class="btn btn-primary" onclick="showMarkdownImportModal()">📁 批量导入 Markdown</button>
+                    </div>
                 </div>
                 <div>
                     <input type="text" id="articleSearch" placeholder="搜索文章..." style="max-width: 300px; margin-bottom: 15px;">
@@ -3179,6 +3263,340 @@
                 loadCategoriesForSelect('articleCategory', sectionId);
             } else {
                 document.getElementById('articleCategory').innerHTML = '<option value="">选择分类</option>';
+            }
+        }
+
+        // ============= Markdown 批量导入函数 =============
+        
+        let selectedMdFiles = []; // 存储选择的文件
+        
+        // 显示导入模态框
+        async function showMarkdownImportModal() {
+            const modal = document.getElementById('markdownImportModal');
+            modal.style.display = 'flex';
+            
+            // 重置状态
+            selectedMdFiles = [];
+            updateFilesList();
+            document.getElementById('importProgress').style.display = 'none';
+            document.getElementById('importLog').innerHTML = '';
+            
+            // 加载栏目列表
+            await loadSectionsForImport();
+        }
+        
+        // 关闭导入模态框
+        function closeMarkdownImportModal() {
+            document.getElementById('markdownImportModal').style.display = 'none';
+            selectedMdFiles = [];
+        }
+        
+        // 加载栏目列表（用于导入）
+        async function loadSectionsForImport() {
+            try {
+                const response = await fetch(`${API_URL}/api/sections/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const sections = await response.json();
+                    const select = document.getElementById('importSection');
+                    select.innerHTML = '<option value="">-- 选择栏目 --</option>';
+                    sections.forEach(s => {
+                        select.innerHTML += `<option value="${s.id}" data-requires-platform="${s.requires_platform}">${s.name}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('加载栏目失败:', error);
+            }
+        }
+        
+        // 栏目变化时加载分类
+        async function onImportSectionChanged() {
+            const sectionSelect = document.getElementById('importSection');
+            const categorySelect = document.getElementById('importCategory');
+            const platformGroup = document.getElementById('importPlatformGroup');
+            const selectedOption = sectionSelect.options[sectionSelect.selectedIndex];
+            
+            categorySelect.innerHTML = '<option value="">-- 选择分类 --</option>';
+            
+            if (!sectionSelect.value) {
+                platformGroup.style.display = 'none';
+                return;
+            }
+            
+            // 检查是否需要平台
+            const requiresPlatform = selectedOption.getAttribute('data-requires-platform') === 'true';
+            platformGroup.style.display = requiresPlatform ? 'block' : 'none';
+            
+            if (requiresPlatform) {
+                await loadPlatformsForSelect('importPlatform');
+            }
+            
+            // 加载分类
+            try {
+                const response = await fetch(`${API_URL}/api/categories/?section_id=${sectionSelect.value}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const categories = await response.json();
+                    categories.forEach(c => {
+                        categorySelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('加载分类失败:', error);
+            }
+        }
+        
+        // 处理文件拖拽
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').style.borderColor = '#4CAF50';
+            document.getElementById('dropZone').style.background = '#e8f5e9';
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').style.borderColor = '#ccc';
+            document.getElementById('dropZone').style.background = '#fafafa';
+        }
+        
+        function handleFileDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('dropZone').style.borderColor = '#ccc';
+            document.getElementById('dropZone').style.background = '#fafafa';
+            
+            const files = Array.from(e.dataTransfer.files).filter(f => 
+                f.name.endsWith('.md') || f.name.endsWith('.markdown')
+            );
+            addFiles(files);
+        }
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addFiles(files);
+            e.target.value = ''; // 重置以便可以再次选择相同文件
+        }
+        
+        // 添加文件到列表
+        function addFiles(files) {
+            // 限制最多50个文件
+            const remaining = 50 - selectedMdFiles.length;
+            if (files.length > remaining) {
+                showNotification(`⚠️ 最多只能导入50个文件，已添加前${remaining}个`, 'warning');
+                files = files.slice(0, remaining);
+            }
+            
+            // 去重
+            files.forEach(file => {
+                if (!selectedMdFiles.find(f => f.name === file.name)) {
+                    selectedMdFiles.push(file);
+                }
+            });
+            
+            updateFilesList();
+        }
+        
+        // 更新文件列表显示
+        function updateFilesList() {
+            const listContainer = document.getElementById('selectedFilesList');
+            const listContent = document.getElementById('filesListContent');
+            const countSpan = document.getElementById('selectedFilesCount');
+            const importBtn = document.getElementById('startImportBtn');
+            const importBtnCount = document.getElementById('importBtnCount');
+            
+            countSpan.textContent = selectedMdFiles.length;
+            importBtnCount.textContent = selectedMdFiles.length;
+            importBtn.disabled = selectedMdFiles.length === 0;
+            
+            if (selectedMdFiles.length === 0) {
+                listContainer.style.display = 'none';
+                return;
+            }
+            
+            listContainer.style.display = 'block';
+            listContent.innerHTML = selectedMdFiles.map((file, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee;">
+                    <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        📄 ${file.name} <small style="color: #999;">(${(file.size / 1024).toFixed(1)}KB)</small>
+                    </span>
+                    <button type="button" onclick="removeFile(${index})" style="background: none; border: none; color: #f44336; cursor: pointer; padding: 2px 8px;">✕</button>
+                </div>
+            `).join('');
+        }
+        
+        // 移除文件
+        function removeFile(index) {
+            selectedMdFiles.splice(index, 1);
+            updateFilesList();
+        }
+        
+        // 解析 Markdown Frontmatter
+        function parseFrontmatter(content) {
+            const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+            const match = content.match(frontmatterRegex);
+            
+            if (match) {
+                const frontmatter = {};
+                const lines = match[1].split('\n');
+                lines.forEach(line => {
+                    const colonIndex = line.indexOf(':');
+                    if (colonIndex > 0) {
+                        const key = line.substring(0, colonIndex).trim();
+                        const value = line.substring(colonIndex + 1).trim();
+                        frontmatter[key] = value;
+                    }
+                });
+                return {
+                    frontmatter,
+                    content: match[2]
+                };
+            }
+            
+            return { frontmatter: {}, content };
+        }
+        
+        // 从文件名提取标题
+        function extractTitleFromFilename(filename) {
+            return filename.replace(/\.(md|markdown)$/, '').replace(/[-_]/g, ' ');
+        }
+        
+        // 生成 slug
+        function generateSlug(title) {
+            return title
+                .toLowerCase()
+                .replace(/[^\w\s\u4e00-\u9fa5-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                + '-' + Date.now().toString(36);
+        }
+        
+        // 开始导入
+        async function startMarkdownImport() {
+            const sectionId = document.getElementById('importSection').value;
+            const categoryId = document.getElementById('importCategory').value;
+            const platformId = document.getElementById('importPlatform').value;
+            const isPublished = document.getElementById('importAsPublished').checked;
+            
+            if (!sectionId || !categoryId) {
+                showNotification('❌ 请选择栏目和分类', 'error');
+                return;
+            }
+            
+            // 检查是否需要平台
+            const sectionSelect = document.getElementById('importSection');
+            const selectedOption = sectionSelect.options[sectionSelect.selectedIndex];
+            const requiresPlatform = selectedOption.getAttribute('data-requires-platform') === 'true';
+            
+            if (requiresPlatform && !platformId) {
+                showNotification('❌ 该栏目需要选择关联平台', 'error');
+                return;
+            }
+            
+            if (selectedMdFiles.length === 0) {
+                showNotification('❌ 请选择要导入的文件', 'error');
+                return;
+            }
+            
+            // 显示进度
+            const progressDiv = document.getElementById('importProgress');
+            const progressBar = document.getElementById('importProgressBar');
+            const progressText = document.getElementById('importProgressText');
+            const importLog = document.getElementById('importLog');
+            const importBtn = document.getElementById('startImportBtn');
+            
+            progressDiv.style.display = 'block';
+            importBtn.disabled = true;
+            importBtn.textContent = '导入中...';
+            importLog.innerHTML = '';
+            
+            let successCount = 0;
+            let failCount = 0;
+            const total = selectedMdFiles.length;
+            
+            for (let i = 0; i < selectedMdFiles.length; i++) {
+                const file = selectedMdFiles[i];
+                
+                try {
+                    // 读取文件内容
+                    const text = await file.text();
+                    
+                    // 解析 frontmatter
+                    const { frontmatter, content } = parseFrontmatter(text);
+                    
+                    // 提取标题
+                    const title = frontmatter.title || extractTitleFromFilename(file.name);
+                    
+                    // 转换 Markdown 为 HTML
+                    const htmlContent = marked.parse(content);
+                    
+                    // 生成 slug
+                    const slug = generateSlug(title);
+                    
+                    // 创建文章
+                    const articleData = {
+                        title: title,
+                        slug: slug,
+                        content: htmlContent,
+                        summary: frontmatter.summary || frontmatter.description || '',
+                        section_id: parseInt(sectionId),
+                        category_id: parseInt(categoryId),
+                        platform_id: platformId ? parseInt(platformId) : null,
+                        tags: frontmatter.tags || '',
+                        is_published: isPublished,
+                        is_featured: false,
+                        meta_description: frontmatter.description || '',
+                        meta_keywords: frontmatter.keywords || frontmatter.tags || ''
+                    };
+                    
+                    const response = await fetch(`${API_URL}/api/articles`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(articleData)
+                    });
+                    
+                    if (response.ok) {
+                        successCount++;
+                        importLog.innerHTML += `<div style="color: #4CAF50;">✅ ${title}</div>`;
+                    } else {
+                        const error = await response.json();
+                        failCount++;
+                        importLog.innerHTML += `<div style="color: #f44336;">❌ ${title}: ${error.detail || '创建失败'}</div>`;
+                    }
+                    
+                } catch (error) {
+                    failCount++;
+                    importLog.innerHTML += `<div style="color: #f44336;">❌ ${file.name}: ${error.message}</div>`;
+                }
+                
+                // 更新进度
+                const progress = ((i + 1) / total * 100).toFixed(0);
+                progressBar.style.width = progress + '%';
+                progressText.textContent = `${i + 1}/${total}`;
+                
+                // 滚动日志到底部
+                importLog.scrollTop = importLog.scrollHeight;
+            }
+            
+            // 完成
+            importBtn.textContent = `开始导入 (${selectedMdFiles.length}篇)`;
+            importBtn.disabled = false;
+            
+            showNotification(`📁 导入完成: ${successCount}篇成功, ${failCount}篇失败`, successCount > 0 ? 'success' : 'error');
+            
+            // 如果全部成功，刷新文章列表并关闭模态框
+            if (failCount === 0) {
+                setTimeout(() => {
+                    closeMarkdownImportModal();
+                    loadArticles();
+                }, 1500);
             }
         }
 
