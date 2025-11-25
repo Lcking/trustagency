@@ -488,7 +488,8 @@
                 }
             },
             updatePageContent(platform) {
-                document.title = `${platform.name} - 股票杠杆平台排行榜单`;
+                // 只设置页面标题，站点名称后缀由 site-settings.js 动态追加
+                document.title = platform.name;
                 const heading = document.querySelector('h1');
                 if (heading) heading.textContent = platform.name;
                 const description = document.querySelector('.lead.text-muted');
@@ -502,6 +503,7 @@
     <script src="/assets/js/main.js" defer></script>
     <!-- Auth Manager -->
     <script src="/assets/js/auth-manager.js"></script>
-
+    <!-- Site Settings Loader -->
+    <script src="/assets/js/site-settings.js" defer></script>
 </body>
 </html>

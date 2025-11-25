@@ -335,7 +335,8 @@
             });
 
             // ✅ 动态更新SEO元数据
-            const pageTitle = `${article.title} - 股票杠杆平台排行榜单`;
+            // 只设置页面标题，站点名称后缀由 site-settings.js 动态追加
+            const pageTitle = article.title;
             document.title = pageTitle;
             
             // 更新meta标签
@@ -434,6 +435,7 @@
             loadArticle();
         }
     </script>
-
+    <!-- Site Settings Loader -->
+    <script src="/assets/js/site-settings.js" defer></script>
 </body>
 </html>

@@ -226,9 +226,13 @@ a:focus {
 }
 
 .card-header {
-    background-color: var(--light-color);
     border-bottom: 1px solid var(--border-color);
     border-radius: 0.375rem 0.375rem 0 0;
+}
+
+/* 只对没有Bootstrap背景色类的card-header应用默认背景 */
+.card-header:not([class*="bg-"]) {
+    background-color: var(--light-color);
 }
 
 .card-body {
