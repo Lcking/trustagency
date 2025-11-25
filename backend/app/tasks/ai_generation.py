@@ -43,8 +43,15 @@ def generate_article_batch(
         Exception: 生成失败时抛出异常
     """
     try:
-        # 更新任务状态为处理中
+        # 获取任务记录以读取 AI 配置
         db = SessionLocal()
+        task_record = db.query(AIGenerationTask).filter(
+            AIGenerationTask.batch_id == batch_id
+        ).first()
+        
+        ai_config_id = task_record.ai_config_id if task_record else None
+        
+        # 更新任务状态为处理中
         db.execute(
             sql_update(AIGenerationTask).where(
                 AIGenerationTask.batch_id == batch_id
@@ -74,7 +81,7 @@ def generate_article_batch(
         # 逐篇生成文章
         for i, title in enumerate(titles):
             try:
-                # 生成单篇文章
+                # 生成单篇文章（传递 AI 配置 ID）
                 result = generate_single_article.apply_async(
                     args=(
                         title, 
@@ -82,7 +89,8 @@ def generate_article_batch(
                         category_id,
                         platform_id,
                         batch_id,
-                        creator_id
+                        creator_id,
+                        ai_config_id  # 传递 AI 配置 ID
                     ),
                     queue='ai_generation'
                 )
@@ -176,7 +184,8 @@ def generate_single_article(
     category_id: int,
     platform_id: int = None,
     batch_id: str = None,
-    creator_id: int = None
+    creator_id: int = None,
+    ai_config_id: int = None
 ):
     """
     生成单篇文章的异步任务（新逻辑）
@@ -198,31 +207,22 @@ def generate_single_article(
     try:
         print(f"[TASK] Generating article for title: '{title}'")
         
-        # 集成 OpenAI API
+        # 集成 OpenAI API（使用数据库中的 AI 配置）
         try:
             from app.services.openai_service import OpenAIService
             
-            print(f"[OPENAI] 调用 OpenAI 生成文章: {title}")
-            content = OpenAIService.generate_article(title, f"section_{section_id}")
+            print(f"[OPENAI] 调用 AI 生成文章: {title} (配置ID: {ai_config_id})")
+            content = OpenAIService.generate_article(
+                title, 
+                f"section_{section_id}",
+                ai_config_id=ai_config_id  # 传递 AI 配置 ID
+            )
             
-        except ImportError:
-            # OpenAI 服务不可用时，使用占位符
-            print(f"[PLACEHOLDER] OpenAI 服务不可用，使用占位符")
-            content = f"""
-# {title}
-
-## 介绍
-这是关于 {title} 的文章。
-
-## 内容
-这是自动生成的文章内容。
-在集成 OpenAI API 后，此处将显示 AI 生成的内容。
-
-## 结论
-更多内容将在 OpenAI 集成完成后生成。
-
-生成时间: {datetime.utcnow().isoformat()}
-"""
+        except Exception as e:
+            # OpenAI 服务不可用时，记录错误并使用占位符
+            print(f"[ERROR] AI 服务调用失败: {str(e)}")
+            # 重新抛出异常让 Celery 处理重试
+            raise Exception(f"AI 生成失败: {str(e)}")
         
         # 保存文章到数据库
         from app.database import SessionLocal
