@@ -28,6 +28,46 @@ class AIConfigTestResponse(BaseModel):
     response_time: float = None
 
 
+def normalize_api_endpoint(endpoint: str, model_name: str = "") -> str:
+    """
+    规范化 API 端点 URL
+    
+    自动为常见的 AI 服务补全路径：
+    - OpenAI: 自动追加 /v1/chat/completions
+    - 其他服务: 保持原样
+    """
+    endpoint = endpoint.rstrip('/')
+    
+    # OpenAI 官方 API
+    if 'api.openai.com' in endpoint:
+        if not endpoint.endswith('/chat/completions') and not endpoint.endswith('/completions'):
+            if endpoint.endswith('/v1'):
+                endpoint += '/chat/completions'
+            else:
+                endpoint += '/v1/chat/completions'
+    
+    # Azure OpenAI
+    elif 'openai.azure.com' in endpoint:
+        if not endpoint.endswith('/chat/completions'):
+            # Azure 格式: https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=xxx
+            if '/deployments/' not in endpoint:
+                endpoint += f'/openai/deployments/{model_name}/chat/completions?api-version=2024-02-15-preview'
+    
+    # DeepSeek
+    elif 'api.deepseek.com' in endpoint:
+        if not endpoint.endswith('/chat/completions'):
+            if endpoint.endswith('/v1'):
+                endpoint += '/chat/completions'
+            else:
+                endpoint += '/v1/chat/completions'
+    
+    # 其他兼容 OpenAI 的服务（如 one-api, new-api 等）
+    elif '/v1' in endpoint and not endpoint.endswith('/chat/completions') and not endpoint.endswith('/completions'):
+        endpoint += '/chat/completions'
+    
+    return endpoint
+
+
 @router.post("/test", response_model=AIConfigTestResponse)
 async def test_ai_config(
     test_data: AIConfigTestRequest,
@@ -37,8 +77,12 @@ async def test_ai_config(
     测试 AI 配置连接
     
     验证 API 端点和密钥的有效性
+    自动规范化常见 AI 服务的端点路径
     """
     try:
+        # 规范化端点 URL
+        normalized_endpoint = normalize_api_endpoint(test_data.api_endpoint, test_data.model_name)
+        
         headers = {
             "Authorization": f"Bearer {test_data.api_key}",
             "Content-Type": "application/json"
@@ -56,21 +100,26 @@ async def test_ai_config(
         import time
         start_time = time.time()
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            # 尝试向 API 端点发送请求
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # 尝试向规范化后的 API 端点发送请求
             response = await client.post(
-                test_data.api_endpoint,
+                normalized_endpoint,
                 json=test_payload,
                 headers=headers
             )
         
         response_time = time.time() - start_time
         
+        # 提示信息（如果端点被规范化）
+        endpoint_note = ""
+        if normalized_endpoint != test_data.api_endpoint:
+            endpoint_note = f"（自动补全路径: {normalized_endpoint}）"
+        
         # 检查响应状态
         if response.status_code in [200, 201]:
             return AIConfigTestResponse(
                 success=True,
-                message=f"✅ 连接成功（响应时间: {response_time:.2f}s）",
+                message=f"✅ 连接成功（响应时间: {response_time:.2f}s）{endpoint_note}",
                 response_time=response_time
             )
         elif response.status_code == 401:
@@ -82,8 +131,21 @@ async def test_ai_config(
         elif response.status_code == 404:
             return AIConfigTestResponse(
                 success=False,
-                message="❌ API 端点不存在",
-                error=f"HTTP {response.status_code}: Not Found"
+                message=f"❌ API 端点不存在，请检查 URL 是否正确{endpoint_note}",
+                error=f"HTTP {response.status_code}: Not Found. 请求的端点: {normalized_endpoint}"
+            )
+        elif response.status_code == 400:
+            # 400 通常表示请求格式有误，但连接是正常的
+            try:
+                error_detail = response.json()
+                error_msg = error_detail.get('error', {}).get('message', str(error_detail))
+            except:
+                error_msg = response.text[:200]
+            return AIConfigTestResponse(
+                success=True,  # 能收到400说明连接正常，只是请求参数问题
+                message=f"✅ 连接正常（API 返回参数错误，但连接有效）{endpoint_note}",
+                error=f"API 返回: {error_msg}",
+                response_time=response_time
             )
         elif response.status_code >= 500:
             return AIConfigTestResponse(
@@ -94,7 +156,7 @@ async def test_ai_config(
         else:
             return AIConfigTestResponse(
                 success=False,
-                message=f"❌ 请求失败",
+                message=f"❌ 请求失败{endpoint_note}",
                 error=f"HTTP {response.status_code}"
             )
     
