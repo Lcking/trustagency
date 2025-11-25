@@ -131,6 +131,10 @@ def generate_article_batch(
                     'error': str(e)
                 })
         
+        # 统计成功和失败数量
+        success_count = sum(1 for r in results if r.get('status') != 'failed')
+        fail_count = len(results) - success_count
+        
         # 更新任务状态为成功
         db.execute(
             sql_update(AIGenerationTask).where(
@@ -138,6 +142,9 @@ def generate_article_batch(
             ).values(
                 status='completed',
                 celery_status='SUCCESS',
+                progress=100,
+                completed_count=success_count,
+                failed_count=fail_count,
                 completed_at=datetime.utcnow(),
                 last_progress_update=datetime.utcnow()
             )
