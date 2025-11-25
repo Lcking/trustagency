@@ -3273,13 +3273,18 @@
         // 显示导入模态框
         async function showMarkdownImportModal() {
             const modal = document.getElementById('markdownImportModal');
-            modal.style.display = 'flex';
             
             // 重置状态
             selectedMdFiles = [];
             updateFilesList();
             document.getElementById('importProgress').style.display = 'none';
             document.getElementById('importLog').innerHTML = '';
+            document.getElementById('importSection').innerHTML = '<option value="">-- 选择栏目 --</option>';
+            document.getElementById('importCategory').innerHTML = '<option value="">-- 先选择栏目 --</option>';
+            document.getElementById('importPlatformGroup').style.display = 'none';
+            
+            // 显示模态框
+            modal.classList.add('active');
             
             // 加载栏目列表
             await loadSectionsForImport();
@@ -3287,18 +3292,19 @@
         
         // 关闭导入模态框
         function closeMarkdownImportModal() {
-            document.getElementById('markdownImportModal').style.display = 'none';
+            document.getElementById('markdownImportModal').classList.remove('active');
             selectedMdFiles = [];
         }
         
         // 加载栏目列表（用于导入）
         async function loadSectionsForImport() {
             try {
-                const response = await fetch(`${API_URL}/api/sections/`, {
+                const response = await fetch(`${API_URL}/api/sections`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
-                    const sections = await response.json();
+                    const result = await response.json();
+                    const sections = result.data;  // API返回 {data: [...]}
                     const select = document.getElementById('importSection');
                     select.innerHTML = '<option value="">-- 选择栏目 --</option>';
                     sections.forEach(s => {
@@ -3332,9 +3338,9 @@
                 await loadPlatformsForSelect('importPlatform');
             }
             
-            // 加载分类
+            // 加载分类 - 使用正确的API路径
             try {
-                const response = await fetch(`${API_URL}/api/categories/?section_id=${sectionSelect.value}`, {
+                const response = await fetch(`${API_URL}/api/categories/section/${sectionSelect.value}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
