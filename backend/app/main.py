@@ -29,15 +29,21 @@ app = FastAPI(
 )
 
 # CORS 配置 - 允许所有来源（本地开发）
-cors_origins = os.getenv("CORS_ORIGINS", '["http://localhost", "http://localhost:80", "http://localhost:8000", "http://localhost:8001"]')
+cors_origins = os.getenv("CORS_ORIGINS", "")
 if isinstance(cors_origins, str) and cors_origins.strip():
     import json
     try:
         cors_origins = json.loads(cors_origins)
     except json.JSONDecodeError:
-        cors_origins = ["http://localhost:8000", "http://localhost:8001", "http://127.0.0.1:8000"]
+        # 如果环境变量解析失败，使用默认列表
+        cors_origins = ["http://localhost:8000", "http://localhost:8001", "http://127.0.0.1:8000", "http://127.0.0.1:8080"]
 else:
-    cors_origins = ["http://localhost:8000", "http://localhost:8001", "http://127.0.0.1:8000"]
+    # 默认CORS白名单（本地开发环境）
+    cors_origins = ["http://localhost:8000", "http://localhost:8001", "http://127.0.0.1:8000", "http://127.0.0.1:8080"]
+
+# 调试：打印CORS配置
+import sys
+print(f"[CORS] Allowed origins: {cors_origins}", file=sys.stderr)
 
 app.add_middleware(
     CORSMiddleware,
