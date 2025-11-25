@@ -124,8 +124,12 @@
 
             <!-- FAQ列表 - 动态加载或显示默认内容 -->
             <div id="faqList" class="faq-list">
+ fix/bug-002-qa-ui
                 <!-- 动态加载的FAQ列表 -->
                 <div id="faqListGroup" class="list-group">
+
+
+ main
                     <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                         <div>
                             <h2 class="h6 mb-1">什么是股票杠杆交易？</h2>
@@ -196,12 +200,15 @@
                         </div>
                         <span class="text-muted">→</span>
                     </a>
+ fix/bug-002-qa-ui
                 </div>
                 <!-- 加载更多按钮 -->
                 <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
                     <button id="loadMoreBtn" class="btn btn-outline-primary">
                         加载更多
                     </button>
+
+ main
                 </div>
             </div>
         </div>
@@ -252,7 +259,10 @@
         
         /**
          * 动态加载常见问题栏目的文章
+ fix/bug-002-qa-ui
          * 支持分页加载更多
+
+ main
          */
         async function loadQAArticles(append = false) {
             if (faqIsLoading || (!faqHasMore && append)) return;
@@ -268,8 +278,12 @@
                 const API_URL = location.origin.replace(/\/$/, '');
                 const skip = faqCurrentPage * FAQ_PAGE_SIZE;
                 
+ fix/bug-002-qa-ui
                 // 获取"常见问题"栏目的文章 (分页)
                 const response = await fetch(`${API_URL}/api/articles/by-section/faq?limit=${FAQ_PAGE_SIZE}&skip=${skip}`, {
+
+
+ main
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -299,6 +313,7 @@
                 }
                 
                 // 获取FAQ列表容器
+fix/bug-002-qa-ui
                 const listGroup = document.getElementById('faqListGroup');
                 if (!listGroup) {
                     console.error('找不到FAQ列表容器');
@@ -310,6 +325,7 @@
                 if (!append) {
                     listGroup.innerHTML = '';
                 }
+ main
                 
                 // 生成列表项
                 articles.forEach((article) => {
@@ -331,6 +347,7 @@
                     listGroup.appendChild(listItem);
                 });
                 
+fix/bug-002-qa-ui
                 // 更新页码
                 faqCurrentPage++;
                 
@@ -338,6 +355,9 @@
                 updateLoadMoreButton();
                 
                 console.log(`✅ 成功加载 ${articles.length} 篇FAQ (第${faqCurrentPage}页, 共${listGroup.children.length}篇)`);
+
+
+main
                 
             } catch (error) {
                 console.error('加载常见问题文章时发生错误:', error);
