@@ -1355,26 +1355,107 @@
                     <h2>⚙️ 系统设置</h2>
                 </div>
                 
-                <!-- 密码修改表单 -->
-                <div style="background: white; padding: 20px; border-radius: 8px; max-width: 500px;">
-                    <h3>修改管理员密码</h3>
-                    <form id="changePasswordForm" style="margin-top: 20px;">
-                        <div class="form-group">
-                            <label for="oldPassword">旧密码 *</label>
-                            <input type="password" id="oldPassword" placeholder="请输入当前密码" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="newPassword">新密码 *</label>
-                            <input type="password" id="newPassword" placeholder="请输入新密码 (至少8个字符)" required minlength="8">
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">确认新密码 *</label>
-                            <input type="password" id="confirmPassword" placeholder="请再次输入新密码" required minlength="8">
-                        </div>
-                        <div id="passwordError" style="color: #e74c3c; margin-bottom: 10px; display: none;"></div>
-                        <div id="passwordSuccess" style="color: #27ae60; margin-bottom: 10px; display: none;"></div>
-                        <button type="button" class="btn btn-primary" onclick="changePassword()">✅ 更改密码</button>
-                    </form>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px;">
+                    <!-- 网站基本设置 -->
+                    <div style="background: white; padding: 20px; border-radius: 8px;">
+                        <h3>🌐 网站基本设置</h3>
+                        <form id="websiteSettingsForm" style="margin-top: 20px;">
+                            <div class="form-group">
+                                <label for="siteName">网站名称 (用于标题后缀) *</label>
+                                <input type="text" id="siteName" placeholder="如: 股票杠杆平台排行榜单">
+                                <small style="color: #666;">页面标题将显示为: 页面标题 - 网站名称</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="siteTitle">首页标题 (Title)</label>
+                                <input type="text" id="siteTitle" placeholder="首页SEO标题">
+                            </div>
+                            <div class="form-group">
+                                <label for="siteDescription">网站描述 (Description)</label>
+                                <textarea id="siteDescription" rows="3" placeholder="网站SEO描述，建议120字以内"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="siteKeywords">关键词 (Keywords)</label>
+                                <input type="text" id="siteKeywords" placeholder="关键词，用英文逗号分隔">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveWebsiteSettings()">💾 保存基本设置</button>
+                        </form>
+                    </div>
+
+                    <!-- 流量统计设置 -->
+                    <div style="background: white; padding: 20px; border-radius: 8px;">
+                        <h3>📊 流量统计代码</h3>
+                        <form id="analyticsSettingsForm" style="margin-top: 20px;">
+                            <div class="form-group">
+                                <label for="baiduAnalytics">百度统计代码</label>
+                                <textarea id="baiduAnalytics" rows="4" placeholder="粘贴百度统计的完整script代码"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="googleAnalytics">Google Analytics代码</label>
+                                <textarea id="googleAnalytics" rows="4" placeholder="粘贴Google Analytics的完整script代码"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="customScripts">自定义脚本 (放在head中)</label>
+                                <textarea id="customScripts" rows="3" placeholder="其他需要在head中加载的脚本"></textarea>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveAnalyticsSettings()">💾 保存统计代码</button>
+                        </form>
+                    </div>
+
+                    <!-- 备案与版权设置 -->
+                    <div style="background: white; padding: 20px; border-radius: 8px;">
+                        <h3>📜 备案与版权</h3>
+                        <form id="footerSettingsForm" style="margin-top: 20px;">
+                            <div class="form-group">
+                                <label for="icpNumber">ICP备案号</label>
+                                <input type="text" id="icpNumber" placeholder="如: 京ICP备xxxxxxxx号">
+                                <small style="color: #666;">留空则不显示备案信息</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="companyName">公司/网站主体名称</label>
+                                <input type="text" id="companyName" placeholder="版权归属名称">
+                            </div>
+                            <div class="form-group">
+                                <label for="contactEmail">联系邮箱</label>
+                                <input type="email" id="contactEmail" placeholder="support@example.com">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveFooterSettings()">💾 保存备案信息</button>
+                        </form>
+                    </div>
+
+                    <!-- 友情链接设置 -->
+                    <div style="background: white; padding: 20px; border-radius: 8px;">
+                        <h3>🔗 友情链接</h3>
+                        <form id="footerLinksForm" style="margin-top: 20px;">
+                            <div class="form-group">
+                                <label for="footerLinks">友情链接 (JSON格式)</label>
+                                <textarea id="footerLinks" rows="6" placeholder='[{"name":"链接名称","url":"https://example.com"}]'></textarea>
+                                <small style="color: #666;">格式: [{"name":"名称","url":"地址"}, ...]</small>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveFooterLinks()">💾 保存友情链接</button>
+                        </form>
+                    </div>
+
+                    <!-- 密码修改表单 -->
+                    <div style="background: white; padding: 20px; border-radius: 8px;">
+                        <h3>🔐 修改管理员密码</h3>
+                        <form id="changePasswordForm" style="margin-top: 20px;">
+                            <div class="form-group">
+                                <label for="oldPassword">旧密码 *</label>
+                                <input type="password" id="oldPassword" placeholder="请输入当前密码" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newPassword">新密码 *</label>
+                                <input type="password" id="newPassword" placeholder="请输入新密码 (至少8个字符)" required minlength="8">
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPassword">确认新密码 *</label>
+                                <input type="password" id="confirmPassword" placeholder="请再次输入新密码" required minlength="8">
+                            </div>
+                            <div id="passwordError" style="color: #e74c3c; margin-bottom: 10px; display: none;"></div>
+                            <div id="passwordSuccess" style="color: #27ae60; margin-bottom: 10px; display: none;"></div>
+                            <button type="button" class="btn btn-primary" onclick="changePassword()">✅ 更改密码</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3861,7 +3942,108 @@
 
         // 初始化设置页面
         function initializeSettings() {
-            // 可以在这里添加初始化逻辑
+            loadWebsiteSettings();
+        }
+
+        // ============= 网站设置管理函数 =============
+        
+        // 加载网站设置
+        async function loadWebsiteSettings() {
+            try {
+                const response = await authenticatedFetch(`${API_URL}/api/website-settings/`);
+                if (response.ok) {
+                    const settings = await response.json();
+                    // 填充基本设置
+                    document.getElementById('siteName').value = settings.site_name || '';
+                    document.getElementById('siteTitle').value = settings.site_title || '';
+                    document.getElementById('siteDescription').value = settings.site_description || '';
+                    document.getElementById('siteKeywords').value = settings.site_keywords || '';
+                    // 填充统计代码
+                    document.getElementById('baiduAnalytics').value = settings.baidu_analytics || '';
+                    document.getElementById('googleAnalytics').value = settings.google_analytics || '';
+                    document.getElementById('customScripts').value = settings.custom_scripts || '';
+                    // 填充备案信息
+                    document.getElementById('icpNumber').value = settings.icp_number || '';
+                    document.getElementById('companyName').value = settings.company_name || '';
+                    document.getElementById('contactEmail').value = settings.contact_email || '';
+                    // 填充友情链接
+                    document.getElementById('footerLinks').value = settings.footer_links || '[]';
+                    console.log('✅ 网站设置加载成功');
+                }
+            } catch (error) {
+                console.error('加载网站设置失败:', error);
+            }
+        }
+
+        // 保存网站基本设置
+        async function saveWebsiteSettings() {
+            const data = {
+                site_name: document.getElementById('siteName').value,
+                site_title: document.getElementById('siteTitle').value,
+                site_description: document.getElementById('siteDescription').value,
+                site_keywords: document.getElementById('siteKeywords').value
+            };
+            await updateWebsiteSettings(data, '基本设置');
+        }
+
+        // 保存流量统计代码
+        async function saveAnalyticsSettings() {
+            const data = {
+                baidu_analytics: document.getElementById('baiduAnalytics').value,
+                google_analytics: document.getElementById('googleAnalytics').value,
+                custom_scripts: document.getElementById('customScripts').value
+            };
+            await updateWebsiteSettings(data, '统计代码');
+        }
+
+        // 保存备案信息
+        async function saveFooterSettings() {
+            const data = {
+                icp_number: document.getElementById('icpNumber').value,
+                company_name: document.getElementById('companyName').value,
+                contact_email: document.getElementById('contactEmail').value
+            };
+            await updateWebsiteSettings(data, '备案信息');
+        }
+
+        // 保存友情链接
+        async function saveFooterLinks() {
+            const linksText = document.getElementById('footerLinks').value.trim();
+            // 验证JSON格式
+            try {
+                if (linksText) {
+                    JSON.parse(linksText);
+                }
+            } catch (e) {
+                showNotification('友情链接格式错误，请检查JSON格式', 'error');
+                return;
+            }
+            const data = {
+                footer_links: linksText || '[]'
+            };
+            await updateWebsiteSettings(data, '友情链接');
+        }
+
+        // 更新网站设置的通用函数
+        async function updateWebsiteSettings(data, settingName) {
+            try {
+                const response = await authenticatedFetch(`${API_URL}/api/website-settings/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showNotification(`✅ ${settingName}保存成功`, 'success');
+                } else {
+                    const errorData = await response.json();
+                    showNotification(`❌ 保存失败: ${errorData.detail || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                showNotification(`❌ 网络错误: ${error.message}`, 'error');
+            }
         }
 
         // 退出登录
