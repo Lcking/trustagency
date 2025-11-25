@@ -124,8 +124,8 @@
 
             <!-- FAQ列表 - 动态加载或显示默认内容 -->
             <div id="faqList" class="faq-list">
-                <!-- 默认静态FAQ列表 (API加载成功后会被替换) -->
-                <div class="list-group">
+                <!-- 动态加载的FAQ列表 -->
+                <div id="faqListGroup" class="list-group">
                     <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                         <div>
                             <h2 class="h6 mb-1">什么是股票杠杆交易？</h2>
@@ -197,6 +197,12 @@
                         <span class="text-muted">→</span>
                     </a>
                 </div>
+                <!-- 加载更多按钮 -->
+                <div id="loadMoreContainer" class="text-center mt-4" style="display: none;">
+                    <button id="loadMoreBtn" class="btn btn-outline-primary">
+                        加载更多
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -237,15 +243,33 @@
     
     <script>
         /**
-         * 动态加载常见问题栏目的文章
-         * 以列表+链接形式展示，点击直接跳转到文章页面
+         * FAQ分页加载管理
          */
-        async function loadQAArticles() {
+        const FAQ_PAGE_SIZE = 10; // 每次加载10条
+        let faqCurrentPage = 0;   // 当前页码 (从0开始)
+        let faqHasMore = true;    // 是否还有更多
+        let faqIsLoading = false; // 是否正在加载
+        
+        /**
+         * 动态加载常见问题栏目的文章
+         * 支持分页加载更多
+         */
+        async function loadQAArticles(append = false) {
+            if (faqIsLoading || (!faqHasMore && append)) return;
+            
+            faqIsLoading = true;
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            if (loadMoreBtn && append) {
+                loadMoreBtn.textContent = '加载中...';
+                loadMoreBtn.disabled = true;
+            }
+            
             try {
                 const API_URL = location.origin.replace(/\/$/, '');
+                const skip = faqCurrentPage * FAQ_PAGE_SIZE;
                 
-                // 获取"常见问题"栏目的文章
-                const response = await fetch(`${API_URL}/api/articles/by-section/faq?limit=100`, {
+                // 获取"常见问题"栏目的文章 (分页)
+                const response = await fetch(`${API_URL}/api/articles/by-section/faq?limit=${FAQ_PAGE_SIZE}&skip=${skip}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -253,27 +277,39 @@
                 });
                 
                 if (!response.ok) {
-                    console.warn('加载常见问题栏目文章失败, 使用默认FAQ内容');
+                    console.warn('加载常见问题栏目文章失败');
+                    faqIsLoading = false;
                     return;
                 }
                 
                 const articles = await response.json();
                 
-                if (!Array.isArray(articles) || articles.length === 0) {
-                    console.warn('未找到常见问题栏目的文章, 使用默认FAQ内容');
+                // 判断是否还有更多
+                if (!Array.isArray(articles) || articles.length < FAQ_PAGE_SIZE) {
+                    faqHasMore = false;
+                }
+                
+                if (articles.length === 0) {
+                    if (!append) {
+                        console.warn('未找到常见问题栏目的文章');
+                    }
+                    updateLoadMoreButton();
+                    faqIsLoading = false;
                     return;
                 }
                 
                 // 获取FAQ列表容器
-                const faqList = document.getElementById('faqList');
-                if (!faqList) {
+                const listGroup = document.getElementById('faqListGroup');
+                if (!listGroup) {
                     console.error('找不到FAQ列表容器');
+                    faqIsLoading = false;
                     return;
                 }
                 
-                // 创建新的列表
-                const listGroup = document.createElement('div');
-                listGroup.className = 'list-group';
+                // 如果是首次加载，清空默认内容
+                if (!append) {
+                    listGroup.innerHTML = '';
+                }
                 
                 // 生成列表项
                 articles.forEach((article) => {
@@ -295,15 +331,32 @@
                     listGroup.appendChild(listItem);
                 });
                 
-                // 替换默认内容
-                faqList.innerHTML = '';
-                faqList.appendChild(listGroup);
+                // 更新页码
+                faqCurrentPage++;
                 
-                console.log(`✅ 成功加载 ${articles.length} 篇常见问题文章 (列表形式)`);
+                // 更新"加载更多"按钮状态
+                updateLoadMoreButton();
+                
+                console.log(`✅ 成功加载 ${articles.length} 篇FAQ (第${faqCurrentPage}页, 共${listGroup.children.length}篇)`);
                 
             } catch (error) {
                 console.error('加载常见问题文章时发生错误:', error);
-                console.warn('将保留默认FAQ内容');
+            } finally {
+                faqIsLoading = false;
+                if (loadMoreBtn) {
+                    loadMoreBtn.textContent = '加载更多';
+                    loadMoreBtn.disabled = false;
+                }
+            }
+        }
+        
+        /**
+         * 更新"加载更多"按钮的显示状态
+         */
+        function updateLoadMoreButton() {
+            const container = document.getElementById('loadMoreContainer');
+            if (container) {
+                container.style.display = faqHasMore ? 'block' : 'none';
             }
         }
         
@@ -317,11 +370,25 @@
             return div.innerHTML;
         }
         
-        // 页面加载完成后，动态加载常见问题文章
+        /**
+         * 初始化
+         */
+        function initFAQ() {
+            // 首次加载
+            loadQAArticles(false);
+            
+            // 绑定"加载更多"按钮事件
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', () => loadQAArticles(true));
+            }
+        }
+        
+        // 页面加载完成后初始化
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadQAArticles);
+            document.addEventListener('DOMContentLoaded', initFAQ);
         } else {
-            loadQAArticles();
+            initFAQ();
         }
     </script>
 
