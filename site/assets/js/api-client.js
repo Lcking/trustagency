@@ -24,8 +24,12 @@
         let port = window.location.port || '80';
         const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
         
-        // 如果前端运行在 8000 端口（HTTP 文件服务器），后端 API 在 8001
-        if (port === '8000') {
+        // 开发环境端口映射：
+        // 8080 (前端) -> 8000 (后端API)
+        // 8000 (前端 HTTP 文件服务器) -> 8001 (后端 API)
+        if (port === '8080') {
+            port = '8000';
+        } else if (port === '8000') {
             port = '8001';
         }
         
