@@ -454,6 +454,8 @@ def list_tasks(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     status: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     current_user: AdminUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -463,6 +465,8 @@ def list_tasks(
     - **skip**: 跳过记录数 (分页)
     - **limit**: 返回记录数 (最多100条)
     - **status**: 筛选状态 (pending/processing/completed/failed)
+    - **start_date**: 开始日期 (YYYY-MM-DD)
+    - **end_date**: 结束日期 (YYYY-MM-DD)
     
     返回: 任务列表
     """
@@ -472,6 +476,24 @@ def list_tasks(
 
     if status:
         query = query.filter(AIGenerationTask.status == status)
+    
+    # 日期筛选
+    if start_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(AIGenerationTask.created_at >= start_dt)
+        except ValueError:
+            pass  # 忽略无效日期格式
+    
+    if end_date:
+        try:
+            # 结束日期包含当天，所以加一天
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+            from datetime import timedelta
+            end_dt = end_dt + timedelta(days=1)
+            query = query.filter(AIGenerationTask.created_at < end_dt)
+        except ValueError:
+            pass  # 忽略无效日期格式
 
     total = query.count()
     tasks = query.offset(skip).limit(limit).all()

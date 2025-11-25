@@ -435,8 +435,17 @@
             },
             
             filterArticles() {
+                // 重新渲染所有文章（确保文章元素存在）
+                if (this.articlesContainer.querySelectorAll('[data-article]').length === 0) {
+                    this.renderArticles(this.allArticles);
+                }
+                
                 const articles = this.articlesContainer.querySelectorAll('[data-article]');
                 let visibleCount = 0;
+                
+                // 移除之前的"无结果"提示
+                const noResultMsg = this.articlesContainer.querySelector('.no-result-message');
+                if (noResultMsg) noResultMsg.remove();
                 
                 articles.forEach(article => {
                     const title = article.dataset.title || '';
@@ -457,9 +466,12 @@
                     }
                 });
                 
-                // 如果没有结果，显示提示
+                // 如果没有结果，显示提示（不替换原有元素）
                 if (visibleCount === 0) {
-                    this.articlesContainer.innerHTML = '<div class="col-12 text-center text-muted">未找到符合条件的文章</div>';
+                    const noResultDiv = document.createElement('div');
+                    noResultDiv.className = 'col-12 text-center text-muted no-result-message';
+                    noResultDiv.textContent = '未找到符合条件的文章';
+                    this.articlesContainer.appendChild(noResultDiv);
                 }
             }
         };
