@@ -272,7 +272,8 @@
                 document.getElementById('platform-name').textContent = platform.name;
                 document.getElementById('platform-description').textContent = platform.description || '专业交易平台';
                 document.getElementById('breadcrumb-platform').textContent = platform.name;
-                document.title = `${platform.name} - 股票杠杆平台排行榜单`;
+                // 只设置页面标题，站点名称后缀由 site-settings.js 动态追加
+                document.title = platform.name;
                 document.getElementById('platform-rating').textContent = ratingStars + ` (${(platform.rating || 0).toFixed(1)})`;
                 document.getElementById('platform-leverage').textContent = `1:${platform.max_leverage || '未公开'}`;
                 document.getElementById('platform-fee').textContent = platform.fee_rate ? `${platform.fee_rate}%` : '未公开';
