@@ -12,7 +12,8 @@ from celery.signals import task_prerun, task_postrun, task_failure
 app = Celery(
     'trustagency',
     broker=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
-    backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
+    backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1'),
+    include=['app.tasks.ai_generation']  # 显式包含任务模块
 )
 
 # Celery 配置
