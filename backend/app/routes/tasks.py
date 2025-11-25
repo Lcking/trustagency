@@ -319,6 +319,136 @@ def cancel_task(
         raise HTTPException(status_code=500, detail=f"取消任务失败: {str(e)}")
 
 
+@router.delete("/{task_id}", description="删除任务批次")
+def delete_task(
+    task_id: str,
+    current_user: AdminUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    删除任务批次记录
+    
+    - **task_id**: 任务ID
+    
+    注意:
+    - 只能删除已完成(completed)或已失败(failed)的任务
+    - 不会删除已生成的文章，只删除任务记录
+    - 只有任务创建者可以删除
+    
+    返回: 删除结果
+    """
+    task = db.query(AIGenerationTask).filter(
+        AIGenerationTask.batch_id == task_id
+    ).first()
+
+    if not task:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+
+    # 只有创建者可以删除任务
+    if task.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权限删除此任务")
+
+    # 只能删除已完成或已失败的任务
+    task_status = task.status.value if hasattr(task.status, 'value') else task.status
+    if task_status not in ['completed', 'failed']:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"只能删除已完成或已失败的任务，当前状态: {task_status}"
+        )
+
+    try:
+        # 删除任务记录（不删除已生成的文章）
+        db.delete(task)
+        db.commit()
+
+        return {
+            "status": "success",
+            "task_id": task_id,
+            "message": "任务批次已成功删除"
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"删除任务失败: {str(e)}")
+
+
+@router.post("/{task_id}/retry", description="重试失败的任务")
+def retry_task(
+    task_id: str,
+    current_user: AdminUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    重试失败的任务
+    
+    - **task_id**: 任务ID
+    
+    注意:
+    - 只能重试已失败(failed)的任务
+    - 会重新提交Celery任务
+    
+    返回: 重试结果
+    """
+    task = db.query(AIGenerationTask).filter(
+        AIGenerationTask.batch_id == task_id
+    ).first()
+
+    if not task:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+
+    # 只有创建者可以重试任务
+    if task.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权限重试此任务")
+
+    # 只能重试已失败的任务
+    task_status = task.status.value if hasattr(task.status, 'value') else task.status
+    if task_status != 'failed':
+        raise HTTPException(
+            status_code=400, 
+            detail=f"只能重试已失败的任务，当前状态: {task_status}"
+        )
+
+    try:
+        # 重置任务状态
+        task.status = "pending"
+        task.progress = 0
+        task.completed_count = 0
+        task.failed_count = 0
+        task.error_message = None
+        task.error_details = None
+        task.has_error = False
+        task.celery_status = 'PENDING'
+        db.commit()
+
+        # 重新提交 Celery 任务
+        celery_task = generate_article_batch.apply_async(
+            args=(
+                task.batch_id, 
+                task.titles, 
+                task.section_id,
+                task.category_id,
+                task.platform_id,
+                current_user.id
+            ),
+            queue='ai_generation'
+        )
+
+        # 更新 Celery 任务ID
+        task.celery_task_id = celery_task.id
+        db.commit()
+
+        return {
+            "status": "success",
+            "task_id": task_id,
+            "celery_task_id": celery_task.id,
+            "message": "任务已重新提交"
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"重试任务失败: {str(e)}")
+
+
 @router.get("", description="列出所有任务")
 def list_tasks(
     skip: int = Query(0, ge=0),

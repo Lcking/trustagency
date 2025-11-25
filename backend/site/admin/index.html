@@ -2441,6 +2441,21 @@
                                 </div>
                             `;
 
+                            // 根据状态生成操作按钮
+                            let actionButtons = `<button class="btn btn-info btn-small" onclick="viewTaskDetails('${task.task_id}')" title="查看详情">详情</button> `;
+                            
+                            if (task.status === 'pending' || task.status === 'processing') {
+                                // 待处理/处理中 -> 可取消
+                                actionButtons += `<button class="btn btn-warning btn-small" onclick="cancelTask('${task.task_id}')" title="取消任务">取消</button>`;
+                            } else if (task.status === 'failed') {
+                                // 失败 -> 可重试和删除
+                                actionButtons += `<button class="btn btn-primary btn-small" onclick="retryTask('${task.task_id}')" title="重试任务">重试</button> `;
+                                actionButtons += `<button class="btn btn-danger btn-small" onclick="deleteTask('${task.task_id}')" title="删除批次">删除</button>`;
+                            } else if (task.status === 'completed') {
+                                // 完成 -> 可删除
+                                actionButtons += `<button class="btn btn-danger btn-small" onclick="deleteTask('${task.task_id}')" title="删除批次">删除</button>`;
+                            }
+
                             html += `
                                 <tr style="border-bottom: 1px solid #eee; hover: background: #f9f9f9;">
                                     <td style="padding: 10px;"><code style="font-size: 11px;">${task.task_id}</code></td>
@@ -2448,8 +2463,8 @@
                                     <td style="padding: 10px;">${statusBadge}</td>
                                     <td style="padding: 10px;">${progressBar}</td>
                                     <td style="padding: 10px;">${new Date(task.created_at).toLocaleString('zh-CN')}</td>
-                                    <td style="padding: 10px;">
-                                        <button class="btn btn-info btn-small" onclick="viewTaskDetails('${task.task_id}')">详情</button>
+                                    <td style="padding: 10px; white-space: nowrap;">
+                                        ${actionButtons}
                                     </td>
                                 </tr>
                             `;
@@ -2576,6 +2591,80 @@
             const modal = document.getElementById('taskDetailsModal');
             if (modal) {
                 modal.remove();
+            }
+        }
+
+        // ============= 任务操作函数 =============
+        
+        // 取消任务
+        async function cancelTask(taskId) {
+            if (!confirm(`确定要取消任务 ${taskId} 吗？\n\n取消后任务将停止执行。`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/tasks/${taskId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    showNotification('✅ 任务已取消', 'success');
+                    loadTasks(); // 刷新列表
+                } else {
+                    const error = await response.json();
+                    showNotification(`❌ 取消失败: ${error.detail || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                showNotification(`❌ 网络错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 重试任务
+        async function retryTask(taskId) {
+            if (!confirm(`确定要重试任务 ${taskId} 吗？\n\n将重新执行所有文章生成。`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/tasks/${taskId}/retry`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    showNotification('✅ 任务已重新提交', 'success');
+                    loadTasks(); // 刷新列表
+                } else {
+                    const error = await response.json();
+                    showNotification(`❌ 重试失败: ${error.detail || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                showNotification(`❌ 网络错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 删除任务
+        async function deleteTask(taskId) {
+            if (!confirm(`确定要删除任务 ${taskId} 吗？\n\n注意：只会删除任务记录，已生成的文章不会被删除。`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/tasks/${taskId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    showNotification('✅ 任务批次已删除', 'success');
+                    loadTasks(); // 刷新列表
+                } else {
+                    const error = await response.json();
+                    showNotification(`❌ 删除失败: ${error.detail || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                showNotification(`❌ 网络错误: ${error.message}`, 'error');
             }
         }
 
