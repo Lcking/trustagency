@@ -13,6 +13,115 @@ from sqlalchemy import update as sql_update
 from slugify import slugify
 
 
+def _update_batch_completion(db, batch_id: str, success: bool, article_id: int = None, error_title: str = None):
+    """
+    更新批次任务的完成计数，并检查是否全部完成
+    
+    Args:
+        db: 数据库会话
+        batch_id: 批次ID
+        success: 是否成功
+        article_id: 成功生成的文章ID（可选）
+        error_title: 失败的文章标题（可选）
+    """
+    try:
+        # 获取当前批次状态
+        task = db.query(AIGenerationTask).filter(
+            AIGenerationTask.batch_id == batch_id
+        ).first()
+        
+        if not task:
+            print(f"[WARNING] Batch {batch_id} not found")
+            return
+        
+        # 更新计数
+        if success:
+            new_completed = (task.completed_count or 0) + 1
+            db.execute(
+                sql_update(AIGenerationTask).where(
+                    AIGenerationTask.batch_id == batch_id
+                ).values(
+                    completed_count=new_completed,
+                    last_progress_update=datetime.utcnow()
+                )
+            )
+            
+            # 更新 generated_articles 列表
+            if article_id:
+                current_articles = task.generated_articles or []
+                current_articles.append(article_id)
+                db.execute(
+                    sql_update(AIGenerationTask).where(
+                        AIGenerationTask.batch_id == batch_id
+                    ).values(
+                        generated_articles=current_articles
+                    )
+                )
+        else:
+            new_failed = (task.failed_count or 0) + 1
+            db.execute(
+                sql_update(AIGenerationTask).where(
+                    AIGenerationTask.batch_id == batch_id
+                ).values(
+                    failed_count=new_failed,
+                    has_error=True,
+                    last_progress_update=datetime.utcnow()
+                )
+            )
+            
+            # 更新 failed_titles 列表
+            if error_title:
+                current_failed = task.failed_titles or []
+                current_failed.append(error_title)
+                db.execute(
+                    sql_update(AIGenerationTask).where(
+                        AIGenerationTask.batch_id == batch_id
+                    ).values(
+                        failed_titles=current_failed
+                    )
+                )
+        
+        db.commit()
+        
+        # 重新获取更新后的状态
+        db.refresh(task)
+        
+        total_processed = (task.completed_count or 0) + (task.failed_count or 0)
+        total_count = task.total_count or 0
+        
+        # 计算进度
+        progress = int((total_processed / total_count) * 100) if total_count > 0 else 0
+        
+        # 更新进度
+        db.execute(
+            sql_update(AIGenerationTask).where(
+                AIGenerationTask.batch_id == batch_id
+            ).values(
+                progress=progress
+            )
+        )
+        
+        # 检查是否全部完成
+        if total_processed >= total_count:
+            final_status = 'completed' if task.failed_count == 0 else 'completed'  # 有失败也算完成
+            db.execute(
+                sql_update(AIGenerationTask).where(
+                    AIGenerationTask.batch_id == batch_id
+                ).values(
+                    status=final_status,
+                    celery_status='SUCCESS',
+                    completed_at=datetime.utcnow()
+                )
+            )
+            print(f"[BATCH] Batch {batch_id} completed: {task.completed_count}/{total_count} success, {task.failed_count} failed")
+        
+        db.commit()
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to update batch completion: {str(e)}")
+        db.rollback()
+
+
 # Phase 2: 任务定义
 
 @app.task(bind=True, name='tasks.generate_article_batch')
@@ -131,31 +240,43 @@ def generate_article_batch(
                     'error': str(e)
                 })
         
-        # 统计成功和失败数量
-        success_count = sum(1 for r in results if r.get('status') != 'failed')
-        fail_count = len(results) - success_count
+        # 统计提交任务失败的数量（不是子任务执行失败）
+        submit_fail_count = sum(1 for r in results if r.get('status') == 'failed')
         
-        # 更新任务状态为成功
-        db.execute(
-            sql_update(AIGenerationTask).where(
-                AIGenerationTask.batch_id == batch_id
-            ).values(
-                status='completed',
-                celery_status='SUCCESS',
-                progress=100,
-                completed_count=success_count,
-                failed_count=fail_count,
-                completed_at=datetime.utcnow(),
-                last_progress_update=datetime.utcnow()
+        # 如果所有任务都提交失败，直接标记为失败
+        if submit_fail_count == len(titles):
+            db.execute(
+                sql_update(AIGenerationTask).where(
+                    AIGenerationTask.batch_id == batch_id
+                ).values(
+                    status='failed',
+                    celery_status='FAILURE',
+                    has_error=True,
+                    error_message='所有子任务提交失败',
+                    completed_at=datetime.utcnow(),
+                    last_progress_update=datetime.utcnow()
+                )
             )
-        )
+        else:
+            # 子任务已提交，批次保持 processing 状态
+            # 等待子任务完成后由 generate_single_article 更新
+            db.execute(
+                sql_update(AIGenerationTask).where(
+                    AIGenerationTask.batch_id == batch_id
+                ).values(
+                    celery_status='TASKS_SUBMITTED',
+                    last_progress_update=datetime.utcnow()
+                )
+            )
+        
         db.commit()
         db.close()
         
         return {
             'batch_id': batch_id,
-            'status': 'completed',
+            'status': 'processing',  # 子任务仍在执行中
             'total': len(titles),
+            'submitted': len(titles) - submit_fail_count,
             'results': results
         }
         
@@ -278,6 +399,10 @@ def generate_single_article(
                 'batch_id': batch_id
             }
             
+            # 更新批次的 completed_count，并检查是否全部完成
+            if batch_id:
+                _update_batch_completion(db, batch_id, success=True, article_id=article.id)
+            
         finally:
             db.close()
         
@@ -285,6 +410,16 @@ def generate_single_article(
         
     except Exception as exc:
         print(f"[ERROR] Failed to generate article '{title}': {str(exc)}")
+        
+        # 更新批次的 failed_count
+        if batch_id:
+            try:
+                from app.database import SessionLocal
+                db = SessionLocal()
+                _update_batch_completion(db, batch_id, success=False, error_title=title)
+                db.close()
+            except Exception as update_error:
+                print(f"[ERROR] Failed to update batch status: {str(update_error)}")
         
         # 重试策略
         try:

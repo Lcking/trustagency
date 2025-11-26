@@ -2608,9 +2608,9 @@
                                     <p><strong>分类:</strong> ${task.category_name || '未知'}</p>
                                     ${task.platform_name ? `<p><strong>平台:</strong> ${task.platform_name}</p>` : ''}
                                     <p><strong>状态:</strong> 
-                                        ${task.status === 'PENDING' ? '<span class="badge badge-warning">待处理</span>' : 
-                                          task.status === 'PROCESSING' ? '<span class="badge badge-info">处理中</span>' :
-                                          task.status === 'COMPLETED' ? '<span class="badge badge-success">已完成</span>' :
+                                        ${task.status === 'pending' ? '<span class="badge badge-warning">待处理</span>' : 
+                                          task.status === 'processing' ? '<span class="badge badge-info">处理中</span>' :
+                                          task.status === 'completed' ? '<span class="badge badge-success">已完成</span>' :
                                           '<span class="badge badge-danger">已失败</span>'}
                                     </p>
                                     <p><strong>进度:</strong> ${task.completed_count || 0} / ${task.total_count || 0} (${task.progress || 0}%)</p>
@@ -4038,7 +4038,7 @@
                                        onchange="setDefaultAIConfig(${config.id})">
                             </td>
                             <td style="white-space: nowrap;">
-                                <button class="btn btn-sm btn-info" onclick="testExistingAIConfig(${config.id})" title="测试连接">🧪 测试</button>
+                                <button class="btn btn-sm btn-info" onclick="testExistingAIConfig(${config.id}, this)" title="测试连接">🧪 测试</button>
                                 <button class="btn btn-sm btn-primary" onclick="editAIConfig(${config.id})">编辑</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteAIConfig(${config.id})">删除</button>
                             </td>
@@ -4179,13 +4179,21 @@
         }
 
         // 测试已存在的 AI 配置（从列表按钮点击）
-        async function testExistingAIConfig(configId) {
+        async function testExistingAIConfig(configId, btnElement) {
             if (!token) {
                 alert('请先登录');
                 return;
             }
             
+            // 保存按钮引用和原始文本
+            const btn = btnElement;
+            const originalText = btn.innerHTML;
+            
             try {
+                // 显示正在测试的提示
+                btn.innerHTML = '⏳ 测试中...';
+                btn.disabled = true;
+                
                 // 获取配置信息
                 const configResp = await fetch(`${API_URL}/api/ai-configs/${configId}`, {
                     headers: {
@@ -4194,17 +4202,13 @@
                 });
                 
                 if (!configResp.ok) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
                     alert('❌ 获取配置失败');
                     return;
                 }
                 
                 const config = await configResp.json();
-                
-                // 显示正在测试的提示
-                const btn = event.target;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '⏳ 测试中...';
-                btn.disabled = true;
                 
                 // 调用测试 API
                 const testResp = await fetch(`${API_URL}/api/ai-configs/test`, {
@@ -4232,10 +4236,8 @@
                 }
             } catch (error) {
                 // 恢复按钮状态
-                if (event && event.target) {
-                    event.target.innerHTML = '🧪 测试';
-                    event.target.disabled = false;
-                }
+                btn.innerHTML = originalText;
+                btn.disabled = false;
                 alert('测试失败: ' + error.message);
             }
         }
