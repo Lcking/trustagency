@@ -168,6 +168,7 @@ def generate_article_batch(
     Raises:
         Exception: 生成失败时抛出异常
     """
+    db = None  # 在外部声明，确保 finally 中可以访问
     try:
         # 获取任务记录以读取 AI 配置
         db = SessionLocal()
@@ -288,7 +289,6 @@ def generate_article_batch(
             )
         
         db.commit()
-        db.close()
         
         return {
             'batch_id': batch_id,
@@ -301,25 +301,29 @@ def generate_article_batch(
     except Exception as e:
         # 更新任务状态为失败
         try:
-            db = SessionLocal()
-            db.execute(
-                sql_update(AIGenerationTask).where(
-                    AIGenerationTask.batch_id == batch_id
-                ).values(
-                    status='failed',
-                    celery_status='FAILURE',
-                    has_error=True,
-                    error_message=str(e),
-                    completed_at=datetime.utcnow(),
-                    last_progress_update=datetime.utcnow()
+            if db:
+                db.execute(
+                    sql_update(AIGenerationTask).where(
+                        AIGenerationTask.batch_id == batch_id
+                    ).values(
+                        status='failed',
+                        celery_status='FAILURE',
+                        has_error=True,
+                        error_message=str(e),
+                        completed_at=datetime.utcnow(),
+                        last_progress_update=datetime.utcnow()
+                    )
                 )
-            )
-            db.commit()
-            db.close()
+                db.commit()
         except:
             pass
         
         raise Exception(f"Batch generation failed: {str(e)}")
+    
+    finally:
+        # 确保数据库会话在任何情况下都被关闭
+        if db:
+            db.close()
 
 
 @app.task(bind=True, name='tasks.generate_single_article', max_retries=3)
