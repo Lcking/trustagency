@@ -139,7 +139,8 @@ def generate_article_batch(
     section_id: int,
     category_id: int,
     platform_id: int = None,
-    creator_id: int = None
+    creator_id: int = None,
+    auto_publish: bool = False
 ):
     """
     批量生成文章的异步任务（新逻辑）
@@ -151,6 +152,7 @@ def generate_article_batch(
         category_id: 分类ID
         platform_id: 平台ID (某些栏目需要，可选)
         creator_id: 创建者ID
+        auto_publish: 是否直接发布（默认False，保存为草稿）
     
     Returns:
         dict: 包含生成结果的字典
@@ -197,7 +199,7 @@ def generate_article_batch(
         # 逐篇生成文章
         for i, title in enumerate(titles):
             try:
-                # 生成单篇文章（传递 AI 配置 ID）
+                # 生成单篇文章（传递 AI 配置 ID 和发布选项）
                 result = generate_single_article.apply_async(
                     args=(
                         title, 
@@ -206,7 +208,8 @@ def generate_article_batch(
                         platform_id,
                         batch_id,
                         creator_id,
-                        ai_config_id  # 传递 AI 配置 ID
+                        ai_config_id,  # 传递 AI 配置 ID
+                        auto_publish   # 传递发布选项
                     ),
                     queue='ai_generation'
                 )
@@ -320,7 +323,8 @@ def generate_single_article(
     platform_id: int = None,
     batch_id: str = None,
     creator_id: int = None,
-    ai_config_id: int = None
+    ai_config_id: int = None,
+    auto_publish: bool = False
 ):
     """
     生成单篇文章的异步任务（新逻辑）
@@ -332,6 +336,8 @@ def generate_single_article(
         platform_id: 平台ID (可选)
         batch_id: 所属批次ID（可选）
         creator_id: 创建者ID
+        ai_config_id: AI配置ID
+        auto_publish: 是否直接发布（默认False）
     
     Returns:
         dict: 生成的文章信息
@@ -384,9 +390,12 @@ def generate_single_article(
                 category_id=category_id,
                 platform_id=platform_id,  # 可能为 None
                 author_id=creator_id or 1,  # 使用传入的creator_id或默认为1
-                is_published=False,  # 默认不发布
+                is_published=auto_publish,  # 根据选项决定是否直接发布
                 created_at=datetime.utcnow()
             )
+            
+            publish_status = "已发布" if auto_publish else "草稿"
+            print(f"[ARTICLE] 文章状态: {publish_status}")
             
             db.add(article)
             db.commit()

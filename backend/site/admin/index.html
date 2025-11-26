@@ -1324,6 +1324,13 @@
                         <label>批量标题（每行一个） *</label>
                         <textarea id="taskTitles" rows="6" placeholder="Python 交易机器人入门&#10;如何使用 API 自动交易&#10;风险管理最佳实践" required></textarea>
                     </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="taskAutoPublish" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span>🚀 生成后直接发布</span>
+                            <small style="color: #666; font-size: 12px;">（不勾选则保存为草稿）</small>
+                        </label>
+                    </div>
                     <button class="btn btn-success" onclick="submitGenerationTask()">🚀 提交生成任务</button>
                 </div>
 
@@ -3909,6 +3916,10 @@
                 if (aiConfigId) {
                     body.ai_config_id = parseInt(aiConfigId);
                 }
+                
+                // 是否直接发布
+                const autoPublish = document.getElementById('taskAutoPublish').checked;
+                body.auto_publish = autoPublish;
 
                 const response = await fetch(`${API_URL}/api/tasks/generate-articles`, {
                     method: 'POST',

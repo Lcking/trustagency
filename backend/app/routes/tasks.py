@@ -31,6 +31,7 @@ class TaskGenerationRequest(BaseModel):
     platform_id: Optional[int] = Field(None, description="平台ID (某些栏目需要)")
     batch_name: Optional[str] = Field(None, description="批次名称")
     ai_config_id: Optional[int] = Field(None, description="AI配置ID")
+    auto_publish: bool = Field(False, description="生成后是否直接发布")
 
     class Config:
         json_schema_extra = {
@@ -170,7 +171,8 @@ def submit_article_generation_task(
                 request.section_id,
                 request.category_id,  # 改为ID而不是字符串
                 request.platform_id,
-                current_user.id
+                current_user.id,
+                request.auto_publish  # 是否直接发布
             ),
             queue='ai_generation'
         )
