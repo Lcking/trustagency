@@ -959,7 +959,7 @@
                         <p>✅ 后端服务: <strong id="backendStatus">正常</strong></p>
                         <p>✅ 数据库: <strong id="dbStatus">正常</strong></p>
                         <p>✅ Redis缓存: <strong id="cacheStatus">正常</strong></p>
-                        <p id="openaiStatus" style="display: none;">🤖 OpenAI API: <strong id="openaiStatusText">未配置</strong></p>
+                        <p id="aiConfigStatus">🤖 AI 配置: <strong id="aiConfigStatusText">检查中...</strong></p>
                     </div>
                 </div>
             </div>
@@ -1323,6 +1323,13 @@
                     <div class="form-group">
                         <label>批量标题（每行一个） *</label>
                         <textarea id="taskTitles" rows="6" placeholder="Python 交易机器人入门&#10;如何使用 API 自动交易&#10;风险管理最佳实践" required></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="taskAutoPublish" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span>🚀 生成后直接发布</span>
+                            <small style="color: #666; font-size: 12px;">（不勾选则保存为草稿）</small>
+                        </label>
                     </div>
                     <button class="btn btn-success" onclick="submitGenerationTask()">🚀 提交生成任务</button>
                 </div>
@@ -2186,17 +2193,32 @@
                 }
 
                 // 检查 OpenAI 状态
-                const openaiResponse = await fetch(`${API_URL}/api/admin/openai-health`, {
+                // 检查 AI 配置状态
+                const aiConfigResponse = await fetch(`${API_URL}/api/ai-configs`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                if (openaiResponse.ok) {
-                    const openaiHealth = await openaiResponse.json();
-                    document.getElementById('openaiStatus').style.display = 'block';
-                    document.getElementById('openaiStatusText').textContent = 
-                        openaiHealth.status === 'ok' ? '已连接 ✓' : '未连接 ✗';
+                if (aiConfigResponse.ok) {
+                    const result = await aiConfigResponse.json();
+                    const configs = result.data || result;
+                    const activeConfigs = configs.filter(c => c.is_active);
+                    const statusEl = document.getElementById('aiConfigStatusText');
+                    
+                    if (activeConfigs.length > 0) {
+                        // 有可用的配置
+                        const defaultConfig = activeConfigs.find(c => c.is_default) || activeConfigs[0];
+                        statusEl.innerHTML = `<span style="color: #4CAF50;">已配置 ✓</span> <small style="color: #666;">(${defaultConfig.provider})</small>`;
+                    } else if (configs.length > 0) {
+                        // 有配置但都未激活
+                        statusEl.innerHTML = `<span style="color: #ff9800;">未激活 ⚠</span> <small style="color: #666;">(${configs.length}个配置)</small>`;
+                    } else {
+                        // 没有配置
+                        statusEl.innerHTML = `<span style="color: #f44336;">未配置 ✗</span>`;
+                    }
+                } else {
+                    document.getElementById('aiConfigStatusText').innerHTML = `<span style="color: #999;">无法检查</span>`;
                 }
             } catch (error) {
                 console.error('加载仪表板失败:', error);
@@ -2608,9 +2630,9 @@
                                     <p><strong>分类:</strong> ${task.category_name || '未知'}</p>
                                     ${task.platform_name ? `<p><strong>平台:</strong> ${task.platform_name}</p>` : ''}
                                     <p><strong>状态:</strong> 
-                                        ${task.status === 'PENDING' ? '<span class="badge badge-warning">待处理</span>' : 
-                                          task.status === 'PROCESSING' ? '<span class="badge badge-info">处理中</span>' :
-                                          task.status === 'COMPLETED' ? '<span class="badge badge-success">已完成</span>' :
+                                        ${task.status === 'pending' ? '<span class="badge badge-warning">待处理</span>' : 
+                                          task.status === 'processing' ? '<span class="badge badge-info">处理中</span>' :
+                                          task.status === 'completed' ? '<span class="badge badge-success">已完成</span>' :
                                           '<span class="badge badge-danger">已失败</span>'}
                                     </p>
                                     <p><strong>进度:</strong> ${task.completed_count || 0} / ${task.total_count || 0} (${task.progress || 0}%)</p>
@@ -3909,6 +3931,10 @@
                 if (aiConfigId) {
                     body.ai_config_id = parseInt(aiConfigId);
                 }
+                
+                // 是否直接发布
+                const autoPublish = document.getElementById('taskAutoPublish').checked;
+                body.auto_publish = autoPublish;
 
                 const response = await fetch(`${API_URL}/api/tasks/generate-articles`, {
                     method: 'POST',
@@ -4038,7 +4064,7 @@
                                        onchange="setDefaultAIConfig(${config.id})">
                             </td>
                             <td style="white-space: nowrap;">
-                                <button class="btn btn-sm btn-info" onclick="testExistingAIConfig(${config.id})" title="测试连接">🧪 测试</button>
+                                <button class="btn btn-sm btn-info" onclick="testExistingAIConfig(${config.id}, this)" title="测试连接">🧪 测试</button>
                                 <button class="btn btn-sm btn-primary" onclick="editAIConfig(${config.id})">编辑</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteAIConfig(${config.id})">删除</button>
                             </td>
@@ -4179,13 +4205,21 @@
         }
 
         // 测试已存在的 AI 配置（从列表按钮点击）
-        async function testExistingAIConfig(configId) {
+        async function testExistingAIConfig(configId, btnElement) {
             if (!token) {
                 alert('请先登录');
                 return;
             }
             
+            // 保存按钮引用和原始文本（btnElement 通过参数传入）
+            const btn = btnElement;
+            const originalText = btn.innerHTML;
+            
             try {
+                // 显示正在测试的提示
+                btn.innerHTML = '⏳ 测试中...';
+                btn.disabled = true;
+                
                 // 获取配置信息
                 const configResp = await fetch(`${API_URL}/api/ai-configs/${configId}`, {
                     headers: {
@@ -4194,17 +4228,13 @@
                 });
                 
                 if (!configResp.ok) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
                     alert('❌ 获取配置失败');
                     return;
                 }
                 
                 const config = await configResp.json();
-                
-                // 显示正在测试的提示
-                const btn = event.target;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '⏳ 测试中...';
-                btn.disabled = true;
                 
                 // 调用测试 API
                 const testResp = await fetch(`${API_URL}/api/ai-configs/test`, {
@@ -4232,16 +4262,14 @@
                 }
             } catch (error) {
                 // 恢复按钮状态
-                if (event && event.target) {
-                    event.target.innerHTML = '🧪 测试';
-                    event.target.disabled = false;
-                }
+                btn.innerHTML = originalText;
+                btn.disabled = false;
                 alert('测试失败: ' + error.message);
             }
         }
         
         // 在编辑弹窗中测试 AI 配置
-        async function testExistingAIConfigInEdit(configId) {
+        async function testExistingAIConfigInEdit(configId, btn) {
             if (!token) {
                 alert('请先登录');
                 return;
@@ -4256,8 +4284,7 @@
                 return;
             }
             
-            // 显示正在测试
-            const btn = event.target;
+            // 显示正在测试（btn 通过参数传入）
             const originalText = btn.innerHTML;
             btn.innerHTML = '⏳ 测试中...';
             btn.disabled = true;
@@ -4422,7 +4449,7 @@
                             </div>
                             
                             <div style="display:flex;gap:10px;justify-content:flex-end;">
-                                <button type="button" class="btn btn-info" onclick="testExistingAIConfigInEdit(${configId})" style="padding:10px 20px;">🧪 测试连接</button>
+                                <button type="button" class="btn btn-info" onclick="testExistingAIConfigInEdit(${configId}, this)" style="padding:10px 20px;">🧪 测试连接</button>
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('aiConfigEditModal').remove()" style="padding:10px 20px;">取消</button>
                                 <button type="submit" class="btn btn-success" style="padding:10px 20px;">保存配置</button>
                             </div>
