@@ -86,22 +86,29 @@ def _update_batch_completion(db, batch_id: str, success: bool, article_id: int =
         # 重新获取更新后的状态
         db.refresh(task)
         
-        total_processed = (task.completed_count or 0) + (task.failed_count or 0)
         total_count = task.total_count or 0
+        completed = task.completed_count or 0
+        failed = task.failed_count or 0
         
-        # 计算进度
-        progress = int((total_processed / total_count) * 100) if total_count > 0 else 0
+        # 防止重试导致 failed_count 超过 total_count
+        # 只统计实际处理完成的任务数（不重复计算重试）
+        total_processed = min(completed + failed, total_count)
+        
+        # 计算进度（确保不超过 100%）
+        progress = min(int((total_processed / total_count) * 100), 100) if total_count > 0 else 0
         
         # 更新进度
         db.execute(
             sql_update(AIGenerationTask).where(
                 AIGenerationTask.batch_id == batch_id
             ).values(
-                progress=progress
+                progress=progress,
+                # 同时限制 failed_count 不超过 total_count
+                failed_count=min(failed, total_count - completed)
             )
         )
         
-        # 检查是否全部完成
+        # 检查是否全部完成（completed + failed 达到 total）
         if total_processed >= total_count:
             final_status = 'completed' if task.failed_count == 0 else 'completed'  # 有失败也算完成
             db.execute(
