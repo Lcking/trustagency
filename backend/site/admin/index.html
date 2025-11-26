@@ -959,7 +959,7 @@
                         <p>✅ 后端服务: <strong id="backendStatus">正常</strong></p>
                         <p>✅ 数据库: <strong id="dbStatus">正常</strong></p>
                         <p>✅ Redis缓存: <strong id="cacheStatus">正常</strong></p>
-                        <p id="openaiStatus" style="display: none;">🤖 OpenAI API: <strong id="openaiStatusText">未配置</strong></p>
+                        <p id="aiConfigStatus">🤖 AI 配置: <strong id="aiConfigStatusText">检查中...</strong></p>
                     </div>
                 </div>
             </div>
@@ -2193,17 +2193,32 @@
                 }
 
                 // 检查 OpenAI 状态
-                const openaiResponse = await fetch(`${API_URL}/api/admin/openai-health`, {
+                // 检查 AI 配置状态
+                const aiConfigResponse = await fetch(`${API_URL}/api/ai-configs`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                if (openaiResponse.ok) {
-                    const openaiHealth = await openaiResponse.json();
-                    document.getElementById('openaiStatus').style.display = 'block';
-                    document.getElementById('openaiStatusText').textContent = 
-                        openaiHealth.status === 'ok' ? '已连接 ✓' : '未连接 ✗';
+                if (aiConfigResponse.ok) {
+                    const result = await aiConfigResponse.json();
+                    const configs = result.data || result;
+                    const activeConfigs = configs.filter(c => c.is_active);
+                    const statusEl = document.getElementById('aiConfigStatusText');
+                    
+                    if (activeConfigs.length > 0) {
+                        // 有可用的配置
+                        const defaultConfig = activeConfigs.find(c => c.is_default) || activeConfigs[0];
+                        statusEl.innerHTML = `<span style="color: #4CAF50;">已配置 ✓</span> <small style="color: #666;">(${defaultConfig.provider})</small>`;
+                    } else if (configs.length > 0) {
+                        // 有配置但都未激活
+                        statusEl.innerHTML = `<span style="color: #ff9800;">未激活 ⚠</span> <small style="color: #666;">(${configs.length}个配置)</small>`;
+                    } else {
+                        // 没有配置
+                        statusEl.innerHTML = `<span style="color: #f44336;">未配置 ✗</span>`;
+                    }
+                } else {
+                    document.getElementById('aiConfigStatusText').innerHTML = `<span style="color: #999;">无法检查</span>`;
                 }
             } catch (error) {
                 console.error('加载仪表板失败:', error);
