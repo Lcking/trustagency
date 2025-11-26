@@ -424,8 +424,13 @@ def generate_single_article(
             }
             
             # 更新批次的 completed_count，并检查是否全部完成
+            # 注意：这里单独捕获异常，不让批次更新失败导致整个任务重试
+            # 因为文章已经成功创建，重试会导致文章重复
             if batch_id:
-                _update_batch_completion(db, batch_id, success=True, article_id=article.id)
+                try:
+                    _update_batch_completion(db, batch_id, success=True, article_id=article.id)
+                except Exception as batch_error:
+                    print(f"[WARNING] 批次状态更新失败，但文章已成功创建: {str(batch_error)}")
             
         finally:
             db.close()
