@@ -17,6 +17,8 @@ def _update_batch_completion(db, batch_id: str, success: bool, article_id: int =
     """
     更新批次任务的完成计数，并检查是否全部完成
     
+    使用 SQL 原子操作防止并发更新时的竞态条件。
+    
     Args:
         db: 数据库会话
         batch_id: 批次ID
@@ -24,8 +26,62 @@ def _update_batch_completion(db, batch_id: str, success: bool, article_id: int =
         article_id: 成功生成的文章ID（可选）
         error_title: 失败的文章标题（可选）
     """
+    from sqlalchemy import func
+    from sqlalchemy.sql import case
+    
     try:
-        # 获取当前批次状态
+        # 使用原子操作更新计数器（防止竞态条件）
+        if success:
+            # 原子递增 completed_count
+            db.execute(
+                sql_update(AIGenerationTask).where(
+                    AIGenerationTask.batch_id == batch_id
+                ).values(
+                    completed_count=AIGenerationTask.completed_count + 1,
+                    last_progress_update=datetime.utcnow()
+                )
+            )
+            db.commit()
+            
+            # 更新 generated_articles 列表（需要锁定行以防止并发问题）
+            if article_id:
+                # 使用 FOR UPDATE 锁定行
+                task = db.query(AIGenerationTask).filter(
+                    AIGenerationTask.batch_id == batch_id
+                ).with_for_update().first()
+                
+                if task:
+                    current_articles = task.generated_articles or []
+                    current_articles.append(article_id)
+                    task.generated_articles = current_articles
+                    db.commit()
+        else:
+            # 原子递增 failed_count
+            db.execute(
+                sql_update(AIGenerationTask).where(
+                    AIGenerationTask.batch_id == batch_id
+                ).values(
+                    failed_count=AIGenerationTask.failed_count + 1,
+                    has_error=True,
+                    last_progress_update=datetime.utcnow()
+                )
+            )
+            db.commit()
+            
+            # 更新 failed_titles 列表（需要锁定行以防止并发问题）
+            if error_title:
+                # 使用 FOR UPDATE 锁定行
+                task = db.query(AIGenerationTask).filter(
+                    AIGenerationTask.batch_id == batch_id
+                ).with_for_update().first()
+                
+                if task:
+                    current_failed = task.failed_titles or []
+                    current_failed.append(error_title)
+                    task.failed_titles = current_failed
+                    db.commit()
+        
+        # 重新获取更新后的状态
         task = db.query(AIGenerationTask).filter(
             AIGenerationTask.batch_id == batch_id
         ).first()
@@ -33,58 +89,6 @@ def _update_batch_completion(db, batch_id: str, success: bool, article_id: int =
         if not task:
             print(f"[WARNING] Batch {batch_id} not found")
             return
-        
-        # 更新计数
-        if success:
-            new_completed = (task.completed_count or 0) + 1
-            db.execute(
-                sql_update(AIGenerationTask).where(
-                    AIGenerationTask.batch_id == batch_id
-                ).values(
-                    completed_count=new_completed,
-                    last_progress_update=datetime.utcnow()
-                )
-            )
-            
-            # 更新 generated_articles 列表
-            if article_id:
-                current_articles = task.generated_articles or []
-                current_articles.append(article_id)
-                db.execute(
-                    sql_update(AIGenerationTask).where(
-                        AIGenerationTask.batch_id == batch_id
-                    ).values(
-                        generated_articles=current_articles
-                    )
-                )
-        else:
-            new_failed = (task.failed_count or 0) + 1
-            db.execute(
-                sql_update(AIGenerationTask).where(
-                    AIGenerationTask.batch_id == batch_id
-                ).values(
-                    failed_count=new_failed,
-                    has_error=True,
-                    last_progress_update=datetime.utcnow()
-                )
-            )
-            
-            # 更新 failed_titles 列表
-            if error_title:
-                current_failed = task.failed_titles or []
-                current_failed.append(error_title)
-                db.execute(
-                    sql_update(AIGenerationTask).where(
-                        AIGenerationTask.batch_id == batch_id
-                    ).values(
-                        failed_titles=current_failed
-                    )
-                )
-        
-        db.commit()
-        
-        # 重新获取更新后的状态
-        db.refresh(task)
         
         total_count = task.total_count or 0
         completed = task.completed_count or 0
@@ -97,30 +101,34 @@ def _update_batch_completion(db, batch_id: str, success: bool, article_id: int =
         # 计算进度（确保不超过 100%）
         progress = min(int((total_processed / total_count) * 100), 100) if total_count > 0 else 0
         
-        # 更新进度
+        # 更新进度（使用当前读取的值，因为计数器已经原子更新了）
+        update_values = {
+            'progress': progress
+        }
+        
+        # 如果 failed_count 超过允许范围，限制它
+        if failed > total_count - completed:
+            update_values['failed_count'] = total_count - completed
+        
         db.execute(
             sql_update(AIGenerationTask).where(
                 AIGenerationTask.batch_id == batch_id
-            ).values(
-                progress=progress,
-                # 同时限制 failed_count 不超过 total_count
-                failed_count=min(failed, total_count - completed)
-            )
+            ).values(**update_values)
         )
         
         # 检查是否全部完成（completed + failed 达到 total）
         if total_processed >= total_count:
-            final_status = 'completed' if task.failed_count == 0 else 'completed'  # 有失败也算完成
+            # 批次处理完成即标记为 completed（部分失败的信息由 has_error/failed_count/failed_titles 记录）
             db.execute(
                 sql_update(AIGenerationTask).where(
                     AIGenerationTask.batch_id == batch_id
                 ).values(
-                    status=final_status,
+                    status='completed',
                     celery_status='SUCCESS',
                     completed_at=datetime.utcnow()
                 )
             )
-            print(f"[BATCH] Batch {batch_id} completed: {task.completed_count}/{total_count} success, {task.failed_count} failed")
+            print(f"[BATCH] Batch {batch_id} completed: {completed}/{total_count} success, {failed} failed")
         
         db.commit()
         

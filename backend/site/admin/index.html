@@ -4269,7 +4269,7 @@
         }
         
         // 在编辑弹窗中测试 AI 配置
-        async function testExistingAIConfigInEdit(configId) {
+        async function testExistingAIConfigInEdit(configId, btn) {
             if (!token) {
                 alert('请先登录');
                 return;
@@ -4284,8 +4284,7 @@
                 return;
             }
             
-            // 显示正在测试
-            const btn = event.target;
+            // 显示正在测试（btn 通过参数传入）
             const originalText = btn.innerHTML;
             btn.innerHTML = '⏳ 测试中...';
             btn.disabled = true;
@@ -4450,7 +4449,7 @@
                             </div>
                             
                             <div style="display:flex;gap:10px;justify-content:flex-end;">
-                                <button type="button" class="btn btn-info" onclick="testExistingAIConfigInEdit(${configId})" style="padding:10px 20px;">🧪 测试连接</button>
+                                <button type="button" class="btn btn-info" onclick="testExistingAIConfigInEdit(${configId}, this)" style="padding:10px 20px;">🧪 测试连接</button>
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('aiConfigEditModal').remove()" style="padding:10px 20px;">取消</button>
                                 <button type="submit" class="btn btn-success" style="padding:10px 20px;">保存配置</button>
                             </div>
