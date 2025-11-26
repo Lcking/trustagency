@@ -437,13 +437,16 @@ def generate_single_article(
         
         # 更新批次的 failed_count
         if batch_id:
+            db = None
             try:
                 from app.database import SessionLocal
                 db = SessionLocal()
                 _update_batch_completion(db, batch_id, success=False, error_title=title)
-                db.close()
             except Exception as update_error:
                 print(f"[ERROR] Failed to update batch status: {str(update_error)}")
+            finally:
+                if db:
+                    db.close()
         
         # 重试策略
         try:
