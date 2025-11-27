@@ -407,6 +407,35 @@ async def get_articles_by_author(
     return [ArticleResponse.model_validate(a) for a in articles]
 
 
+@router.get("/by-slug/{slug}", response_model=ArticleResponse)
+async def get_article_by_slug(
+    slug: str,
+    db: Session = Depends(get_db),
+):
+    """
+    通过 slug 获取单篇已发布文章（用于前端 SEO 友好的 URL）
+    
+    示例:
+    ```
+    GET /api/articles/by-slug/bitcoin-beginner-guide
+    ```
+    """
+    article = db.query(Article).filter(
+        Article.slug == slug,
+        Article.is_published == True
+    ).first()
+    
+    if not article:
+        raise HTTPException(status_code=404, detail="文章不存在")
+    
+    # 增加浏览量
+    article.view_count = (article.view_count or 0) + 1
+    db.commit()
+    db.refresh(article)
+    
+    return ArticleResponse.model_validate(article)
+
+
 @router.get("/by-section/{section_slug}", response_model=list[ArticleResponse])
 async def get_articles_by_section(
     section_slug: str,
