@@ -21,8 +21,8 @@
         
         // Otherwise use current host and port
         const host = window.location.hostname;
-        let port = window.location.port || '80';
         const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+        let port = window.location.port || '';
         
         // 开发环境端口映射：
         // 8080 (前端) -> 8000 (后端API)
@@ -33,11 +33,13 @@
             port = '8001';
         }
         
-        // 如果前端运行在 80 或 443，使用同一端口（Nginx 代理场景）
-        // 否则使用当前端口（开发环境）
+        let portSegment = '';
+        if (port && port !== '80' && port !== '443') {
+            portSegment = `:${port}`;
+        }
         
         // Return API base URL
-        return `${protocol}://${host}:${port}/api`;
+        return `${protocol}://${host}${portSegment}/api`;
     }
     
     const API_CONFIG = {
