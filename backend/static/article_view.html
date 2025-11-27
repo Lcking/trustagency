@@ -2,10 +2,22 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>文章预览 - TrustAgency</title>
+  <title>加载中... - 股票杠杆平台排行榜单</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta id="seo-description" name="description" content="" />
-  <meta id="seo-keywords" name="keywords" content="" />
+  <meta id="seo-description" name="description" content="专业的股票杠杆交易平台排行榜单" />
+  <meta id="seo-keywords" name="keywords" content="股票杠杆,杠杆交易,平台排行" />
+  <!-- Open Graph -->
+  <meta id="og-title" property="og:title" content="股票杠杆平台排行榜单" />
+  <meta id="og-description" property="og:description" content="专业的股票杠杆交易平台排行榜单" />
+  <meta id="og-url" property="og:url" content="https://www.yycr.net/" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="股票杠杆平台排行榜单" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta id="twitter-title" name="twitter:title" content="股票杠杆平台排行榜单" />
+  <meta id="twitter-description" name="twitter:description" content="专业的股票杠杆交易平台排行榜单" />
+  <!-- Canonical -->
+  <link id="canonical" rel="canonical" href="https://www.yycr.net/" />
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <!-- Markdown Parser -->
@@ -71,7 +83,7 @@
   <main>
     <div id="articleContainer">加载中...</div>
   </main>
-  <footer>© 2025 TrustAgency</footer>
+  <footer>© 2025 股票杠杆平台排行榜单</footer>
   <script>
     const API_URL = location.origin.replace(/\/$/,'');
     let embeddedArticleData = window.__ARTICLE_DATA__ || null;
@@ -186,12 +198,30 @@
       const seoDescription = data.meta_description && data.meta_description.trim() ? data.meta_description : summaryText;
       const seoKeywords = data.meta_keywords && data.meta_keywords.trim() ? data.meta_keywords : '';
       
-      // 更新 SEO 元标签（仅在非SSR页面时更新，因为SSR页面已经在服务端设置好了）
+      // 更新 SEO 元标签
+      const siteName = '股票杠杆平台排行榜单';
+      const articleUrl = data.slug ? `https://www.yycr.net/article/${data.slug}` : location.href;
+      
+      // 更新页面标题
+      document.title = data.title + ' - ' + siteName;
+      
+      // 更新 meta 标签
       if (!isSSRPage) {
         document.getElementById('seo-description').content = seoDescription;
         document.getElementById('seo-keywords').content = seoKeywords;
       }
-      document.title = (data.title) + ' - TrustAgency';
+      
+      // 更新 Open Graph 标签
+      document.getElementById('og-title').content = data.title;
+      document.getElementById('og-description').content = seoDescription;
+      document.getElementById('og-url').content = articleUrl;
+      
+      // 更新 Twitter Card 标签
+      document.getElementById('twitter-title').content = data.title;
+      document.getElementById('twitter-description').content = seoDescription;
+      
+      // 更新 canonical 链接
+      document.getElementById('canonical').href = articleUrl;
       
       const container = document.getElementById('articleContainer');
       
@@ -235,7 +265,7 @@
         'datePublished': data.published_at || data.created_at,
         'dateModified': data.published_at || data.created_at,
         'author': { '@type':'Person','name': 'Admin' },
-        'publisher': { '@type':'Organization','name':'TrustAgency' },
+        'publisher': { '@type':'Organization','name':'股票杠杆平台排行榜单', 'url': 'https://www.yycr.net' },
         'inLanguage':'zh-CN',
         'mainEntityOfPage': data.slug ? `/article/${data.slug}` : `${API_URL}/static/article_view.html?id=${data.id}`,
         'image': imageArray.length > 0 ? imageArray : undefined,

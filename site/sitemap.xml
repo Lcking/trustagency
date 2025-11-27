@@ -5,7 +5,7 @@
     
     <!-- Main Pages -->
     <url>
-        <loc>https://example.com/</loc>
+        <loc>https://www.yycr.net/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
@@ -13,28 +13,28 @@
     
     <!-- Platforms -->
     <url>
-        <loc>https://example.com/platforms/</loc>
+        <loc>https://www.yycr.net/platforms/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     
     <url>
-        <loc>https://example.com/platforms/alpha-leverage/</loc>
+        <loc>https://www.yycr.net/platforms/alpha-leverage/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>bi-weekly</changefreq>
         <priority>0.85</priority>
     </url>
     
     <url>
-        <loc>https://example.com/platforms/beta-margin/</loc>
+        <loc>https://www.yycr.net/platforms/beta-margin/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>bi-weekly</changefreq>
         <priority>0.85</priority>
     </url>
     
     <url>
-        <loc>https://example.com/platforms/gamma-trader/</loc>
+        <loc>https://www.yycr.net/platforms/gamma-trader/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>bi-weekly</changefreq>
         <priority>0.85</priority>
@@ -42,7 +42,7 @@
     
     <!-- Comparison -->
     <url>
-        <loc>https://example.com/compare/</loc>
+        <loc>https://www.yycr.net/compare/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.85</priority>
@@ -50,7 +50,7 @@
     
     <!-- FAQ -->
     <url>
-        <loc>https://example.com/qa/</loc>
+        <loc>https://www.yycr.net/qa/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
@@ -58,7 +58,7 @@
     
     <!-- Wiki Index -->
     <url>
-        <loc>https://example.com/wiki/</loc>
+        <loc>https://www.yycr.net/wiki/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
@@ -66,21 +66,21 @@
     
     <!-- Wiki Articles -->
     <url>
-        <loc>https://example.com/wiki/what-is-leverage/</loc>
+        <loc>https://www.yycr.net/wiki/what-is-leverage/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.75</priority>
     </url>
     
     <url>
-        <loc>https://example.com/wiki/margin-call/</loc>
+        <loc>https://www.yycr.net/wiki/margin-call/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.75</priority>
     </url>
     
     <url>
-        <loc>https://example.com/wiki/risk-metrics/</loc>
+        <loc>https://www.yycr.net/wiki/risk-metrics/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.75</priority>
@@ -88,7 +88,7 @@
     
     <!-- Guides Index -->
     <url>
-        <loc>https://example.com/guides/</loc>
+        <loc>https://www.yycr.net/guides/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
@@ -96,21 +96,21 @@
     
     <!-- Guides Articles -->
     <url>
-        <loc>https://example.com/guides/quick-start/</loc>
+        <loc>https://www.yycr.net/guides/quick-start/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.75</priority>
     </url>
     
     <url>
-        <loc>https://example.com/guides/open-account/</loc>
+        <loc>https://www.yycr.net/guides/open-account/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.75</priority>
     </url>
     
     <url>
-        <loc>https://example.com/guides/risk-settings/</loc>
+        <loc>https://www.yycr.net/guides/risk-settings/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.75</priority>
@@ -118,14 +118,14 @@
     
     <!-- Supporting Pages -->
     <url>
-        <loc>https://example.com/about/</loc>
+        <loc>https://www.yycr.net/about/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     
     <url>
-        <loc>https://example.com/legal/</loc>
+        <loc>https://www.yycr.net/legal/</loc>
         <lastmod>2025-10-21</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.6</priority>

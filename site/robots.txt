@@ -17,4 +17,4 @@ Disallow: /*.sql$
 
 Crawl-delay: 1
 
-Sitemap: https://example.com/sitemap.xml
+Sitemap: https://www.yycr.net/sitemap.xml
