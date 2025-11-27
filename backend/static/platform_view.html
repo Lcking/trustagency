@@ -296,10 +296,16 @@
                 ` : (hasPlainWhyChoose ? `
                 <section class="mb-5" aria-labelledby="why-title">
                     <h2 id="why-title" class="h4 mb-3">为什么选择 ${escapeHtml(p.name)}？</h2>
-                    <div class="card card-feature">
-                        <div class="card-body">
-                            <p class="mb-0">${escapeHtml(p.why_choose)}</p>
+                    <div class="row g-3">
+                        ${plainWhyChooseList.map(item => `
+                        <div class="col-md-6">
+                            <div class="card h-100 card-feature">
+                                <div class="card-body">
+                                    <h4 class="card-title h6">✓ ${escapeHtml(item)}</h4>
+                                </div>
+                            </div>
                         </div>
+                        `).join('')}
                     </div>
                 </section>
                 ` : '')}
