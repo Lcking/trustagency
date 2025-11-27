@@ -462,7 +462,10 @@ async def view_article(request: Request, slug: str, db: Session = Depends(get_db
     schema_data = {k: v for k, v in schema_data.items() if v is not None}
     
     article_json = json.dumps(article_data, ensure_ascii=False)
+    # 防止 XSS：转义 </script> 序列，避免脚本注入
+    article_json = article_json.replace("</", "<\\/")
     schema_json = json.dumps(schema_data, ensure_ascii=False, indent=2)
+    schema_json = schema_json.replace("</", "<\\/")
     
     # 组装 SSR 内容
     published_display = pub_date.strftime("%Y-%m-%d %H:%M") if pub_date else ""
@@ -609,6 +612,8 @@ async def view_platform(request: Request, slug: str, db: Session = Depends(get_d
     }
     
     platform_json = json.dumps(platform_data, ensure_ascii=False)
+    # 防止 XSS：转义 </script> 序列，避免脚本注入
+    platform_json = platform_json.replace("</", "<\\/")
     
     # SEO 数据
     seo_title = platform.name or "平台详情"
@@ -632,6 +637,8 @@ async def view_platform(request: Request, slug: str, db: Session = Depends(get_d
             "ratingCount": "100"
         }
     schema_json = json.dumps(schema_data, ensure_ascii=False, indent=2)
+    # 防止 XSS：转义 </script> 序列
+    schema_json = schema_json.replace("</", "<\\/")
     
     # 使用 BeautifulSoup 修改 HTML
     from bs4 import BeautifulSoup
