@@ -307,6 +307,7 @@ async def get_platform_by_slug(
     通过 slug 获取平台信息
     
     用于 SEO 友好的 URL，如 /platforms/gamma-trader/
+    只返回活跃状态的平台，与 SSR 路由保持一致。
     
     Args:
         slug: 平台的 URL 友好标识符
@@ -317,7 +318,10 @@ async def get_platform_by_slug(
     ```
     """
     from app.models import Platform
-    platform = db.query(Platform).filter(Platform.slug == slug).first()
+    platform = db.query(Platform).filter(
+        Platform.slug == slug,
+        Platform.is_active == True  # 只返回活跃平台，防止数据泄露
+    ).first()
     if not platform:
         raise_resource_not_found("Platform", slug)
     return PlatformResponse.model_validate(platform)
