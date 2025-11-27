@@ -84,14 +84,37 @@
         data = embeddedArticleData;
         isSSRPage = true;  // 如果有嵌入数据，说明这是SSR页面
       } else {
-        const urlParams = new URLSearchParams(location.search);
-        const id = urlParams.get('id');
-        if(!id){
+        // 支持两种 URL 格式：
+        // 1. /article/slug (路径形式)
+        // 2. ?id=xxx (参数形式)
+        let articleId = null;
+        let slug = null;
+        
+        // 尝试从路径获取 slug: /article/xxx
+        const pathMatch = location.pathname.match(/^\/article\/(.+?)\/?$/);
+        if (pathMatch) {
+          slug = pathMatch[1];
+        } else {
+          // 尝试从 URL 参数获取 id
+          const urlParams = new URLSearchParams(location.search);
+          articleId = urlParams.get('id');
+        }
+        
+        if (!slug && !articleId) {
           document.getElementById('articleContainer').textContent='缺少文章ID';
           return;
         }
+        
         try {
-          const resp = await fetch(`${API_URL}/api/articles/${id}`);
+          let resp;
+          if (slug) {
+            // 通过 slug 获取文章
+            resp = await fetch(`${API_URL}/api/articles/by-slug/${encodeURIComponent(slug)}`);
+          } else {
+            // 通过 id 获取文章
+            resp = await fetch(`${API_URL}/api/articles/${articleId}`);
+          }
+          
           if(!resp.ok){
             document.getElementById('articleContainer').textContent='文章不存在';
             return;
