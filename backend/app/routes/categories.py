@@ -1,6 +1,7 @@
 """
 分类管理 API 路由
 """
+from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
