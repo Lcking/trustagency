@@ -160,14 +160,33 @@
             .replace(/'/g, '&#39;');
     }
     
+    // 智能解析：支持 JSON 数组或普通文本
     function parseJSON(str, fallback = []) {
         if (!str) return fallback;
-        try {
-            const result = JSON.parse(str);
-            return Array.isArray(result) ? result : fallback;
-        } catch (e) {
-            return fallback;
+        const trimmed = str.trim();
+        // 如果以 [ 开头，尝试解析为 JSON 数组
+        if (trimmed.startsWith('[')) {
+            try {
+                const result = JSON.parse(trimmed);
+                return Array.isArray(result) ? result : fallback;
+            } catch (e) {
+                return fallback;
+            }
         }
+        return fallback; // 不是 JSON 数组，返回空数组
+    }
+    
+    // 检查字段是否为普通文本（非 JSON）
+    function isPlainText(str) {
+        if (!str) return false;
+        const trimmed = str.trim();
+        return trimmed.length > 0 && !trimmed.startsWith('[') && !trimmed.startsWith('{');
+    }
+    
+    // 将普通文本按行分割成数组
+    function textToList(str) {
+        if (!str) return [];
+        return str.split(/[\n,，、;；]+/).map(s => s.trim()).filter(s => s.length > 0);
     }
     
     function createStars(rating) {
@@ -186,6 +205,8 @@
     // 主渲染函数
     function renderPlatform(platform) {
         const p = platform;
+        
+        // 解析各字段 - 支持 JSON 数组或普通文本
         const badges = parseJSON(p.platform_badges);
         const whyChoose = parseJSON(p.why_choose);
         const tradingConditions = parseJSON(p.trading_conditions);
@@ -195,6 +216,26 @@
         const openingSteps = parseJSON(p.opening_steps);
         const securityMeasures = parseJSON(p.security_measures);
         const customerSupport = parseJSON(p.customer_support);
+        
+        // 检查哪些字段是普通文本（非 JSON）
+        const hasPlainWhyChoose = isPlainText(p.why_choose);
+        const hasPlainTradingConditions = isPlainText(p.trading_conditions);
+        const hasPlainFeeAdvantages = isPlainText(p.fee_advantages);
+        const hasPlainAccountTypes = isPlainText(p.account_types);
+        const hasPlainLearningResources = isPlainText(p.learning_resources);
+        const hasPlainOpeningSteps = isPlainText(p.opening_steps);
+        const hasPlainSecurityMeasures = isPlainText(p.security_measures);
+        const hasPlainCustomerSupport = isPlainText(p.customer_support);
+        const hasPlainBadges = isPlainText(p.platform_badges);
+        
+        // 将普通文本转换为列表（用于简单显示）
+        const plainWhyChooseList = textToList(p.why_choose);
+        const plainTradingConditionsList = textToList(p.trading_conditions);
+        const plainFeeAdvantagesList = textToList(p.fee_advantages);
+        const plainOpeningStepsList = textToList(p.opening_steps);
+        const plainSecurityMeasuresList = textToList(p.security_measures);
+        const plainCustomerSupportList = textToList(p.customer_support);
+        const plainBadgesList = textToList(p.platform_badges);
         
         // 更新页面元数据
         document.title = `${p.name} - ${siteName}`;
@@ -219,7 +260,7 @@
                             <h1 id="page-title" class="display-5 fw-bold mb-2">${escapeHtml(p.name)}</h1>
                             <p class="lead text-muted mb-0">${escapeHtml(p.description || '专业交易平台')}</p>
                         </div>
-                        ${badges.length > 0 ? badges.map(b => `<span class="badge bg-success">${escapeHtml(typeof b === 'string' ? b : b.text || b.name || '')}</span>`).join('') : (p.platform_type ? `<span class="badge bg-success">${escapeHtml(p.platform_type)}</span>` : '')}
+                        ${badges.length > 0 ? badges.map(b => `<span class="badge bg-success">${escapeHtml(typeof b === 'string' ? b : b.text || b.name || '')}</span>`).join('') : (hasPlainBadges ? plainBadgesList.map(b => `<span class="badge bg-success">${escapeHtml(b)}</span>`).join('') : (p.platform_type ? `<span class="badge bg-success">${escapeHtml(p.platform_type)}</span>` : ''))}
                     </div>
                 </section>
                 
@@ -252,10 +293,25 @@
                         `).join('')}
                     </div>
                 </section>
-                ` : ''}
+                ` : (hasPlainWhyChoose ? `
+                <section class="mb-5" aria-labelledby="why-title">
+                    <h2 id="why-title" class="h4 mb-3">为什么选择 ${escapeHtml(p.name)}？</h2>
+                    <div class="row g-3">
+                        ${plainWhyChooseList.map(item => `
+                        <div class="col-md-6">
+                            <div class="card h-100 card-feature">
+                                <div class="card-body">
+                                    <h4 class="card-title h6">✓ ${escapeHtml(item)}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        `).join('')}
+                    </div>
+                </section>
+                ` : '')}
                 
                 <!-- 主要特性：交易条件 + 费用优势 -->
-                ${tradingConditions.length > 0 || feeAdvantages.length > 0 ? `
+                ${tradingConditions.length > 0 || feeAdvantages.length > 0 || hasPlainTradingConditions || hasPlainFeeAdvantages ? `
                 <section class="mb-5" aria-labelledby="features-title">
                     <h2 id="features-title" class="h4 mb-3">✨ 主要特性</h2>
                     ${tradingConditions.length > 0 ? `
@@ -269,7 +325,16 @@
                             `).join('')}
                         </ul>
                     </div>
-                    ` : ''}
+                    ` : (hasPlainTradingConditions ? `
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h3 class="card-title h6 mb-0">交易条件</h3>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            ${plainTradingConditionsList.map(item => `<li class="list-group-item">✓ ${escapeHtml(item)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : '')}
                     ${feeAdvantages.length > 0 ? `
                     <div class="card">
                         <div class="card-header bg-info text-white">
@@ -281,7 +346,16 @@
                             `).join('')}
                         </ul>
                     </div>
-                    ` : ''}
+                    ` : (hasPlainFeeAdvantages ? `
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h3 class="card-title h6 mb-0">费用优势</h3>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            ${plainFeeAdvantagesList.map(item => `<li class="list-group-item">✓ ${escapeHtml(item)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : '')}
                 </section>
                 ` : ''}
                 
@@ -384,10 +458,37 @@
                     </div>
                     ` : ''}
                 </section>
-                ` : ''}
+                ` : (hasPlainOpeningSteps ? `
+                <section class="mb-5" aria-labelledby="start-title">
+                    <h2 id="start-title" class="h4 mb-3">🚀 开始交易</h2>
+                    <div class="row g-3">
+                        ${plainOpeningStepsList.map((step, index) => {
+                            const colors = ['success', 'info', 'warning', 'primary', 'secondary'];
+                            const color = colors[index % colors.length];
+                            return `
+                            <div class="col-md-${plainOpeningStepsList.length <= 3 ? 4 : 6} text-center">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="step-number bg-${color} text-white">${index + 1}</div>
+                                        <h4 class="card-title h6">${escapeHtml(step)}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    ${p.account_opening_link ? `
+                    <div class="mt-4 text-center">
+                        <a href="${escapeAttr(p.account_opening_link)}" class="btn btn-primary btn-lg cta-button" target="_blank" rel="noopener">
+                            🎯 立即开户
+                        </a>
+                    </div>
+                    ` : ''}
+                </section>
+                ` : '')}
                 
                 <!-- 安全与支持 -->
-                ${securityMeasures.length > 0 || customerSupport.length > 0 ? `
+                ${securityMeasures.length > 0 || customerSupport.length > 0 || hasPlainSecurityMeasures || hasPlainCustomerSupport ? `
                 <section aria-labelledby="safety-title">
                     <h2 id="safety-title" class="h4 mb-3">🔒 安全与支持</h2>
                     ${securityMeasures.length > 0 ? `
@@ -397,7 +498,14 @@
                             ${securityMeasures.map(item => `<li>${escapeHtml(typeof item === 'string' ? item : item.text || item.description || '')}</li>`).join('')}
                         </ul>
                     </div>
-                    ` : ''}
+                    ` : (hasPlainSecurityMeasures ? `
+                    <div class="alert alert-success">
+                        <h4 class="alert-heading h6">✓ 安全措施</h4>
+                        <ul class="mb-0">
+                            ${plainSecurityMeasuresList.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : '')}
                     ${customerSupport.length > 0 ? `
                     <div class="alert alert-info">
                         <h4 class="alert-heading h6">📞 客户支持</h4>
@@ -410,7 +518,14 @@
                             }).join('')}
                         </ul>
                     </div>
-                    ` : ''}
+                    ` : (hasPlainCustomerSupport ? `
+                    <div class="alert alert-info">
+                        <h4 class="alert-heading h6">📞 客户支持</h4>
+                        <ul class="mb-0">
+                            ${plainCustomerSupportList.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : '')}
                 </section>
                 ` : ''}
             </div>
