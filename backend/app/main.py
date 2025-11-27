@@ -617,7 +617,7 @@ async def view_platform(request: Request, slug: str, db: Session = Depends(get_d
     
     # SEO 数据
     seo_title = platform.name or "平台详情"
-    seo_description = platform.description or f"{platform.name} 平台详情、费用、杠杆比例等信息"
+    seo_description = platform.description or f"{seo_title} 平台详情、费用、杠杆比例等信息"
     platform_url = f"{public_site_url}/platforms/{platform.slug}/"
     
     # 构建 Schema.org 数据
