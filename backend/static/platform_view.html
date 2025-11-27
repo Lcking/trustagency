@@ -152,6 +152,14 @@
         return div.innerHTML;
     }
     
+    // 用于 HTML 属性值的转义（额外转义双引号和单引号）
+    function escapeAttr(text) {
+        if (!text) return '';
+        return escapeHtml(text)
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    
     function parseJSON(str, fallback = []) {
         if (!str) return fallback;
         try {
@@ -370,7 +378,7 @@
                     </div>
                     ${p.account_opening_link ? `
                     <div class="mt-4 text-center">
-                        <a href="${escapeHtml(p.account_opening_link)}" class="btn btn-primary btn-lg cta-button" target="_blank" rel="noopener">
+                        <a href="${escapeAttr(p.account_opening_link)}" class="btn btn-primary btn-lg cta-button" target="_blank" rel="noopener">
                             🎯 立即开户
                         </a>
                     </div>
@@ -432,7 +440,7 @@
                         </dl>
                         
                         ${p.account_opening_link ? `
-                        <a href="${escapeHtml(p.account_opening_link)}" class="btn btn-primary btn-lg w-100 cta-button" target="_blank" rel="noopener">
+                        <a href="${escapeAttr(p.account_opening_link)}" class="btn btn-primary btn-lg w-100 cta-button" target="_blank" rel="noopener">
                             🎯 立即开户
                         </a>
                         <p class="text-center text-muted small mt-2 mb-0">快速注册，5分钟完成</p>
