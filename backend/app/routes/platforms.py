@@ -296,3 +296,28 @@ async def get_regulated_platforms(
     """
     platforms = PlatformService.get_regulated_platforms(db)
     return [PlatformResponse.model_validate(p) for p in platforms]
+
+
+@router.get("/by-slug/{slug}", response_model=PlatformResponse)
+async def get_platform_by_slug(
+    slug: str,
+    db: Session = Depends(get_db),
+):
+    """
+    通过 slug 获取平台信息
+    
+    用于 SEO 友好的 URL，如 /platforms/gamma-trader/
+    
+    Args:
+        slug: 平台的 URL 友好标识符
+        
+    示例:
+    ```
+    GET /api/platforms/by-slug/gamma-trader
+    ```
+    """
+    from app.models import Platform
+    platform = db.query(Platform).filter(Platform.slug == slug).first()
+    if not platform:
+        raise_resource_not_found("Platform", slug)
+    return PlatformResponse.model_validate(platform)

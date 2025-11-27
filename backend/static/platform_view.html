@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Primary Meta Tags (SSR 会替换) -->
+    <title>加载中... - 股票杠杆平台排行榜单</title>
+    <meta id="seo-description" name="description" content="专业的股票杠杆交易平台详情页">
+    <meta id="seo-keywords" name="keywords" content="杠杆交易,交易平台">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph -->
+    <meta id="og-title" property="og:title" content="股票杠杆平台排行榜单">
+    <meta id="og-description" property="og:description" content="专业的股票杠杆交易平台详情页">
+    <meta id="og-url" property="og:url" content="https://www.yycr.net/platforms/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="股票杠杆平台排行榜单">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta id="twitter-title" name="twitter:title" content="股票杠杆平台排行榜单">
+    <meta id="twitter-description" name="twitter:description" content="专业的股票杠杆交易平台详情页">
+    
+    <!-- Canonical -->
+    <link id="canonical" rel="canonical" href="https://www.yycr.net/platforms/">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    
+    <!-- Main Stylesheet -->
+    <link href="/assets/css/main.css" rel="stylesheet">
+    <link href="/assets/css/utilities.css" rel="stylesheet">
+    
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        .border-left { border-left: 4px solid #198754 !important; }
+        .card-feature { transition: transform 0.2s, box-shadow 0.2s; }
+        .card-feature:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .step-number { width: 60px; height: 60px; font-size: 2rem; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto 1rem; }
+        .cta-button { font-size: 1.1rem; padding: 12px 32px; }
+        .sidebar-cta { position: sticky; top: 20px; }
+    </style>
+</head>
+<body>
+    <!-- Header / Navigation -->
+    <header role="banner">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top border-bottom" role="navigation" aria-label="主导航">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="/" aria-label="股票杠杆平台排行榜单首页">
+                    <span>股票杠杆</span><span class="d-none d-sm-inline">平台排行榜单</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="/">首页</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="/platforms/">平台</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/compare/">对比</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/qa/">常见问题</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarResources" role="button" data-bs-toggle="dropdown" aria-expanded="false">资源</a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarResources">
+                                <li><a class="dropdown-item" href="/wiki/">百科</a></li>
+                                <li><a class="dropdown-item" href="/guides/">指南</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/about/">关于</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="d-none d-md-block bg-light border-bottom py-2">
+        <div class="container">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item"><a href="/platforms/">平台</a></li>
+                <li class="breadcrumb-item active" aria-current="page" id="breadcrumb-name">加载中...</li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main role="main" id="main-content" class="py-5">
+        <div class="container">
+            <div id="platform-container">
+                <!-- 加载状态 -->
+                <div id="loading-state" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-3 text-muted">正在加载平台信息...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5 mt-5" role="contentinfo" aria-label="页脚">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">关于我们</h3>
+                    <p class="small text-muted">为投资者提供专业、透明的杠杆平台信息和交易指南。</p>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">快速链接</h3>
+                    <ul class="list-unstyled small">
+                        <li><a href="/platforms/" class="text-decoration-none text-muted">平台列表</a></li>
+                        <li><a href="/compare/" class="text-decoration-none text-muted">平台对比</a></li>
+                        <li><a href="/about/" class="text-decoration-none text-muted">关于我们</a></li>
+                        <li><a href="/legal/" class="text-decoration-none text-muted">法律声明</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">联系我们</h3>
+                    <p class="small text-muted mb-0">Email: <a href="mailto:support@yycr.net" class="text-decoration-none text-muted">support@yycr.net</a></p>
+                </div>
+            </div>
+            <hr class="border-secondary my-4">
+            <div class="text-center small text-muted">
+                <p class="mb-1">© 2025 股票杠杆平台排行榜单。版权所有。</p>
+                <p class="mb-0">
+                    <a href="/legal/" class="text-decoration-none text-muted">法律声明</a> | 
+                    <a href="/legal/#disclaimer" class="text-decoration-none text-muted">风险声明</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    
+    <script>
+    const API_URL = location.origin.replace(/\/$/, '');
+    const siteName = '股票杠杆平台排行榜单';
+    
+    // SSR 数据（后端会注入）
+    let platformData = window.__PLATFORM_DATA__ || null;
+    
+    // 工具函数
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function parseJSON(str, fallback = []) {
+        if (!str) return fallback;
+        try {
+            const result = JSON.parse(str);
+            return Array.isArray(result) ? result : fallback;
+        } catch (e) {
+            return fallback;
+        }
+    }
+    
+    function createStars(rating) {
+        const r = parseFloat(rating) || 0;
+        const full = Math.floor(r);
+        const half = r % 1 >= 0.5;
+        let stars = '';
+        for (let i = 0; i < 5; i++) {
+            if (i < full) stars += '★';
+            else if (i === full && half) stars += '◆';
+            else stars += '☆';
+        }
+        return stars;
+    }
+    
+    // 主渲染函数
+    function renderPlatform(platform) {
+        const p = platform;
+        const badges = parseJSON(p.platform_badges);
+        const whyChoose = parseJSON(p.why_choose);
+        const tradingConditions = parseJSON(p.trading_conditions);
+        const feeAdvantages = parseJSON(p.fee_advantages);
+        const accountTypes = parseJSON(p.account_types);
+        const learningResources = parseJSON(p.learning_resources);
+        const openingSteps = parseJSON(p.opening_steps);
+        const securityMeasures = parseJSON(p.security_measures);
+        const customerSupport = parseJSON(p.customer_support);
+        
+        // 更新页面元数据
+        document.title = `${p.name} - ${siteName}`;
+        document.getElementById('breadcrumb-name').textContent = p.name;
+        document.getElementById('seo-description').content = p.description || `${p.name} 平台详情`;
+        document.getElementById('og-title').content = `${p.name} - ${siteName}`;
+        document.getElementById('og-description').content = p.description || '';
+        document.getElementById('og-url').content = `https://www.yycr.net/platforms/${p.slug}/`;
+        document.getElementById('twitter-title').content = `${p.name} - ${siteName}`;
+        document.getElementById('twitter-description').content = p.description || '';
+        document.getElementById('canonical').href = `https://www.yycr.net/platforms/${p.slug}/`;
+        
+        // 构建 HTML
+        let html = `
+        <div class="row g-5">
+            <!-- 主内容区 -->
+            <div class="col-lg-8">
+                <!-- 页面标题 -->
+                <section class="mb-5" aria-labelledby="page-title">
+                    <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                        <div>
+                            <h1 id="page-title" class="display-5 fw-bold mb-2">${escapeHtml(p.name)}</h1>
+                            <p class="lead text-muted mb-0">${escapeHtml(p.description || '专业交易平台')}</p>
+                        </div>
+                        ${badges.length > 0 ? badges.map(b => `<span class="badge bg-success">${escapeHtml(typeof b === 'string' ? b : b.text || b.name || '')}</span>`).join('') : (p.platform_type ? `<span class="badge bg-success">${escapeHtml(p.platform_type)}</span>` : '')}
+                    </div>
+                </section>
+                
+                <!-- 平台概述 -->
+                ${p.introduction || p.overview_intro ? `
+                <section class="mb-5" aria-labelledby="overview-title">
+                    <h2 id="overview-title" class="h4 mb-3">平台概述</h2>
+                    <div class="card border-left border-success">
+                        <div class="card-body">
+                            <p class="mb-0">${escapeHtml(p.introduction || p.overview_intro)}</p>
+                        </div>
+                    </div>
+                </section>
+                ` : ''}
+                
+                <!-- 为什么选择 -->
+                ${whyChoose.length > 0 ? `
+                <section class="mb-5" aria-labelledby="why-title">
+                    <h2 id="why-title" class="h4 mb-3">为什么选择 ${escapeHtml(p.name)}？</h2>
+                    <div class="row g-3">
+                        ${whyChoose.map(item => `
+                        <div class="col-md-6">
+                            <div class="card h-100 card-feature">
+                                <div class="card-body">
+                                    <h4 class="card-title h6">${escapeHtml(item.icon || '✓')} ${escapeHtml(item.title || '')}</h4>
+                                    <p class="card-text small text-muted mb-0">${escapeHtml(item.description || '')}</p>
+                                </div>
+                            </div>
+                        </div>
+                        `).join('')}
+                    </div>
+                </section>
+                ` : ''}
+                
+                <!-- 主要特性：交易条件 + 费用优势 -->
+                ${tradingConditions.length > 0 || feeAdvantages.length > 0 ? `
+                <section class="mb-5" aria-labelledby="features-title">
+                    <h2 id="features-title" class="h4 mb-3">✨ 主要特性</h2>
+                    ${tradingConditions.length > 0 ? `
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h3 class="card-title h6 mb-0">交易条件</h3>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            ${tradingConditions.map(item => `
+                            <li class="list-group-item">✓ ${escapeHtml(item.label || item.title || '')}: ${escapeHtml(item.value || item.description || '')}</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                    ${feeAdvantages.length > 0 ? `
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h3 class="card-title h6 mb-0">费用优势</h3>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            ${feeAdvantages.map(item => `
+                            <li class="list-group-item">✓ ${escapeHtml(item.label || item.title || '')}: ${escapeHtml(item.value || item.description || '')}</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </section>
+                ` : ''}
+                
+                <!-- 学习资源（手风琴样式） -->
+                ${learningResources.length > 0 ? `
+                <section class="mb-5" aria-labelledby="learning-title">
+                    <h2 id="learning-title" class="h4 mb-3">📖 学习资源</h2>
+                    <div class="accordion" id="learningAccordion">
+                        ${learningResources.map((item, index) => `
+                        <div class="accordion-item">
+                            <h3 class="accordion-header">
+                                <button class="accordion-button ${index > 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#learning${index}">
+                                    ${escapeHtml(item.title || item.name || `资源 ${index + 1}`)}
+                                </button>
+                            </h3>
+                            <div id="learning${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#learningAccordion">
+                                <div class="accordion-body">
+                                    ${item.items && Array.isArray(item.items) ? `
+                                    <ul>
+                                        ${item.items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}
+                                    </ul>
+                                    ` : `<p>${escapeHtml(item.description || item.content || '')}</p>`}
+                                </div>
+                            </div>
+                        </div>
+                        `).join('')}
+                    </div>
+                </section>
+                ` : ''}
+                
+                <!-- 账户类型（表格样式） -->
+                ${accountTypes.length > 0 ? `
+                <section class="mb-5" aria-labelledby="accounts-title">
+                    <h2 id="accounts-title" class="h4 mb-3">📊 账户类型</h2>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>账户类型</th>
+                                    ${accountTypes.map(a => `<th>${escapeHtml(a.name || a.type || '')}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${accountTypes[0].min_deposit !== undefined ? `
+                                <tr>
+                                    <td><strong>最低入金</strong></td>
+                                    ${accountTypes.map(a => `<td>${escapeHtml(a.min_deposit || '-')}</td>`).join('')}
+                                </tr>
+                                ` : ''}
+                                ${accountTypes[0].leverage !== undefined ? `
+                                <tr>
+                                    <td><strong>最大杠杆</strong></td>
+                                    ${accountTypes.map(a => `<td>${escapeHtml(a.leverage || '-')}</td>`).join('')}
+                                </tr>
+                                ` : ''}
+                                ${accountTypes[0].fee !== undefined ? `
+                                <tr>
+                                    <td><strong>交易费</strong></td>
+                                    ${accountTypes.map(a => `<td>${escapeHtml(a.fee || '-')}</td>`).join('')}
+                                </tr>
+                                ` : ''}
+                                ${accountTypes[0].interest !== undefined ? `
+                                <tr>
+                                    <td><strong>借款利息</strong></td>
+                                    ${accountTypes.map(a => `<td>${escapeHtml(a.interest || '-')}</td>`).join('')}
+                                </tr>
+                                ` : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                ` : ''}
+                
+                <!-- 开户步骤（横向三等分） -->
+                ${openingSteps.length > 0 ? `
+                <section class="mb-5" aria-labelledby="start-title">
+                    <h2 id="start-title" class="h4 mb-3">🚀 开始交易</h2>
+                    <div class="row g-3">
+                        ${openingSteps.map((step, index) => {
+                            const colors = ['success', 'info', 'warning', 'primary', 'secondary'];
+                            const color = colors[index % colors.length];
+                            return `
+                            <div class="col-md-${openingSteps.length <= 3 ? 4 : 6} text-center">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="step-number bg-${color} text-white">${index + 1}</div>
+                                        <h4 class="card-title h6">${escapeHtml(step.title || step.name || `步骤 ${index + 1}`)}</h4>
+                                        <p class="card-text small text-muted mb-0">${escapeHtml(step.description || '')}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    ${p.account_opening_link ? `
+                    <div class="mt-4 text-center">
+                        <a href="${escapeHtml(p.account_opening_link)}" class="btn btn-primary btn-lg cta-button" target="_blank" rel="noopener">
+                            🎯 立即开户
+                        </a>
+                    </div>
+                    ` : ''}
+                </section>
+                ` : ''}
+                
+                <!-- 安全与支持 -->
+                ${securityMeasures.length > 0 || customerSupport.length > 0 ? `
+                <section aria-labelledby="safety-title">
+                    <h2 id="safety-title" class="h4 mb-3">🔒 安全与支持</h2>
+                    ${securityMeasures.length > 0 ? `
+                    <div class="alert alert-success">
+                        <h4 class="alert-heading h6">✓ 安全措施</h4>
+                        <ul class="mb-0">
+                            ${securityMeasures.map(item => `<li>${escapeHtml(typeof item === 'string' ? item : item.text || item.description || '')}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                    ${customerSupport.length > 0 ? `
+                    <div class="alert alert-info">
+                        <h4 class="alert-heading h6">📞 客户支持</h4>
+                        <ul class="mb-0">
+                            ${customerSupport.map(item => {
+                                let text = typeof item === 'string' ? item : '';
+                                if (item.type) text = item.type + (item.description ? ` - ${item.description}` : '');
+                                if (item.channel) text = item.channel + (item.hours ? ` (${item.hours})` : '');
+                                return `<li>${escapeHtml(text)}</li>`;
+                            }).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </section>
+                ` : ''}
+            </div>
+            
+            <!-- 侧边栏 -->
+            <aside class="col-lg-4">
+                <div class="card shadow-sm sidebar-cta">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="card-title h6 mb-0">📋 快速信息</h4>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-3">
+                            <dt class="col-6">评分:</dt>
+                            <dd class="col-6">${createStars(p.rating)} (${(parseFloat(p.rating) || 0).toFixed(1)})</dd>
+                            
+                            <dt class="col-6">杠杆:</dt>
+                            <dd class="col-6">1:${p.max_leverage || '100'}</dd>
+                            
+                            <dt class="col-6">费率:</dt>
+                            <dd class="col-6">${p.fee_rate ? p.fee_rate + '%' : '未公开'}</dd>
+                            
+                            <dt class="col-6">安全评级:</dt>
+                            <dd class="col-6"><span class="badge bg-${p.safety_rating === 'A' ? 'success' : p.safety_rating === 'B' ? 'primary' : 'warning'}">${p.safety_rating || 'B'}</span></dd>
+                            
+                            <dt class="col-6">成立年份:</dt>
+                            <dd class="col-6">${p.founded_year || '未公开'}</dd>
+                        </dl>
+                        
+                        ${p.account_opening_link ? `
+                        <a href="${escapeHtml(p.account_opening_link)}" class="btn btn-primary btn-lg w-100 cta-button" target="_blank" rel="noopener">
+                            🎯 立即开户
+                        </a>
+                        <p class="text-center text-muted small mt-2 mb-0">快速注册，5分钟完成</p>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- 相关链接 -->
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title h6 mb-0">📚 相关资源</h5>
+                    </div>
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item"><a href="/wiki/" class="text-decoration-none">杠杆交易百科</a></li>
+                        <li class="list-group-item"><a href="/guides/" class="text-decoration-none">新手指南</a></li>
+                        <li class="list-group-item"><a href="/qa/" class="text-decoration-none">常见问题</a></li>
+                        <li class="list-group-item"><a href="/compare/" class="text-decoration-none">平台对比</a></li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+        `;
+        
+        document.getElementById('platform-container').innerHTML = html;
+    }
+    
+    // 显示错误
+    function showError(message) {
+        document.getElementById('platform-container').innerHTML = `
+            <div class="text-center py-5">
+                <h1 class="display-1 text-muted">404</h1>
+                <p class="lead">${escapeHtml(message)}</p>
+                <a href="/platforms/" class="btn btn-primary">返回平台列表</a>
+            </div>
+        `;
+    }
+    
+    // 从 API 加载数据
+    async function loadPlatformFromAPI() {
+        const pathMatch = location.pathname.match(/^\/platforms\/([^\/]+)\/?$/);
+        if (!pathMatch) {
+            showError('无效的平台链接');
+            return;
+        }
+        
+        const slug = pathMatch[1];
+        
+        try {
+            const response = await fetch(`${API_URL}/api/platforms/by-slug/${encodeURIComponent(slug)}`);
+            if (!response.ok) {
+                showError('平台不存在');
+                return;
+            }
+            const data = await response.json();
+            renderPlatform(data);
+        } catch (error) {
+            console.error('加载平台失败:', error);
+            showError('加载失败，请稍后重试');
+        }
+    }
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        if (platformData) {
+            // SSR 模式：使用服务端注入的数据
+            renderPlatform(platformData);
+        } else {
+            // CSR 模式：从 API 加载
+            loadPlatformFromAPI();
+        }
+    });
+    </script>
+    
+    <!-- Site Settings Loader -->
+    <script src="/assets/js/site-settings.js" defer></script>
+</body>
+</html>
+

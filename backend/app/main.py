@@ -546,6 +546,140 @@ async def view_article(request: Request, slug: str, db: Session = Depends(get_db
     return HTMLResponse(content=final_html, status_code=200)
 
 
+# 公开平台详情页路由 - /platforms/:slug (SSR)
+@app.get("/platforms/{slug}", include_in_schema=False)
+async def view_platform(request: Request, slug: str, db: Session = Depends(get_db)):
+    """公开平台详情页 — 返回嵌入平台数据的HTML（SSR）"""
+    import json
+    from app.models import Platform
+    
+    # 排除静态资源和列表页
+    if slug in ['index.html', ''] or '.' in slug:
+        # 这是静态文件请求，跳过
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # 查询平台
+    platform = db.query(Platform).filter(Platform.slug == slug, Platform.is_active == True).first()
+    
+    if not platform:
+        raise HTTPException(status_code=404, detail="平台不存在")
+    
+    # 读取模板
+    template_path = BACKEND_DIR / "static" / "platform_view.html"
+    if not template_path.exists():
+        raise HTTPException(status_code=500, detail="模板文件不存在")
+    html_content = template_path.read_text(encoding="utf-8")
+    
+    public_site_url = get_public_site_url(request)
+    
+    # 构建平台数据
+    platform_data = {
+        "id": platform.id,
+        "name": platform.name or "",
+        "slug": platform.slug or "",
+        "description": platform.description or "",
+        "rating": float(platform.rating) if platform.rating else 0,
+        "rank": platform.rank,
+        "min_leverage": float(platform.min_leverage) if platform.min_leverage else 1,
+        "max_leverage": float(platform.max_leverage) if platform.max_leverage else 100,
+        "commission_rate": float(platform.commission_rate) if platform.commission_rate else 0,
+        "is_regulated": platform.is_regulated,
+        "logo_url": platform.logo_url,
+        "website_url": platform.website_url,
+        "introduction": platform.introduction,
+        "main_features": platform.main_features,
+        "fee_structure": platform.fee_structure,
+        "account_opening_link": platform.account_opening_link,
+        "safety_rating": platform.safety_rating or "B",
+        "founded_year": platform.founded_year,
+        "fee_rate": float(platform.fee_rate) if platform.fee_rate else None,
+        "is_recommended": platform.is_recommended,
+        "why_choose": platform.why_choose,
+        "trading_conditions": platform.trading_conditions,
+        "fee_advantages": platform.fee_advantages,
+        "account_types": platform.account_types,
+        "trading_tools": platform.trading_tools,
+        "opening_steps": platform.opening_steps,
+        "security_measures": platform.security_measures,
+        "customer_support": platform.customer_support,
+        "learning_resources": platform.learning_resources,
+        "platform_type": platform.platform_type,
+        "platform_badges": platform.platform_badges,
+        "overview_intro": platform.overview_intro,
+    }
+    
+    platform_json = json.dumps(platform_data, ensure_ascii=False)
+    
+    # SEO 数据
+    seo_title = platform.name or "平台详情"
+    seo_description = platform.description or f"{platform.name} 平台详情、费用、杠杆比例等信息"
+    platform_url = f"{public_site_url}/platforms/{platform.slug}/"
+    
+    # 构建 Schema.org 数据
+    schema_data = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": platform.name,
+        "description": seo_description,
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "url": platform_url,
+    }
+    if platform.rating:
+        schema_data["aggregateRating"] = {
+            "@type": "AggregateRating",
+            "ratingValue": str(platform.rating),
+            "ratingCount": "100"
+        }
+    schema_json = json.dumps(schema_data, ensure_ascii=False, indent=2)
+    
+    # 使用 BeautifulSoup 修改 HTML
+    from bs4 import BeautifulSoup
+    page_soup = BeautifulSoup(html_content, "html.parser")
+    
+    # 更新 title
+    if page_soup.title:
+        page_soup.title.string = f"{seo_title} - {SITE_NAME}"
+    
+    # 更新 meta 标签
+    meta_map = {
+        ("id", "seo-description"): ("content", seo_description),
+        ("id", "og-title"): ("content", f"{seo_title} - {SITE_NAME}"),
+        ("id", "og-description"): ("content", seo_description),
+        ("id", "og-url"): ("content", platform_url),
+        ("id", "twitter-title"): ("content", f"{seo_title} - {SITE_NAME}"),
+        ("id", "twitter-description"): ("content", seo_description),
+    }
+    for (attr_key, attr_val), (target_attr, target_value) in meta_map.items():
+        tag = page_soup.find(attrs={attr_key: attr_val})
+        if tag:
+            tag[target_attr] = target_value
+    
+    # 更新 canonical
+    canonical_tag = page_soup.find("link", {"id": "canonical"})
+    if canonical_tag:
+        canonical_tag["href"] = platform_url
+    
+    # 更新面包屑
+    breadcrumb_tag = page_soup.find(id="breadcrumb-name")
+    if breadcrumb_tag:
+        breadcrumb_tag.string = platform.name
+    
+    # 注入 Schema 和数据
+    head_tag = page_soup.find("head")
+    if head_tag:
+        schema_tag = page_soup.new_tag("script", type="application/ld+json")
+        schema_tag.string = schema_json
+        head_tag.append(schema_tag)
+        
+        data_tag = page_soup.new_tag("script")
+        data_tag.string = f"window.__PLATFORM_DATA__ = {platform_json};"
+        head_tag.append(data_tag)
+    
+    final_html = "<!DOCTYPE html>\n" + str(page_soup)
+    return HTMLResponse(content=final_html, status_code=200)
+
+
 # 主前端路由 - 服务主站点的 index.html
 def get_site_dir():
     """
@@ -616,10 +750,20 @@ if site_assets_dir.exists():
     app.mount("/assets", StaticFiles(directory=str(site_assets_dir)), name="site_assets")
 
 # 挂载其他主站点的目录
-for subdir in ["platforms", "guides", "wiki", "qa", "compare", "about", "legal"]:
+# 注意：platforms 不在此列表中，因为平台详情页由 SSR 路由 /platforms/{slug} 处理
+for subdir in ["guides", "wiki", "qa", "compare", "about", "legal"]:
     subdir_path = SITE_DIR / subdir
     if subdir_path.exists():
         app.mount(f"/{subdir}", StaticFiles(directory=str(subdir_path), html=True), name=f"site_{subdir}")
+
+# 平台列表页单独处理（只提供 /platforms/ 的 index.html）
+@app.get("/platforms/", include_in_schema=False)
+async def platforms_index():
+    """返回平台列表页"""
+    platforms_index_path = SITE_DIR / "platforms" / "index.html"
+    if platforms_index_path.exists():
+        return FileResponse(str(platforms_index_path), media_type="text/html; charset=utf-8")
+    raise HTTPException(status_code=404, detail="平台列表页不存在")
 
 if __name__ == "__main__":
     import uvicorn
