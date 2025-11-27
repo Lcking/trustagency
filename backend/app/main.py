@@ -2,7 +2,7 @@
 FastAPI 应用主文件
 """
 import os
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -11,6 +11,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
+import html
 
 # 初始化日志系统
 from app.utils.logging_setup import setup_logging
@@ -27,6 +28,15 @@ app = FastAPI(
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )
+
+SITE_NAME = os.getenv("SITE_NAME", "股票杠杆平台排行榜单")
+
+# 公开站点基础 URL（用于 canonical / OG）
+def get_public_site_url(request: Request) -> str:
+    base_url = os.getenv("PUBLIC_SITE_URL")
+    if base_url:
+        return base_url.rstrip("/")
+    return str(request.base_url).rstrip("/")
 
 # CORS 配置 - 允许所有来源（本地开发）
 cors_origins = os.getenv("CORS_ORIGINS", "")
@@ -347,25 +357,18 @@ async def health_check():
 
 # 公开文章预览路由 - /article/:slug
 @app.get("/article/{slug}", include_in_schema=False)
-async def view_article(slug: str, db: Session = Depends(get_db)):
+async def view_article(request: Request, slug: str, db: Session = Depends(get_db)):
     """公开文章查看页面 — 返回嵌入文章数据的HTML"""
-    print(f">>> ENTERING view_article with slug={slug}", file=sys.stderr)
-    sys.stderr.flush()
-    
     from sqlalchemy.orm import joinedload
     import json
     from bs4 import BeautifulSoup
     
-    # Step 1: 查询文章
-    article = db.query(Article).options(
-        joinedload(Article.section),
-        joinedload(Article.category_obj)
-    ).filter(
-        and_(Article.slug == slug, Article.is_published == True)
-    ).first()
-    
-    print(f">>> Found article: {article is not None}", file=sys.stderr)
-    sys.stderr.flush()
+    article = (
+        db.query(Article)
+        .options(joinedload(Article.section), joinedload(Article.category_obj))
+        .filter(and_(Article.slug == slug, Article.is_published == True))
+        .first()
+    )
     
     if not article:
         raise HTTPException(status_code=404, detail="文章不存在或未发布")
@@ -375,25 +378,55 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     db.add(article)
     db.commit()
     
-    # Step 2: 读取模板
-    article_view_html = BACKEND_DIR / "static" / "article_view.html"
-    if not article_view_html.exists():
+    template_path = BACKEND_DIR / "static" / "article_view.html"
+    if not template_path.exists():
         raise HTTPException(status_code=500, detail="模板文件不存在")
+    html_content = template_path.read_text(encoding="utf-8")
     
-    html_content = article_view_html.read_text(encoding='utf-8')
-    
-    print(f">>> Template read: {len(html_content)} bytes", file=sys.stderr)
-    sys.stderr.flush()
-    
-    # Step 3: 构建文章数据
-    category_name = article.category_obj.name if article.category_obj else "未分类"
+    public_site_url = get_public_site_url(request)
     section_name = article.section.name if article.section else "未分类"
+    category_name = article.category_obj.name if article.category_obj else "未分类"
+    content_html = article.content or ""
+    
+    # 提取纯文本与图片
+    try:
+        soup = BeautifulSoup(content_html, "html.parser")
+        plain_text = " ".join(soup.get_text().split())
+    except Exception:
+        plain_text = ""
+    
+    images: list[str] = []
+    try:
+        soup = BeautifulSoup(content_html, "html.parser")
+        for img in soup.find_all("img"):
+            src = (img.get("src") or "").strip()
+            if not src:
+                continue
+            if src.startswith("http"):
+                images.append(src)
+            elif src.startswith("/"):
+                images.append(f"{public_site_url}{src}")
+            else:
+                images.append(f"{public_site_url}/{src.lstrip('/')}")
+    except Exception:
+        pass
+    
+    auto_summary = (
+        plain_text[:160] + ("…" if len(plain_text) > 160 else "") if plain_text else ""
+    )
+    summary_text = (article.summary and article.summary.strip()) or auto_summary
+    
+    seo_title = article.seo_title or article.title or SITE_NAME
+    seo_description = article.meta_description or summary_text or ""
+    seo_keywords = article.meta_keywords or ""
+    
+    article_url = f"{public_site_url}/article/{article.slug}"
     
     article_data = {
         "id": article.id,
         "title": article.title or "",
         "slug": article.slug,
-        "content": article.content or "",
+        "content": content_html,
         "summary": article.summary or "",
         "section_name": section_name,
         "category_name": category_name,
@@ -401,47 +434,11 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
         "created_at": article.created_at.isoformat() if article.created_at else None,
         "published_at": article.published_at.isoformat() if article.published_at else None,
         "is_published": article.is_published,
-        "seo_title": article.seo_title or article.title or "",
-        "seo_keywords": article.meta_keywords or "",
-        "seo_description": article.meta_description or "",
+        "seo_title": seo_title,
+        "seo_keywords": seo_keywords,
+        "seo_description": seo_description,
+        "canonical_url": article_url,
     }
-    
-    print(f">>> Article data created", file=sys.stderr)
-    sys.stderr.flush()
-    
-    # Step 4: 提取内容元素
-    content_html = article.content or ""
-    
-    # 提取纯文本
-    try:
-        soup = BeautifulSoup(content_html, 'html.parser')
-        plain_text = soup.get_text().replace('\n', ' ').strip()
-        plain_text = ' '.join(plain_text.split())
-    except:
-        plain_text = ""
-    
-    # 提取图片
-    images = []
-    try:
-        soup = BeautifulSoup(content_html, 'html.parser')
-        for img in soup.find_all('img'):
-            src = img.get('src')
-            if src:
-                if src.startswith('http'):
-                    images.append(src)
-                elif src.startswith('/'):
-                    images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8000')}{src}")
-                else:
-                    images.append(f"http://{os.getenv('SERVER_HOST', 'localhost:8000')}/{src}")
-    except:
-        images = []
-    
-    print(f">>> Content extracted: {len(plain_text)} text, {len(images)} images", file=sys.stderr)
-    sys.stderr.flush()
-    
-    # Step 5: 构建Schema数据
-    auto_summary = plain_text[:160] + ('…' if len(plain_text) > 160 else '') if plain_text else ""
-    summary_text = (article.summary and article.summary.strip()) or auto_summary
     
     pub_date = article.published_at or article.created_at
     pub_date_str = pub_date.isoformat() if pub_date else None
@@ -449,66 +446,104 @@ async def view_article(slug: str, db: Session = Depends(get_db)):
     schema_data = {
         "@context": "https://schema.org",
         "@type": "Article",
-        "@id": f"http://{os.getenv('SERVER_HOST', 'localhost:8001')}/article/{article.slug}#article",
+        "@id": f"{article_url}#article",
         "headline": article.title,
         "description": summary_text,
         "articleSection": category_name,
         "datePublished": pub_date_str,
+        "mainEntityOfPage": article_url,
+        "url": article_url,
         "author": {"@type": "Person", "name": "Admin"},
-        "publisher": {"@type": "Organization", "name": "TrustAgency"},
+        "publisher": {"@type": "Organization", "name": SITE_NAME},
         "inLanguage": "zh-CN",
-        "image": images if images else None,
+        "image": images or None,
         "wordCount": len(plain_text.split()) if plain_text else 0,
     }
-    
     schema_data = {k: v for k, v in schema_data.items() if v is not None}
     
-    print(f">>> Schema data created", file=sys.stderr)
-    sys.stderr.flush()
-    
-    # Step 6: 嵌入HTML
     article_json = json.dumps(article_data, ensure_ascii=False)
     schema_json = json.dumps(schema_data, ensure_ascii=False, indent=2)
     
-    print(f">>> JSON serialized", file=sys.stderr)
-    sys.stderr.flush()
-    
-    schema_script = f'''<script type="application/ld+json">
-{schema_json}
-</script>
-<script>window.__ARTICLE_DATA__ = {article_json};</script>'''
-    
-    # 替换HTML头部标签以支持SSR SEO
-    seo_title = article.seo_title or article.title or "文章预览 - TrustAgency"
-    seo_description = article.meta_description or summary_text or article.summary or ""
-    seo_keywords = article.meta_keywords or ""
-    
-    # 替换title标签
-    html_content = html_content.replace(
-        '<title>文章预览 - TrustAgency</title>',
-        f'<title>{seo_title} - TrustAgency</title>'
+    # 组装 SSR 内容
+    published_display = pub_date.strftime("%Y-%m-%d %H:%M") if pub_date else ""
+    status_badge = (
+        ""
+        if article.is_published
+        else '<span class="badge" style="background:#ffc107;color:#000">草稿</span>'
     )
-    
-    # 替换meta description标签
-    desc_escaped = seo_description.replace('"', '&quot;')
-    html_content = html_content.replace(
-        '<meta id="seo-description" name="description" content="" />',
-        f'<meta id="seo-description" name="description" content="{desc_escaped}" />'
+    category_badge = (
+        f'<span class="badge">分类 {html.escape(category_name)}</span>'
+        if category_name
+        else ""
     )
-    
-    # 替换meta keywords标签
-    keywords_escaped = seo_keywords.replace('"', '&quot;')
-    html_content = html_content.replace(
-        '<meta id="seo-keywords" name="keywords" content="" />',
-        f'<meta id="seo-keywords" name="keywords" content="{keywords_escaped}" />'
+    summary_block = (
+        f'<div class="summary-box"><strong>摘要：</strong>{html.escape(summary_text)}</div>'
+        if summary_text
+        else ""
     )
+    public_link = (
+        f'<p style="margin-top:24px;font-size:13px;color:#666;">公开链接：'
+        f'<a href="/article/{article.slug}" target="_blank" rel="noopener">/article/{article.slug}</a></p>'
+        if article.is_published and article.slug
+        else ""
+    )
+    article_inner_html = f"""
+        <h1>{html.escape(article.title or "")}</h1>
+        <div class="meta">
+          <span class="badge">栏目 {html.escape(section_name)}</span>
+          {category_badge}
+          {status_badge}
+          <span>浏览 {article.view_count or 0}</span>
+          {f'<span style="margin-left:8px">发布时间 {published_display}</span>' if published_display else ''}
+        </div>
+        {summary_block}
+        <article class="content">{content_html}</article>
+        {public_link}
+    """
     
-    html_content = html_content.replace('</head>', f'{schema_script}\n</head>')
+    # 使用 BeautifulSoup 修改整体 HTML，确保 meta / title / canonical 全量更新并注入 SSR 内容
+    page_soup = BeautifulSoup(html_content, "html.parser")
     
-    print(f">>> HTML generated, returning response", file=sys.stderr)
-    sys.stderr.flush()
+    if page_soup.title:
+        page_soup.title.string = f"{seo_title} - {SITE_NAME}"
     
-    return HTMLResponse(content=html_content, status_code=200)
+    meta_map = {
+        ("id", "seo-description"): ("content", seo_description),
+        ("id", "seo-keywords"): ("content", seo_keywords),
+        ("id", "og-title"): ("content", article.title or ""),
+        ("id", "og-description"): ("content", seo_description),
+        ("id", "og-url"): ("content", article_url),
+        ("id", "twitter-title"): ("content", article.title or ""),
+        ("id", "twitter-description"): ("content", seo_description),
+    }
+    for (attr_key, attr_val), (target_attr, target_value) in meta_map.items():
+        tag = page_soup.find(attrs={attr_key: attr_val})
+        if tag:
+            tag[target_attr] = target_value
+    
+    canonical_tag = page_soup.find("link", {"id": "canonical"})
+    if canonical_tag:
+        canonical_tag["href"] = article_url
+    
+    container = page_soup.find(id="articleContainer")
+    if container:
+        container.clear()
+        fragment = BeautifulSoup(article_inner_html, "html.parser")
+        for child in fragment.contents:
+            container.append(child)
+    
+    head_tag = page_soup.find("head")
+    if head_tag:
+        schema_tag = page_soup.new_tag("script", type="application/ld+json")
+        schema_tag.string = schema_json
+        head_tag.append(schema_tag)
+        
+        data_tag = page_soup.new_tag("script")
+        data_tag.string = f"window.__ARTICLE_DATA__ = {article_json};"
+        head_tag.append(data_tag)
+    
+    final_html = "<!DOCTYPE html>\n" + str(page_soup)
+    return HTMLResponse(content=final_html, status_code=200)
 
 
 # 主前端路由 - 服务主站点的 index.html

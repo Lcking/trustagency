@@ -1,6 +1,7 @@
 """
 文章模型
 """
+from __future__ import annotations
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
