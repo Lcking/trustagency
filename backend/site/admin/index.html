@@ -2944,11 +2944,60 @@
                             
                             switch(field.type) {
                                 case 'text':
-                                    input = document.createElement('input');
-                                    input.type = 'text';
-                                    input.id = `platform_${field.name}`;
-                                    input.placeholder = field.placeholder || '';
-                                    input.required = field.required || false;
+                                    // 特殊处理 logo_url 字段：添加上传按钮
+                                    if (field.name === 'logo_url') {
+                                        const inputGroup = document.createElement('div');
+                                        inputGroup.className = 'input-group';
+                                        inputGroup.style.display = 'flex';
+                                        inputGroup.style.gap = '8px';
+                                        
+                                        input = document.createElement('input');
+                                        input.type = 'text';
+                                        input.id = `platform_${field.name}`;
+                                        input.placeholder = field.placeholder || 'https://... 或点击上传';
+                                        input.style.flex = '1';
+                                        
+                                        const uploadBtn = document.createElement('button');
+                                        uploadBtn.type = 'button';
+                                        uploadBtn.className = 'btn btn-outline-secondary';
+                                        uploadBtn.innerHTML = '📁 上传';
+                                        uploadBtn.onclick = () => triggerLogoUpload(input);
+                                        
+                                        const fileInput = document.createElement('input');
+                                        fileInput.type = 'file';
+                                        fileInput.id = 'logo_file_input';
+                                        fileInput.accept = 'image/*';
+                                        fileInput.style.display = 'none';
+                                        fileInput.onchange = (e) => handleLogoUpload(e, input);
+                                        
+                                        inputGroup.appendChild(input);
+                                        inputGroup.appendChild(uploadBtn);
+                                        inputGroup.appendChild(fileInput);
+                                        
+                                        // Logo 预览
+                                        const previewContainer = document.createElement('div');
+                                        previewContainer.id = 'logo_preview_container';
+                                        previewContainer.style.marginTop = '8px';
+                                        previewContainer.style.display = 'none';
+                                        previewContainer.innerHTML = `
+                                            <img id="logo_preview" src="" alt="Logo预览" 
+                                                style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 1px solid #ddd;">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" style="margin-left: 8px;" 
+                                                onclick="clearLogoPreview()">清除</button>
+                                        `;
+                                        
+                                        fieldGroup.appendChild(inputGroup);
+                                        fieldGroup.appendChild(previewContainer);
+                                        
+                                        // 监听输入变化更新预览
+                                        input.addEventListener('input', () => updateLogoPreview(input.value));
+                                    } else {
+                                        input = document.createElement('input');
+                                        input.type = 'text';
+                                        input.id = `platform_${field.name}`;
+                                        input.placeholder = field.placeholder || '';
+                                        input.required = field.required || false;
+                                    }
                                     break;
                                     
                                 case 'number':
@@ -3081,6 +3130,11 @@
                     } else {
                         element.value = value || '';
                     }
+                    
+                    // 特殊处理：Logo 预览
+                    if (fieldName === 'logo_url' && value) {
+                        updateLogoPreview(value);
+                    }
                 }
             });
         }
@@ -3089,6 +3143,103 @@
             document.getElementById('platformModal').classList.remove('active');
             document.getElementById('platformForm').reset();
             currentPlatformId = null;
+            // 清除 Logo 预览
+            const previewContainer = document.getElementById('logo_preview_container');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+            }
+        }
+        
+        // ============= Logo 上传相关函数 =============
+        function triggerLogoUpload(inputElement) {
+            const fileInput = document.getElementById('logo_file_input');
+            if (fileInput) {
+                fileInput.click();
+            }
+        }
+        
+        async function handleLogoUpload(event, inputElement) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 验证文件类型
+            if (!file.type.startsWith('image/')) {
+                showNotification('请选择图片文件', 'error');
+                return;
+            }
+            
+            // 验证文件大小 (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('图片大小不能超过 5MB', 'error');
+                return;
+            }
+            
+            try {
+                showNotification('正在上传...', 'info');
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('category', 'logos');
+                
+                const response = await fetch(`${API_URL}/api/upload/image`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || '上传失败');
+                }
+                
+                const result = await response.json();
+                
+                // 设置 URL 到输入框
+                inputElement.value = result.url;
+                
+                // 更新预览
+                updateLogoPreview(result.url);
+                
+                showNotification('Logo 上传成功', 'success');
+            } catch (error) {
+                console.error('Logo upload error:', error);
+                showNotification('上传失败: ' + error.message, 'error');
+            }
+            
+            // 清空 file input
+            event.target.value = '';
+        }
+        
+        function updateLogoPreview(url) {
+            const previewContainer = document.getElementById('logo_preview_container');
+            const previewImg = document.getElementById('logo_preview');
+            
+            if (!previewContainer || !previewImg) return;
+            
+            if (url && url.trim() && !url.includes('example.com')) {
+                previewImg.src = url;
+                previewImg.onerror = () => {
+                    previewContainer.style.display = 'none';
+                };
+                previewImg.onload = () => {
+                    previewContainer.style.display = 'block';
+                };
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        }
+        
+        function clearLogoPreview() {
+            const logoInput = document.getElementById('platform_logo_url');
+            if (logoInput) {
+                logoInput.value = '';
+            }
+            const previewContainer = document.getElementById('logo_preview_container');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+            }
         }
 
         async function savePlatform(e) {
