@@ -41,6 +41,42 @@
         .step-number { width: 60px; height: 60px; font-size: 2rem; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto 1rem; }
         .cta-button { font-size: 1.1rem; padding: 12px 32px; }
         .sidebar-cta { position: sticky; top: 20px; z-index: 100; }
+        
+        /* 平台 Logo 样式 */
+        .platform-logo-large {
+            width: 80px;
+            height: 80px;
+            min-width: 80px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .platform-logo-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .platform-logo-large .logo-fallback {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #0d6efd;
+            text-transform: uppercase;
+        }
+        @media (max-width: 576px) {
+            .platform-logo-large {
+                width: 60px;
+                height: 60px;
+                min-width: 60px;
+                border-radius: 12px;
+            }
+            .platform-logo-large .logo-fallback {
+                font-size: 1.8rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -248,6 +284,17 @@
         document.getElementById('twitter-description').content = p.description || '';
         document.getElementById('canonical').href = `https://www.yycr.net/platforms/${p.slug}/`;
         
+        // Logo 处理
+        const hasValidLogo = p.logo_url && p.logo_url.trim() && !p.logo_url.includes('example.com');
+        const logoHtml = hasValidLogo 
+            ? `<div class="platform-logo-large">
+                   <img src="${escapeAttr(p.logo_url)}" alt="${escapeAttr(p.name)} Logo" 
+                        onerror="this.parentElement.innerHTML='<span class=\\'logo-fallback\\'>${escapeHtml(p.name.charAt(0))}</span>';">
+               </div>`
+            : `<div class="platform-logo-large">
+                   <span class="logo-fallback">${escapeHtml(p.name.charAt(0))}</span>
+               </div>`;
+        
         // 构建 HTML
         let html = `
         <div class="row g-5">
@@ -255,12 +302,15 @@
             <div class="col-lg-8">
                 <!-- 页面标题 -->
                 <section class="mb-5" aria-labelledby="page-title">
-                    <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
-                        <div>
-                            <h1 id="page-title" class="display-5 fw-bold mb-2">${escapeHtml(p.name)}</h1>
+                    <div class="d-flex align-items-start gap-4 mb-3">
+                        ${logoHtml}
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                                <h1 id="page-title" class="display-5 fw-bold mb-0">${escapeHtml(p.name)}</h1>
+                                ${badges.length > 0 ? badges.map(b => `<span class="badge bg-success">${escapeHtml(typeof b === 'string' ? b : b.text || b.name || '')}</span>`).join('') : (hasPlainBadges ? plainBadgesList.map(b => `<span class="badge bg-success">${escapeHtml(b)}</span>`).join('') : (p.platform_type ? `<span class="badge bg-success">${escapeHtml(p.platform_type)}</span>` : ''))}
+                            </div>
                             <p class="lead text-muted mb-0">${escapeHtml(p.description || '专业交易平台')}</p>
                         </div>
-                        ${badges.length > 0 ? badges.map(b => `<span class="badge bg-success">${escapeHtml(typeof b === 'string' ? b : b.text || b.name || '')}</span>`).join('') : (hasPlainBadges ? plainBadgesList.map(b => `<span class="badge bg-success">${escapeHtml(b)}</span>`).join('') : (p.platform_type ? `<span class="badge bg-success">${escapeHtml(p.platform_type)}</span>` : ''))}
                     </div>
                 </section>
                 
