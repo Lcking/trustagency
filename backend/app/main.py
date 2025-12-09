@@ -29,7 +29,7 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-SITE_NAME = os.getenv("SITE_NAME", "股票杠杆平台排行榜单")
+SITE_NAME = os.getenv("SITE_NAME", "鹰眼查融")
 
 # 公开站点基础 URL（用于 canonical / OG）
 def get_public_site_url(request: Request) -> str:
