@@ -6,22 +6,22 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     
     <!-- Primary Meta Tags (SSR 会替换) -->
-    <title>加载中... - 股票杠杆平台排行榜单</title>
-    <meta id="seo-description" name="description" content="专业的股票杠杆交易平台详情页">
-    <meta id="seo-keywords" name="keywords" content="杠杆交易,交易平台">
+    <title>加载中... - 鹰眼查融</title>
+    <meta id="seo-description" name="description" content="融资融券与股票杠杆平台详情页">
+    <meta id="seo-keywords" name="keywords" content="融资融券,杠杆交易,交易平台">
     <meta name="robots" content="index, follow">
     
     <!-- Open Graph -->
-    <meta id="og-title" property="og:title" content="股票杠杆平台排行榜单">
-    <meta id="og-description" property="og:description" content="专业的股票杠杆交易平台详情页">
+    <meta id="og-title" property="og:title" content="鹰眼查融">
+    <meta id="og-description" property="og:description" content="融资融券与股票杠杆平台详情页">
     <meta id="og-url" property="og:url" content="https://www.yycr.net/platforms/">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="股票杠杆平台排行榜单">
+    <meta property="og:site_name" content="鹰眼查融">
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta id="twitter-title" name="twitter:title" content="股票杠杆平台排行榜单">
-    <meta id="twitter-description" name="twitter:description" content="专业的股票杠杆交易平台详情页">
+    <meta id="twitter-title" name="twitter:title" content="鹰眼查融">
+    <meta id="twitter-description" name="twitter:description" content="融资融券与股票杠杆平台详情页">
     
     <!-- Canonical -->
     <link id="canonical" rel="canonical" href="https://www.yycr.net/platforms/">
@@ -84,8 +84,8 @@
     <header role="banner">
         <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top border-bottom" role="navigation" aria-label="主导航">
             <div class="container">
-                <a class="navbar-brand fw-bold" href="/" aria-label="股票杠杆平台排行榜单首页">
-                    <span>股票杠杆</span><span class="d-none d-sm-inline">平台排行榜单</span>
+                <a class="navbar-brand fw-bold" href="/" aria-label="鹰眼查融首页">
+                    <span>鹰眼</span><span class="d-none d-sm-inline">查融</span>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
                     <span class="navbar-toggler-icon"></span>
@@ -161,7 +161,7 @@
             </div>
             <hr class="border-secondary my-4">
             <div class="text-center small text-muted">
-                <p class="mb-1">© 2025 股票杠杆平台排行榜单。版权所有。</p>
+                <p class="mb-1">© 2025 鹰眼查融。版权所有。</p>
                 <p class="mb-0">
                     <a href="/legal/" class="text-decoration-none text-muted">法律声明</a> | 
                     <a href="/legal/#disclaimer" class="text-decoration-none text-muted">风险声明</a>
@@ -175,7 +175,7 @@
     
     <script>
     const API_URL = location.origin.replace(/\/$/, '');
-    const siteName = '股票杠杆平台排行榜单';
+    const siteName = '鹰眼查融';
     
     // SSR 数据（后端会注入）
     let platformData = window.__PLATFORM_DATA__ || null;
@@ -196,20 +196,50 @@
             .replace(/'/g, '&#39;');
     }
     
-    // 智能解析：支持 JSON 数组或普通文本
-    function parseJSON(str, fallback = []) {
-        if (!str) return fallback;
-        const trimmed = str.trim();
-        // 如果以 [ 开头，尝试解析为 JSON 数组
-        if (trimmed.startsWith('[')) {
-            try {
-                const result = JSON.parse(trimmed);
-                return Array.isArray(result) ? result : fallback;
-            } catch (e) {
-                return fallback;
+    // 简单 Markdown 解析（支持加粗、列表、换行）
+    function parseMarkdown(text) {
+        if (!text) return '';
+        let html = escapeHtml(text);
+        // 加粗 **text** 或 __text__
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+        // 斜体 *text* 或 _text_
+        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+        // 列表项 - item（在行首）
+        html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>)+/gs, '<ul class="mb-2">$&</ul>');
+        // 换行
+        html = html.replace(/\n/g, '<br>');
+        // 清理多余的 <br> 在 <ul> 前后
+        html = html.replace(/<br>\s*<ul/g, '<ul');
+        html = html.replace(/<\/ul>\s*<br>/g, '</ul>');
+        html = html.replace(/<br>\s*<li>/g, '<li>');
+        html = html.replace(/<\/li>\s*<br>/g, '</li>');
+        return html;
+    }
+    
+    // 智能解析：支持 JSON 数组、对象或普通文本字符串
+    function parseJSON(data, fallback = []) {
+        if (!data) return fallback;
+        // 如果已经是数组，直接返回
+        if (Array.isArray(data)) return data;
+        // 如果是对象（非字符串、非数组），直接返回对象
+        if (typeof data === 'object') return data;
+        // 如果是字符串，尝试解析
+        if (typeof data === 'string') {
+            const trimmed = data.trim();
+            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                try {
+                    const result = JSON.parse(trimmed);
+                    // 返回解析结果（数组或对象都可以）
+                    return result;
+                } catch (e) {
+                    return fallback;
+                }
             }
         }
-        return fallback; // 不是 JSON 数组，返回空数组
+        return fallback; // 不是 JSON，返回空数组
     }
     
     // 检查字段是否为普通文本（非 JSON）
@@ -320,7 +350,7 @@
                     <h2 id="overview-title" class="h4 mb-3">平台概述</h2>
                     <div class="card border-left border-success">
                         <div class="card-body">
-                            <p class="mb-0">${escapeHtml(p.introduction || p.overview_intro)}</p>
+                            <div class="mb-0">${parseMarkdown(p.introduction || p.overview_intro)}</div>
                         </div>
                     </div>
                 </section>
@@ -545,7 +575,12 @@
                     <div class="alert alert-success">
                         <h4 class="alert-heading h6">✓ 安全措施</h4>
                         <ul class="mb-0">
-                            ${securityMeasures.map(item => `<li>${escapeHtml(typeof item === 'string' ? item : item.text || item.description || '')}</li>`).join('')}
+                            ${securityMeasures.map(item => {
+                                if (typeof item === 'string') return `<li>${escapeHtml(item)}</li>`;
+                                const title = item.title || item.text || '';
+                                const desc = item.desc || item.description || '';
+                                return `<li><strong>${escapeHtml(title)}</strong>${desc ? '：' + escapeHtml(desc) : ''}</li>`;
+                            }).join('')}
                         </ul>
                     </div>
                     ` : (hasPlainSecurityMeasures ? `
@@ -556,15 +591,18 @@
                         </ul>
                     </div>
                     ` : '')}
-                    ${customerSupport.length > 0 ? `
+                    ${customerSupport.length > 0 || (typeof customerSupport === 'object' && !Array.isArray(customerSupport)) ? `
                     <div class="alert alert-info">
                         <h4 class="alert-heading h6">📞 客户支持</h4>
                         <ul class="mb-0">
-                            ${customerSupport.map(item => {
+                            ${Array.isArray(customerSupport) ? customerSupport.map(item => {
                                 let text = typeof item === 'string' ? item : '';
                                 if (item.type) text = item.type + (item.description ? ` - ${item.description}` : '');
                                 if (item.channel) text = item.channel + (item.hours ? ` (${item.hours})` : '');
                                 return `<li>${escapeHtml(text)}</li>`;
+                            }).join('') : Object.entries(customerSupport).map(([key, value]) => {
+                                const labels = {phone:'电话', email:'邮箱', qq:'QQ', wechat:'微信', hours:'服务时间', response_time:'响应时间'};
+                                return `<li><strong>${labels[key] || key}</strong>：${escapeHtml(String(value))}</li>`;
                             }).join('')}
                         </ul>
                     </div>

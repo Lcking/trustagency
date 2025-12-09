@@ -6,10 +6,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     
     <!-- Primary Meta Tags -->
-    <title>文章详情 - 股票杠杆平台排行榜单</title>
-    <meta name="title" content="文章详情 - 股票杠杆平台排行榜单">
-    <meta name="description" content="股票杠杆交易相关文章详情页面">
-    <meta name="keywords" content="文章,详情,杠杆交易">
+    <title>文章详情 - 鹰眼查融</title>
+    <meta name="title" content="文章详情 - 鹰眼查融">
+    <meta name="description" content="融资融券与股票杠杆相关文章详情页面">
+    <meta name="keywords" content="文章,详情,融资融券,杠杆交易">
     <meta name="robots" content="index, follow">
     
     <!-- Bootstrap 5 CSS -->
@@ -119,29 +119,35 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-md navbar-light bg-light border-bottom sticky-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">📊 平台排行</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">首页</a></li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="resourcesDropdown" role="button" data-bs-toggle="dropdown">
-                            📚 资源
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="resourcesDropdown">
-                            <li><a class="dropdown-item" href="/wiki/">📖 百科</a></li>
-                            <li><a class="dropdown-item" href="/guides/">📖 交易指南</a></li>
-                            <li><a class="dropdown-item" href="/qa/">❓ 常见问题</a></li>
-                        </ul>
-                    </li>
-                </ul>
+    <header role="banner">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top border-bottom" role="navigation" aria-label="主导航">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="/" aria-label="鹰眼查融首页">
+                    <span>鹰眼</span><span class="d-none d-sm-inline">查融</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="/">首页</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/platforms/">平台</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/compare/">对比</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/qa/">常见问题</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarResources" role="button" data-bs-toggle="dropdown" aria-expanded="false">资源</a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarResources">
+                                <li><a class="dropdown-item" href="/wiki/">百科</a></li>
+                                <li><a class="dropdown-item" href="/guides/">指南</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/about/">关于</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </header>
 
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="d-none d-md-block bg-light py-2 border-bottom">
@@ -192,9 +198,33 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-light border-top py-4 mt-5">
-        <div class="container text-center text-muted small">
-            <p>&copy; 2025 股票杠杆平台排行榜单. All rights reserved.</p>
+    <footer class="bg-dark text-white py-5 mt-5" role="contentinfo" aria-label="页脚">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">快速链接</h3>
+                    <ul class="list-unstyled small">
+                        <li><a href="/platforms/" class="text-decoration-none text-muted hover-primary">平台列表</a></li>
+                        <li><a href="/compare/" class="text-decoration-none text-muted hover-primary">平台对比</a></li>
+                        <li><a href="/about/" class="text-decoration-none text-muted hover-primary">关于我们</a></li>
+                        <li><a href="/legal/" class="text-decoration-none text-muted hover-primary">法律声明</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">联系我们</h3>
+                    <p class="small text-muted mb-0">
+                        Email: <a href="mailto:support@yycr.net" class="text-decoration-none text-muted hover-primary">support@yycr.net</a>
+                    </p>
+                </div>
+            </div>
+            <hr class="border-secondary my-4">
+            <div class="text-center small text-muted">
+                <p class="mb-1">© 2025 上海薏雅征信。版权所有。</p>
+                <p class="mb-0">
+                    <a href="/legal/" class="text-decoration-none text-muted hover-primary">法律声明</a> | 
+                    <a href="/legal/#disclaimer" class="text-decoration-none text-muted hover-primary">风险声明</a>
+                </p>
+            </div>
         </div>
     </footer>
 

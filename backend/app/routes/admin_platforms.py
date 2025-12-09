@@ -113,6 +113,17 @@ async def get_edit_form_definition(
                             {"label": "专业", "value": "专业"}
                         ]
                     },
+                    {
+                        "name": "platform_source",
+                        "label": "平台来源",
+                        "type": "select",
+                        "required": True,
+                        "options": [
+                            {"label": "🏦 券商平台", "value": "券商平台"},
+                            {"label": "🏢 民间平台", "value": "民间平台"},
+                            {"label": "⚠️ 黑名单", "value": "黑名单"}
+                        ]
+                    },
                 ]
             },
             {
@@ -696,6 +707,7 @@ async def list_platforms_for_edit(
             "rating": p.rating,
             "rank": p.rank,
             "platform_type": p.platform_type,
+            "platform_source": p.platform_source,
             "is_active": p.is_active,
             "is_recommended": p.is_recommended,
             "updated_at": p.updated_at,

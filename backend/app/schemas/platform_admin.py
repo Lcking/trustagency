@@ -37,6 +37,7 @@ class PlatformEditForm(BaseModel):
     is_recommended: Optional[bool] = False
     is_regulated: Optional[bool] = False
     platform_type: Optional[str] = None
+    platform_source: str = Field("民间平台", description="平台来源分类: 券商平台(正规券商两融业务)/民间平台(第三方配资机构)/黑名单(风险警示平台)")
     safety_rating: Optional[str] = None
     
     # 详情页面内容 - JSON字符串
@@ -78,6 +79,7 @@ class PlatformEditResponse(BaseModel):
     rank: Optional[int]
     founded_year: Optional[int]
     platform_type: Optional[str]
+    platform_source: str = Field(..., description="平台来源分类: 券商平台(正规券商两融业务)/民间平台(第三方配资机构)/黑名单(风险警示平台)")
     safety_rating: Optional[str]
     
     # 标志
