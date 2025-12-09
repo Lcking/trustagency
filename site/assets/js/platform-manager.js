@@ -96,13 +96,20 @@
             const sourceButtons = document.querySelectorAll('[data-source]');
             sourceButtons.forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    // 移除所有active状态
-                    sourceButtons.forEach(b => b.classList.remove('active'));
-                    // 添加当前按钮的active状态
-                    e.target.classList.add('active');
+                    // 使用 e.currentTarget 确保引用的是绑定事件的按钮元素
+                    const clickedButton = e.currentTarget;
+                    
+                    // 移除所有active状态和aria-pressed
+                    sourceButtons.forEach(b => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-pressed', 'false');
+                    });
+                    // 添加当前按钮的active状态和aria-pressed
+                    clickedButton.classList.add('active');
+                    clickedButton.setAttribute('aria-pressed', 'true');
                     
                     // 更新状态并重新加载
-                    this.state.platformSource = e.target.dataset.source;
+                    this.state.platformSource = clickedButton.dataset.source;
                     this.state.currentPage = 1;
                     this.loadPlatforms();
                 });
@@ -244,8 +251,10 @@
             const sourceButtons = document.querySelectorAll('[data-source]');
             sourceButtons.forEach(btn => {
                 btn.classList.remove('active');
+                btn.setAttribute('aria-pressed', 'false');
                 if (btn.dataset.source === 'all') {
                     btn.classList.add('active');
+                    btn.setAttribute('aria-pressed', 'true');
                 }
             });
 
@@ -355,11 +364,10 @@
 
             return `
                 <div class="col-md-6 col-lg-4">
-                    <article class="card h-100 shadow-sm hover-lift platform-card ${cardBorderClass}" 
+                    <article class="card h-100 shadow-sm hover-lift platform-card position-relative ${cardBorderClass}" 
                              data-platform-id="${platform.id}" 
-                             aria-label="${platform.name} 平台"
-                             style="position: relative;">
-                        ${isBlacklist ? '<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;"><span class="badge bg-danger fs-6">⚠️</span></div>' : ''}
+                             aria-label="${platform.name} 平台">
+                        ${isBlacklist ? '<div class="position-absolute top-0 start-0 m-2 platform-warning-badge"><span class="badge bg-danger fs-6" aria-label="风险警示">⚠️</span></div>' : ''}
                         <div class="card-header ${headerClass} text-white" style="${headerStyle}">
                             <h3 class="card-title h5 mb-0" style="color: white;">${this.escapeHtml(platform.name)}</h3>
                         </div>
@@ -400,7 +408,7 @@
                             </ul>
                         </div>
                         <div class="card-footer ${isBlacklist ? 'bg-danger bg-opacity-10' : 'bg-light'}">
-                            <a href="/platforms/${platform.slug || platform.id}/" class="btn ${isBlacklist ? 'btn-outline-danger' : 'btn-primary'} btn-sm w-100">
+                            <a href="/platforms/${this.sanitizeUrlSegment(platform.slug || platform.id)}/" class="btn ${isBlacklist ? 'btn-outline-danger' : 'btn-primary'} btn-sm w-100">
                                 ${isBlacklist ? '查看风险详情' : '查看详情'}
                             </a>
                         </div>
@@ -506,6 +514,23 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        },
+
+        /**
+         * Sanitize URL path segment
+         * Encodes special characters to prevent XSS in href attributes
+         */
+        sanitizeUrlSegment(segment) {
+            if (!segment) return '';
+            // Convert to string and encode URI component
+            const str = String(segment);
+            // Only allow alphanumeric, hyphens, and underscores for slug/id
+            // This is more restrictive than encodeURIComponent for extra safety
+            if (/^[\w-]+$/.test(str)) {
+                return str;
+            }
+            // If contains special chars, encode it
+            return encodeURIComponent(str);
         },
 
         /**

@@ -853,3 +853,22 @@ section.bg-gradient-primary .lead {
     /* color: rgba(255, 255, 255, 0.95) !important; */
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
 }
+
+/* ============================================
+   Platform Cards - Source Filter & Warning Badge
+   ============================================ */
+
+/* Platform warning badge for blacklisted platforms */
+.platform-warning-badge {
+    z-index: 10; /* Above card content, below modals (typically z-index: 1050+) */
+}
+
+/* Platform card border styles by source type */
+.platform-card.border-danger {
+    border-width: 2px !important;
+}
+
+/* Blacklist platform card hover effect */
+.platform-card.border-danger:hover {
+    box-shadow: 0 0.5rem 1rem rgba(220, 53, 69, 0.25) !important;
+}

@@ -112,7 +112,7 @@ class PlatformBase(BaseModel):
     customer_support: Optional[str] = None  # JSON
     learning_resources: Optional[str] = None  # JSON
     platform_type: Optional[str] = None  # "专业", "新手友好" 等
-    platform_source: str = "民间平台"  # "券商平台", "民间平台", "黑名单"
+    platform_source: str = "民间平台"  # 平台来源: 券商平台/民间平台/黑名单
     platform_badges: Optional[str] = None  # JSON: ["推荐平台", "新手友好"]
     top_badges: Optional[str] = None  # JSON: ["推荐平台", "新手友好"]: ["推荐平台", "新手友好"]
 
