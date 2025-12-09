@@ -16,6 +16,7 @@
             currentPage: 1,
             pageSize: 12,
             sortBy: 'ranking',
+            platformSource: 'all',  // 'all', '券商平台', '民间平台', '黑名单'
             filters: {
                 minLeverage: null,
                 maxLeverage: null,
@@ -38,6 +39,7 @@
             // Setup event listeners
             this.setupFilters();
             this.setupPagination();
+            this.setupSourceFilter();
 
             // Load initial data
             await this.loadPlatforms();
@@ -63,8 +65,9 @@
                 
                 this.state.platforms = response.data || response.items || response;
                 
-                // Bug004修复：根据排序选项排序平台
-                this.state.filteredPlatforms = this.sortPlatforms(this.state.platforms);
+                // 先按来源筛选，再排序
+                let filtered = this.filterBySource(this.state.platforms);
+                this.state.filteredPlatforms = this.sortPlatforms(filtered);
 
                 this.render();
                 this.updatePaginationInfo(response.total || this.state.platforms.length);
@@ -74,6 +77,36 @@
             } finally {
                 this.state.loading = false;
             }
+        },
+
+        /**
+         * 按平台来源筛选
+         */
+        filterBySource(platforms) {
+            if (this.state.platformSource === 'all') {
+                return platforms;
+            }
+            return platforms.filter(p => p.platform_source === this.state.platformSource);
+        },
+
+        /**
+         * 设置平台来源筛选标签
+         */
+        setupSourceFilter() {
+            const sourceButtons = document.querySelectorAll('[data-source]');
+            sourceButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // 移除所有active状态
+                    sourceButtons.forEach(b => b.classList.remove('active'));
+                    // 添加当前按钮的active状态
+                    e.target.classList.add('active');
+                    
+                    // 更新状态并重新加载
+                    this.state.platformSource = e.target.dataset.source;
+                    this.state.currentPage = 1;
+                    this.loadPlatforms();
+                });
+            });
         },
 
         /**
@@ -200,11 +233,27 @@
             };
             this.state.currentPage = 1;
             this.state.sortBy = 'ranking';
+            this.state.platformSource = 'all';
 
             // Reset form inputs
             document.querySelectorAll('[data-filter]').forEach(elem => {
                 elem.value = '';
             });
+
+            // Reset source filter buttons
+            const sourceButtons = document.querySelectorAll('[data-source]');
+            sourceButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.source === 'all') {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Reset sort select
+            const sortSelect = document.getElementById('sort-by');
+            if (sortSelect) {
+                sortSelect.value = 'ranking';
+            }
 
             this.loadPlatforms();
         },
@@ -273,18 +322,51 @@
             const ratingStars = this.createStars(rating);
             const recommendedBadge = platform.is_recommended ? '<span class="badge bg-success me-2">⭐ 推荐</span>' : '';
             const foundedYear = platform.founded_year || '未公开';
+            
+            // 平台来源标识
+            const platformSource = platform.platform_source || '民间平台';
+            const isBlacklist = platformSource === '黑名单';
+            const isBroker = platformSource === '券商平台';
+            
+            // 根据来源设置卡片样式
+            let headerClass = 'bg-primary';
+            let headerStyle = 'background-color: #0d6efd !important;';
+            let cardBorderClass = '';
+            let sourceBadge = '';
+            let warningBanner = '';
+            
+            if (isBlacklist) {
+                headerClass = 'bg-danger';
+                headerStyle = 'background-color: #dc3545 !important;';
+                cardBorderClass = 'border-danger border-2';
+                sourceBadge = '<span class="badge bg-danger me-2">⚠️ 黑名单</span>';
+                warningBanner = `
+                    <div class="alert alert-danger py-1 px-2 mb-2 small">
+                        <strong>⚠️ 风险警示：</strong>该平台存在风险，请谨慎甄别！
+                    </div>
+                `;
+            } else if (isBroker) {
+                headerClass = 'bg-success';
+                headerStyle = 'background-color: #198754 !important;';
+                sourceBadge = '<span class="badge bg-success me-2">🏦 券商</span>';
+            } else {
+                sourceBadge = '<span class="badge bg-secondary me-2">🏢 民间</span>';
+            }
 
             return `
                 <div class="col-md-6 col-lg-4">
-                    <article class="card h-100 shadow-sm hover-lift platform-card" 
+                    <article class="card h-100 shadow-sm hover-lift platform-card ${cardBorderClass}" 
                              data-platform-id="${platform.id}" 
-                             aria-label="${platform.name} 平台">
-                        <!-- Bug003修复：使用蓝底白字 -->
-                        <div class="card-header bg-primary text-white" style="background-color: #0d6efd !important;">
+                             aria-label="${platform.name} 平台"
+                             style="position: relative;">
+                        ${isBlacklist ? '<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;"><span class="badge bg-danger fs-6">⚠️</span></div>' : ''}
+                        <div class="card-header ${headerClass} text-white" style="${headerStyle}">
                             <h3 class="card-title h5 mb-0" style="color: white;">${this.escapeHtml(platform.name)}</h3>
                         </div>
                         <div class="card-body">
+                            ${warningBanner}
                             <div class="mb-3">
+                                ${sourceBadge}
                                 ${recommendedBadge}
                                 <span class="badge bg-info">成立于 ${foundedYear}</span>
                             </div>
@@ -298,7 +380,6 @@
                                     <span class="text-muted">(${rating.toFixed(1)})</span>
                                 </div>
                             </div>
-                            <!-- Bug005修复：显示安全评级和成立年份 -->
                             <ul class="list-unstyled small mb-3">
                                 <li class="mb-2">
                                     <strong>最高杠杆:</strong>
@@ -310,7 +391,7 @@
                                 </li>
                                 <li class="mb-2">
                                     <strong>安全评级:</strong>
-                                    <span class="badge bg-warning text-dark">${platform.safety_rating || 'B'}</span>
+                                    <span class="badge ${isBlacklist ? 'bg-danger' : 'bg-warning'} text-dark">${platform.safety_rating || 'B'}</span>
                                 </li>
                                 <li class="mb-2">
                                     <strong>成立年份:</strong>
@@ -318,8 +399,10 @@
                                 </li>
                             </ul>
                         </div>
-                        <div class="card-footer bg-light">
-                            <a href="/platforms/${platform.slug || platform.id}/" class="btn btn-primary btn-sm w-100">查看详情</a>
+                        <div class="card-footer ${isBlacklist ? 'bg-danger bg-opacity-10' : 'bg-light'}">
+                            <a href="/platforms/${platform.slug || platform.id}/" class="btn ${isBlacklist ? 'btn-outline-danger' : 'btn-primary'} btn-sm w-100">
+                                ${isBlacklist ? '查看风险详情' : '查看详情'}
+                            </a>
                         </div>
                     </article>
                 </div>

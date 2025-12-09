@@ -607,6 +607,7 @@ async def view_platform(request: Request, slug: str, db: Session = Depends(get_d
         "customer_support": platform.customer_support,
         "learning_resources": platform.learning_resources,
         "platform_type": platform.platform_type,
+        "platform_source": platform.platform_source,
         "platform_badges": platform.platform_badges,
         "overview_intro": platform.overview_intro,
     }

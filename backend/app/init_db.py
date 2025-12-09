@@ -139,6 +139,7 @@ def init_db():
                 "founded_year": 2015,  # Bug005修复：成立年份
                 "fee_rate": 0.5,  # Bug005修复：费率
                 "platform_type": "专业",  # 平台类型分类1
+                "platform_source": "民间平台",  # 平台来源
                 "introduction": "AlphaLeverage是一个专业的外汇交易平台，提供最高500倍的杠杆比例和极具竞争力的交易手续费。平台拥有完善的风险管理系统和24/7的客户支持。",
                 "main_features": '[{"title":"高杠杆","desc":"最高500:1杠杆比例"},{"title":"低手续费","desc":"平均0.5个点的手续费"},{"title":"快速执行","desc":"毫秒级的订单执行速度"},{"title":"多货币对","desc":"支持150+交易对"}]',
                 "fee_structure": '[{"type":"手续费","value":"0.005%","desc":"按交易金额计算"},{"type":"隔夜利息","value":"浮动","desc":"根据货币对变化"},{"type":"点差","value":"0-3点","desc":"主要货币对"}]',
@@ -161,6 +162,7 @@ def init_db():
                 "founded_year": 2012,  # Bug005修复：成立年份
                 "fee_rate": 0.3,  # Bug005修复：费率
                 "platform_type": "平衡",  # 平台类型分类2
+                "platform_source": "民间平台",  # 平台来源
                 "introduction": "BetaMargin是一个全球领先的保证金交易平台，专注于提供专业级的交易工具和市场分析。拥有超过100万活跃交易者。",
                 "main_features": '[{"title":"专业工具","desc":"高级交易终端和分析工具"},{"title":"高流动性","desc":"与全球主要银行合作"},{"title":"教育资源","desc":"丰富的交易教程和网络研讨会"},{"title":"移动交易","desc":"支持iOS和Android应用"}]',
                 "fee_structure": '[{"type":"手续费","value":"0.003%","desc":"行业最低水平"},{"type":"隔夜利息","value":"浮动","desc":"根据市场利率变化"},{"type":"点差","value":"1-2点","desc":"主要货币对"}]',
@@ -183,6 +185,7 @@ def init_db():
                 "founded_year": 2018,  # Bug005修复：成立年份
                 "fee_rate": 0.4,  # Bug005修复：费率
                 "platform_type": "新手友好",  # 平台类型分类3
+                "platform_source": "民间平台",  # 平台来源
                 "introduction": "GammaTrader是一个创新型的交易平台，致力于为零售交易者提供机构级别的交易体验。平台采用最新的区块链技术。",
                 "main_features": '[{"title":"AI助手","desc":"AI驱动的交易建议系统"},{"title":"社交交易","desc":"跟单和复制交易功能"},{"title":"低延迟","desc":"纽约和伦敦的数据中心"},{"title":"多资产","desc":"外汇、股票、加密货币、大宗商品"}]',
                 "fee_structure": '[{"type":"手续费","value":"0.004%","desc":"竞争力的费率结构"},{"type":"隔夜利息","value":"浮动","desc":"根据央行利率"},{"type":"点差","value":"2-4点","desc":"主要货币对"}]',
@@ -205,6 +208,7 @@ def init_db():
                 "founded_year": 2020,  # Bug015修复：成立年份
                 "fee_rate": 0.35,  # Bug015修复：费率
                 "platform_type": "高风险",  # 平台类型分类4
+                "platform_source": "券商平台",  # 平台来源（百度作为示例设为券商平台）
                 "introduction": "百度是一个实际推荐的交易平台，提供专业的杠杆交易服务。平台拥有完善的风险管理系统和优秀的客户支持。",
                 "main_features": '[{"title":"推荐平台","desc":"经过专业评测推荐"},{"title":"稳定可靠","desc":"技术架构完善"},{"title":"专业支持","desc":"24/7客户服务"},{"title":"完善功能","desc":"提供全套交易工具"}]',
                 "fee_structure": '[{"type":"手续费","value":"0.0035%","desc":"行业竞争力费率"},{"type":"隔夜利息","value":"浮动","desc":"根据市场利率"},{"type":"点差","value":"1-3点","desc":"主要货币对"}]',

@@ -68,6 +68,7 @@ class Platform(Base):
     
     # 平台标签和分类
     platform_type = Column(String(50), nullable=True)  # 平台类型: "专业", "新手友好", "平衡", "高风险" 等
+    platform_source = Column(String(50), default="民间平台", nullable=False)  # 平台来源: "券商平台", "民间平台", "黑名单"
     platform_badges = Column(Text, nullable=True)      # JSON: 平台徽章 ["推荐平台", "新手友好", "零佣金"] 等
     
     # 额外的详情页面字段
