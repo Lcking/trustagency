@@ -99,6 +99,15 @@ a:focus {
     font-size: 1.25rem;
     font-weight: 700;
     letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-logo {
+    height: 36px;
+    width: auto;
+    margin-right: 0.5rem;
+    border-radius: 6px;
 }
 
 .navbar-nav .nav-link {
