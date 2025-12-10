@@ -4,9 +4,9 @@ FROM python:3.10-slim AS builder
 
 WORKDIR /app
 
-# 可配置镜像源（国内服务器使用: --build-arg APT_MIRROR=mirrors.aliyun.com --build-arg PIP_INDEX=https://mirrors.aliyun.com/pypi/simple/）
+# 可配置镜像源（国内服务器使用: --build-arg APT_MIRROR=mirrors.aliyun.com --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/）
 ARG APT_MIRROR=deb.debian.org
-ARG PIP_INDEX=https://pypi.org/simple/
+ARG PIP_INDEX_URL=https://pypi.org/simple
 
 # 配置 apt 镜像源
 RUN sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
@@ -23,8 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel -i ${PIP_INDEX} && \
-    pip install --no-cache-dir -r requirements.txt -i ${PIP_INDEX}
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel --index-url ${PIP_INDEX_URL} && \
+    pip install --no-cache-dir -r requirements.txt --index-url ${PIP_INDEX_URL}
 
 # Stage 2: Runtime stage - minimal production image
 FROM python:3.10-slim
