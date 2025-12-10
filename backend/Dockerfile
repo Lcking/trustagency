@@ -4,9 +4,13 @@ FROM python:3.10-slim AS builder
 
 WORKDIR /app
 
-# 使用阿里云镜像源加速（适用于国内服务器）
-RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list 2>/dev/null || true
+# 可配置镜像源（国内服务器使用: --build-arg APT_MIRROR=mirrors.aliyun.com --build-arg PIP_INDEX=https://mirrors.aliyun.com/pypi/simple/）
+ARG APT_MIRROR=deb.debian.org
+ARG PIP_INDEX=https://pypi.org/simple/
+
+# 配置 apt 镜像源
+RUN sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list 2>/dev/null || true
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -19,17 +23,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel -i https://mirrors.aliyun.com/pypi/simple/ && \
-    pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel -i ${PIP_INDEX} && \
+    pip install --no-cache-dir -r requirements.txt -i ${PIP_INDEX}
 
 # Stage 2: Runtime stage - minimal production image
 FROM python:3.10-slim
 
 WORKDIR /app
 
-# 使用阿里云镜像源加速（适用于国内服务器）
-RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
-    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list 2>/dev/null || true
+# 可配置镜像源（与 builder 阶段一致）
+ARG APT_MIRROR=deb.debian.org
+
+# 配置 apt 镜像源
+RUN sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list 2>/dev/null || true
 
 # Install only runtime dependencies (no build tools)
 RUN apt-get update && apt-get install -y --no-install-recommends \
