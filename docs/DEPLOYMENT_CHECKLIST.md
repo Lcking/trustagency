@@ -173,6 +173,34 @@
 - [ ] 预发布环境 (STAGING)
 - [ ] 生产环境 (PROD)
 
+### Docker 构建配置
+
+#### 镜像源配置
+Dockerfile 支持可配置的镜像源，默认使用国际官方源：
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `APT_MIRROR` | deb.debian.org | Debian apt 镜像源 |
+| `PIP_INDEX_URL` | https://pypi.org/simple | Python pip 镜像源 |
+
+**国际部署（默认）：**
+```bash
+docker-compose -f docker-compose.prod.yml build backend
+```
+
+**国内部署（使用阿里云镜像加速）：**
+```bash
+docker-compose -f docker-compose.prod.yml build backend \
+  --build-arg APT_MIRROR=mirrors.aliyun.com \
+  --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
+```
+
+#### ⚠️ 安全提示
+- [ ] 生产环境优先使用官方源或企业内部镜像仓库
+- [ ] 第三方镜像（如阿里云）存在供应链安全风险，虽然信誉良好但无法完全保证包完整性
+- [ ] pip 包签名验证依赖 PyPI，第三方镜像可能无法提供相同保障
+- [ ] 如需使用第三方镜像，确保了解并接受相关风险
+
 ### 生产部署
 - [ ] 代码审查通过
 - [ ] 所有测试通过
