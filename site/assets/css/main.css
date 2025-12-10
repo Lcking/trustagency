@@ -787,6 +787,10 @@ picture {
         font-size: 1rem;
     }
     
+    .navbar-logo {
+        height: 28px;
+    }
+    
     .breadcrumb {
         font-size: 0.875rem;
     }
