@@ -1,10 +1,16 @@
 # Multi-stage Dockerfile for TrustAgency Backend
 #
 # 镜像源配置说明：
-# - 默认使用国际源，适合海外服务器
+# - 默认使用官方国际源，适合海外服务器
 # - 国内服务器构建时添加以下参数加速：
 #   docker build --build-arg APT_MIRROR=mirrors.aliyun.com \
 #                --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple .
+#
+# ⚠️ 安全提示：
+# - 使用第三方镜像源存在供应链安全风险
+# - 生产环境建议使用官方源或企业内部镜像仓库
+# - 第三方镜像（如阿里云）虽然信誉良好，但无法完全保证包的完整性
+# - pip 包签名验证依赖 PyPI，第三方镜像可能无法提供相同保障
 #
 # Stage 1: Build stage - compile dependencies
 FROM python:3.10-slim AS builder
