@@ -1,8 +1,29 @@
 # Multi-stage Dockerfile for TrustAgency Backend
+#
+# 镜像源配置说明：
+# - 默认使用官方国际源，适合海外服务器
+# - 国内服务器构建时添加以下参数加速：
+#   docker build --build-arg APT_MIRROR=mirrors.aliyun.com \
+#                --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple .
+#
+# ⚠️ 安全提示：
+# - 使用第三方镜像源存在供应链安全风险
+# - 生产环境建议使用官方源或企业内部镜像仓库
+# - 第三方镜像（如阿里云）虽然信誉良好，但无法完全保证包的完整性
+# - pip 包签名验证依赖 PyPI，第三方镜像可能无法提供相同保障
+#
 # Stage 1: Build stage - compile dependencies
 FROM python:3.10-slim AS builder
 
 WORKDIR /app
+
+# 可配置的镜像源（默认：国际源）
+ARG APT_MIRROR=deb.debian.org
+ARG PIP_INDEX_URL=https://pypi.org/simple
+
+# 配置 apt 镜像源
+RUN sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list 2>/dev/null || true
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,13 +36,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel --index-url ${PIP_INDEX_URL} && \
+    pip install --no-cache-dir -r requirements.txt --index-url ${PIP_INDEX_URL}
 
 # Stage 2: Runtime stage - minimal production image
 FROM python:3.10-slim
 
 WORKDIR /app
+
+# 可配置的镜像源（默认：国际源，与 builder 阶段一致）
+ARG APT_MIRROR=deb.debian.org
+
+# 配置 apt 镜像源
+RUN sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list 2>/dev/null || true
 
 # Install only runtime dependencies (no build tools)
 RUN apt-get update && apt-get install -y --no-install-recommends \
