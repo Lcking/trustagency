@@ -71,6 +71,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - BACKEND_DIR=/app
       - PYTHONUNBUFFERED=1
+      - CORS_ORIGINS=["http://yycr.net","https://yycr.net","http://www.yycr.net","https://www.yycr.net","http://localhost:8000","http://localhost:8001"]
     depends_on:
       redis:
         condition: service_healthy
@@ -114,6 +115,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - SECRET_KEY=${SECRET_KEY}
       - PYTHONUNBUFFERED=1
+      - CORS_ORIGINS=["http://yycr.net","https://yycr.net","http://www.yycr.net","https://www.yycr.net"]
     depends_on:
       - redis
       - backend
@@ -151,6 +153,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - SECRET_KEY=${SECRET_KEY}
       - PYTHONUNBUFFERED=1
+      - CORS_ORIGINS=["http://yycr.net","https://yycr.net","http://www.yycr.net","https://www.yycr.net"]
     depends_on:
       - redis
       - backend
