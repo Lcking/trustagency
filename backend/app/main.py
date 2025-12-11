@@ -205,6 +205,11 @@ app.include_router(admin_platforms.router)
 # 设置管理后台路由
 setup_admin_routes(app)
 
+# 挂载 admin 静态资源（CSS, JS 等）- 必须在显式路由之前
+admin_assets_dir = ADMIN_DIR / "assets"
+if admin_assets_dir.exists():
+    app.mount("/admin/assets", StaticFiles(directory=str(admin_assets_dir)), name="admin_assets")
+
 # 显式处理 /admin/ 和 /admin 路由，确保返回 index.html
 @app.get("/admin/", include_in_schema=False)
 async def admin_index():
