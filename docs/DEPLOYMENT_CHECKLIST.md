@@ -43,8 +43,68 @@
 - [ ] 检查 CORS 配置是否正确
 - [ ] 验证敏感端点有认证保护
 - [ ] 确认没有硬编码的密钥或密码
-- [ ] 启用 HTTPS (生产环境)
+- [ ] 启用 HTTPS (生产环境) - 见下方 SSL 配置指南
 - [ ] 配置速率限制防止 DDoS
+
+### 🔒 HTTPS/SSL 配置指南
+
+#### 方式一：使用 Let's Encrypt 免费证书（推荐）
+
+```bash
+# 1. 停止 frontend 容器释放 80 端口
+cd /opt/trustagency
+docker-compose -f docker-compose.prod.yml stop frontend
+
+# 2. 安装 certbot
+yum install -y certbot  # CentOS/RHEL
+# apt-get install -y certbot  # Ubuntu/Debian
+
+# 3. 申请证书（确保 DNS 已指向此服务器）
+certbot certonly --standalone -d yycr.net -d www.yycr.net
+
+# 4. 复制证书到项目目录
+mkdir -p /opt/trustagency/certs
+cp /etc/letsencrypt/live/yycr.net/fullchain.pem /opt/trustagency/certs/
+cp /etc/letsencrypt/live/yycr.net/privkey.pem /opt/trustagency/certs/
+chmod 644 /opt/trustagency/certs/*.pem
+
+# 5. 使用 SSL 覆盖配置启动
+docker-compose -f docker-compose.prod.yml -f docker-compose.prod.ssl.yml up -d
+
+# 6. 验证 HTTPS
+curl -I https://yycr.net
+```
+
+#### 方式二：手动配置 SSL
+
+1. 将证书文件放到 `./certs/` 目录：
+   - `fullchain.pem` - 证书链
+   - `privkey.pem` - 私钥
+
+2. 修改 docker-compose.prod.yml，替换 nginx 配置：
+   ```yaml
+   volumes:
+     - ./nginx/ssl.conf:/etc/nginx/conf.d/default.conf:ro
+     - ./certs:/etc/nginx/certs:ro
+   ```
+
+3. 重启服务：
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+#### 证书自动续期
+
+```bash
+# 添加 cron 任务自动续期
+echo "0 0 1 * * certbot renew --pre-hook 'docker-compose -f /opt/trustagency/docker-compose.prod.yml stop frontend' --post-hook 'cp /etc/letsencrypt/live/yycr.net/*.pem /opt/trustagency/certs/ && docker-compose -f /opt/trustagency/docker-compose.prod.yml -f /opt/trustagency/docker-compose.prod.ssl.yml up -d frontend'" | crontab -
+```
+
+#### ⚠️ 注意事项
+- 默认配置（default.conf）仅支持 HTTP，确保无证书时服务仍可用
+- SSL 配置（ssl.conf）需要有效证书才能启动
+- 证书文件不应提交到 Git 仓库
+- 建议使用 `.gitignore` 忽略 `certs/` 目录
 
 ### 🗄️ 数据库检查
 - [ ] 创建所有必需的数据库表
