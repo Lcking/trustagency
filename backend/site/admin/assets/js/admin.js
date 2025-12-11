@@ -3833,8 +3833,6 @@ function clearEditor() {
         articleEditor.commands.clearContent();
     }
 }
-    </script>
-
 
 // ============= Tiptap 诊断脚本 =============
 window.TiptapDiagnostics = {
