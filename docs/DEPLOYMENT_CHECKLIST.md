@@ -66,7 +66,8 @@ certbot certonly --standalone -d yycr.net -d www.yycr.net
 mkdir -p /opt/trustagency/certs
 cp /etc/letsencrypt/live/yycr.net/fullchain.pem /opt/trustagency/certs/
 cp /etc/letsencrypt/live/yycr.net/privkey.pem /opt/trustagency/certs/
-chmod 644 /opt/trustagency/certs/*.pem
+chmod 644 /opt/trustagency/certs/fullchain.pem
+chmod 600 /opt/trustagency/certs/privkey.pem
 
 # 5. 使用 SSL 覆盖配置启动
 docker-compose -f docker-compose.prod.yml -f docker-compose.prod.ssl.yml up -d
@@ -96,8 +97,8 @@ curl -I https://yycr.net
 #### 证书自动续期
 
 ```bash
-# 添加 cron 任务自动续期
-echo "0 0 1 * * certbot renew --pre-hook 'docker-compose -f /opt/trustagency/docker-compose.prod.yml stop frontend' --post-hook 'cp /etc/letsencrypt/live/yycr.net/*.pem /opt/trustagency/certs/ && docker-compose -f /opt/trustagency/docker-compose.prod.yml -f /opt/trustagency/docker-compose.prod.ssl.yml up -d frontend'" | crontab -
+# 添加 cron 任务自动续期（追加到现有 crontab，不会覆盖已有条目）
+(crontab -l 2>/dev/null; echo "0 0 1 * * certbot renew --pre-hook 'docker-compose -f /opt/trustagency/docker-compose.prod.yml stop frontend' --post-hook 'cp /etc/letsencrypt/live/yycr.net/*.pem /opt/trustagency/certs/ && chmod 600 /opt/trustagency/certs/privkey.pem && docker-compose -f /opt/trustagency/docker-compose.prod.yml -f /opt/trustagency/docker-compose.prod.ssl.yml up -d frontend'") | crontab -
 ```
 
 #### ⚠️ 注意事项
