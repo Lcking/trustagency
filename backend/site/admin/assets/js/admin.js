@@ -2704,9 +2704,8 @@ async function testAIConfig() {
 
     // 显示加载状态
     const testStatusDiv = document.getElementById('testStatus');
-    testStatusDiv.className = 'test-status test-status-loading';
+    testStatusDiv.className = 'test-status test-status-loading active';
     testStatusDiv.textContent = '⏳ 测试中...';
-    testStatusDiv.style.display = 'block';
 
     try {
         const response = await fetch(`${API_URL}/api/ai-configs/test`, {
@@ -2726,17 +2725,17 @@ async function testAIConfig() {
 
         if (response.ok && data.success) {
             // 显示成功状态
-            testStatusDiv.className = 'test-status test-status-success';
+            testStatusDiv.className = 'test-status test-status-success active';
             testStatusDiv.textContent = '✅ 连接成功！API 可正常访问';
             console.log('Test result:', data);
         } else {
             // 显示失败状态
-            testStatusDiv.className = 'test-status test-status-error';
+            testStatusDiv.className = 'test-status test-status-error active';
             testStatusDiv.textContent = '❌ 连接失败: ' + (data.error || '未知错误');
             console.error('Test error:', data);
         }
     } catch (error) {
-        testStatusDiv.className = 'test-status test-status-error';
+        testStatusDiv.className = 'test-status test-status-error active';
         testStatusDiv.textContent = '❌ 错误: ' + error.message;
         console.error('Test exception:', error);
     }
