@@ -104,7 +104,7 @@ services:
         - ENVIRONMENT=production
     container_name: trustagency-celery-worker-prod
     image: trustagency-backend:latest
-    command: celery -A app.celery_tasks worker --loglevel=info --concurrency=2
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2 -Q celery,ai_generation
     environment:
       - ENVIRONMENT=production
       - DEBUG=False
@@ -141,7 +141,7 @@ services:
         - ENVIRONMENT=production
     container_name: trustagency-celery-beat-prod
     image: trustagency-backend:latest
-    command: celery -A app.celery_tasks beat --loglevel=info
+    command: celery -A app.celery_app beat --loglevel=info
     environment:
       - ENVIRONMENT=production
       - DEBUG=False
