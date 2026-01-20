@@ -1,16 +1,18 @@
 """
 应用配置管理
+
+注意: CORS_ORIGINS 使用字符串类型 (CORS_ORIGINS_STR) 来避免 pydantic-settings v2
+从 .env 文件解析 List[str] 时的问题。通过 @property 转换为列表。
 """
 import json
-from typing import List, Any
+from typing import List
 
 # 兼容 pydantic v1 和 v2
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
-    from pydantic import field_validator
     PYDANTIC_V2 = True
 except ImportError:
-    from pydantic import BaseSettings, validator
+    from pydantic import BaseSettings
     PYDANTIC_V2 = False
 
 
@@ -51,22 +53,30 @@ class Settings(BaseSettings):
     # Tushare Pro (两融数据)
     TUSHARE_TOKEN: str = ""
     
-    # CORS - 支持 JSON 字符串或列表
-    CORS_ORIGINS: List[str] = ["http://localhost:8000", "http://localhost:8001"]
+    # CORS - 使用字符串类型避免 pydantic-settings 解析问题
+    # 支持 JSON 数组格式: '["http://localhost:8000", "http://localhost:8001"]'
+    # 或逗号分隔格式: 'http://localhost:8000,http://localhost:8001'
+    CORS_ORIGINS_STR: str = '["http://localhost:8000", "http://localhost:8001"]'
+    
+    @property
+    def CORS_ORIGINS(self) -> List[str]:
+        """解析 CORS_ORIGINS_STR 为列表"""
+        value = self.CORS_ORIGINS_STR
+        if not value:
+            return ["http://localhost:8000", "http://localhost:8001"]
+        
+        # 尝试 JSON 解析
+        try:
+            result = json.loads(value)
+            if isinstance(result, list):
+                return [str(item) for item in result]
+        except json.JSONDecodeError:
+            pass
+        
+        # 尝试逗号分隔格式
+        return [s.strip() for s in value.split(',') if s.strip()]
     
     if PYDANTIC_V2:
-        @field_validator('CORS_ORIGINS', mode='before')
-        @classmethod
-        def parse_cors_origins(cls, v: Any) -> List[str]:
-            """解析 CORS_ORIGINS，支持 JSON 字符串或列表"""
-            if isinstance(v, str):
-                try:
-                    return json.loads(v)
-                except json.JSONDecodeError:
-                    # 尝试逗号分隔格式
-                    return [s.strip() for s in v.split(',') if s.strip()]
-            return v
-        
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -74,16 +84,6 @@ class Settings(BaseSettings):
             extra="ignore",
         )
     else:
-        @validator('CORS_ORIGINS', pre=True)
-        def parse_cors_origins_v1(cls, v):
-            """解析 CORS_ORIGINS，支持 JSON 字符串或列表"""
-            if isinstance(v, str):
-                try:
-                    return json.loads(v)
-                except json.JSONDecodeError:
-                    return [s.strip() for s in v.split(',') if s.strip()]
-            return v
-        
         class Config:
             case_sensitive = True
             env_file = ".env"
