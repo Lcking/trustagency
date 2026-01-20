@@ -13,7 +13,10 @@ app = Celery(
     'trustagency',
     broker=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
     backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1'),
-    include=['app.tasks.ai_generation']  # 显式包含任务模块
+    include=[
+        'app.tasks.ai_generation',
+        'app.tasks.margin_sync',  # 两融数据同步任务
+    ]
 )
 
 # Celery 配置
@@ -50,6 +53,16 @@ app.conf.update(
     broker_connection_retry_on_startup=True,
     worker_prefetch_multiplier=4,
     worker_max_tasks_per_child=1000,
+    
+    # 定时任务 (Celery Beat)
+    beat_schedule={
+        # 每天 17:30 同步两融数据（收盘后）
+        'sync-margin-data-daily': {
+            'task': 'tasks.sync_margin_all',
+            'schedule': __import__('celery.schedules', fromlist=['crontab']).crontab(hour=17, minute=30),
+            'options': {'queue': 'celery'},
+        },
+    },
 )
 
 # 任务预处理信号

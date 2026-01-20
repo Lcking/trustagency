@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Primary Meta Tags (will be updated by JS) -->
+    <title>个股两融数据查询 | 鹰眼查融</title>
+    <meta name="description" content="查询A股个股融资融券历史数据，包含融资余额、融券余量、融资净买入等指标趋势分析。">
+    <meta name="keywords" content="个股两融,融资融券查询,融资余额查询,融券余量,股票两融数据">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="鹰眼查融">
+    
+    <!-- Canonical -->
+    <link rel="canonical" href="https://www.yycr.net/margin/stock/">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Main Stylesheet -->
+    <link href="/assets/css/main.css" rel="stylesheet">
+    <link href="/assets/css/utilities.css" rel="stylesheet">
+    
+    <style>
+        .stock-header {
+            background: linear-gradient(135deg, var(--primary-color, #0d6efd) 0%, #0b5ed7 100%);
+            color: white;
+            padding: 2rem 0;
+        }
+        .stock-name {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .stock-code {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-box {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .stat-box .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #212529;
+        }
+        .stat-box .label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        .stat-box.positive .value { color: #28a745; }
+        .stat-box.negative .value { color: #dc3545; }
+        
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .data-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .data-table td {
+            white-space: nowrap;
+        }
+        
+        .search-box {
+            background: rgba(255,255,255,0.1);
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+        }
+        .search-box input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            width: 100%;
+        }
+        .search-box input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        
+        .value-positive { color: #28a745; }
+        .value-negative { color: #dc3545; }
+    </style>
+</head>
+<body>
+    
+    <!-- Header / Navigation -->
+    <header role="banner">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top border-bottom" role="navigation" aria-label="主导航">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="/" aria-label="鹰眼查融首页">
+                    <img src="/assets/images/logo.png" alt="鹰眼查融" class="navbar-logo">
+                    <span>鹰眼</span><span class="d-none d-sm-inline">查融</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="/">首页</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="/margin/">两融</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/platforms/">平台</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/compare/">对比</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/qa/">常见问题</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarResources" role="button" data-bs-toggle="dropdown" aria-expanded="false">资源</a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarResources">
+                                <li><a class="dropdown-item" href="/wiki/">百科</a></li>
+                                <li><a class="dropdown-item" href="/guides/">指南</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/about/">关于</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="d-none d-md-block bg-light border-bottom py-2">
+        <div class="container">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item"><a href="/margin/">两融数据</a></li>
+                <li class="breadcrumb-item active" aria-current="page" id="breadcrumb-stock">个股查询</li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main role="main" id="main-content">
+        <!-- Stock Header -->
+        <section class="stock-header" id="stock-header">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h1 class="stock-name" id="stock-name">加载中...</h1>
+                        <p class="stock-code mb-3" id="stock-code">--</p>
+                        <div class="d-flex gap-3 flex-wrap" id="stock-tags">
+                            <span class="badge bg-primary">两融标的</span>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mt-3 mt-lg-0">
+                        <div class="search-box d-flex align-items-center">
+                            <span class="me-2">🔍</span>
+                            <input type="text" id="stockSearch" placeholder="搜索其他股票..." class="flex-grow-1">
+                            <button class="btn btn-light btn-sm rounded-pill px-3" onclick="searchStock()">搜索</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 最新数据概览 -->
+        <section class="py-4" style="margin-top: -2rem;">
+            <div class="container">
+                <div class="row g-3" id="latest-stats">
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="stat-box">
+                            <div class="value" id="stat-rzye">--</div>
+                            <div class="label">融资余额</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="stat-box" id="stat-net-box">
+                            <div class="value" id="stat-net-buy">--</div>
+                            <div class="label">融资净买入</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="stat-box">
+                            <div class="value" id="stat-rzmre">--</div>
+                            <div class="label">融资买入额</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="stat-box">
+                            <div class="value" id="stat-rqyl">--</div>
+                            <div class="label">融券余量</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="stat-box">
+                            <div class="value" id="stat-rqye">--</div>
+                            <div class="label">融券余额</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="stat-box">
+                            <div class="value" id="stat-rzrqye">--</div>
+                            <div class="label">两融余额</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 趋势图表 -->
+        <section class="py-4">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h4 mb-0">📈 两融趋势</h2>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadHistory(30)">30天</button>
+                        <button type="button" class="btn btn-primary btn-sm active" onclick="loadHistory(90)">90天</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadHistory(180)">180天</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="historyChart" height="350"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- 历史数据表格 -->
+        <section class="py-4 bg-light">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h4 mb-0">📋 历史数据明细</h2>
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportData()">
+                        📥 导出Excel
+                    </button>
+                </div>
+                <div class="data-table">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th class="text-end">融资余额</th>
+                                    <th class="text-end">融资买入</th>
+                                    <th class="text-end">融资偿还</th>
+                                    <th class="text-end">净买入</th>
+                                    <th class="text-end">融券余量</th>
+                                    <th class="text-end">融券余额</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table">
+                                <tr><td colspan="7" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> 加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5" role="contentinfo">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">关于我们</h3>
+                    <p class="small text-muted">鹰眼查融为投资者提供专业的两融数据和杠杆平台信息服务。</p>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">快速链接</h3>
+                    <ul class="list-unstyled small">
+                        <li><a href="/margin/" class="text-decoration-none text-muted">两融数据</a></li>
+                        <li><a href="/platforms/" class="text-decoration-none text-muted">平台列表</a></li>
+                        <li><a href="/about/" class="text-decoration-none text-muted">关于我们</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">联系我们</h3>
+                    <p class="small text-muted">Email: <a href="mailto:support@yycr.net" class="text-muted">support@yycr.net</a></p>
+                </div>
+            </div>
+            <hr class="border-secondary my-4">
+            <div class="text-center small text-muted">© 2025 上海薏雅征信。版权所有。</div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8001'
+            : '';
+        
+        let currentCode = '';
+        let historyData = [];
+        let historyChart = null;
+        
+        // 格式化金额
+        function formatAmount(value) {
+            if (!value && value !== 0) return '--';
+            const yi = value / 1e8;
+            if (Math.abs(yi) >= 10000) {
+                return (yi / 10000).toFixed(2) + '万亿';
+            }
+            return yi.toFixed(2) + '亿';
+        }
+        
+        // 格式化股数
+        function formatVolume(value) {
+            if (!value && value !== 0) return '--';
+            const wan = value / 10000;
+            if (Math.abs(wan) >= 10000) {
+                return (wan / 10000).toFixed(2) + '亿股';
+            }
+            return wan.toFixed(0) + '万股';
+        }
+        
+        // 获取URL参数
+        function getUrlParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+        
+        // 规范化股票代码
+        function normalizeCode(code) {
+            if (!code) return '';
+            code = code.toUpperCase().trim();
+            if (code.includes('.')) return code;
+            if (code.startsWith('6')) return code + '.SH';
+            if (code.startsWith('0') || code.startsWith('3')) return code + '.SZ';
+            if (code.startsWith('8') || code.startsWith('4')) return code + '.BJ';
+            return code;
+        }
+        
+        // 加载股票数据
+        async function loadStockData(code, days = 90) {
+            currentCode = normalizeCode(code);
+            
+            if (!currentCode) {
+                document.getElementById('stock-name').textContent = '请输入股票代码';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/margin/stock/${currentCode}?days=${days}`);
+                if (!response.ok) {
+                    throw new Error('未找到该股票的两融数据');
+                }
+                const data = await response.json();
+                
+                historyData = data.data;
+                
+                // 更新页面标题
+                const stockName = data.name || currentCode.split('.')[0];
+                document.title = `${stockName}(${currentCode})两融数据 | 鹰眼查融`;
+                document.getElementById('stock-name').textContent = stockName;
+                document.getElementById('stock-code').textContent = currentCode;
+                document.getElementById('breadcrumb-stock').textContent = `${stockName}(${currentCode.split('.')[0]})`;
+                
+                // 更新最新数据
+                if (historyData.length > 0) {
+                    const latest = historyData[historyData.length - 1];
+                    document.getElementById('stat-rzye').textContent = formatAmount(latest.rzye);
+                    document.getElementById('stat-rzmre').textContent = formatAmount(latest.rzmre);
+                    document.getElementById('stat-rqyl').textContent = formatVolume(latest.rqyl);
+                    document.getElementById('stat-rqye').textContent = formatAmount(latest.rqye);
+                    document.getElementById('stat-rzrqye').textContent = formatAmount(latest.rzrqye);
+                    
+                    const netBuy = latest.net_buy;
+                    document.getElementById('stat-net-buy').textContent = (netBuy >= 0 ? '+' : '') + formatAmount(netBuy);
+                    const netBox = document.getElementById('stat-net-box');
+                    netBox.classList.remove('positive', 'negative');
+                    netBox.classList.add(netBuy >= 0 ? 'positive' : 'negative');
+                }
+                
+                // 渲染图表
+                renderChart(historyData);
+                
+                // 渲染表格
+                renderTable(historyData);
+                
+            } catch (error) {
+                console.error('加载失败:', error);
+                document.getElementById('stock-name').textContent = error.message;
+                document.getElementById('history-table').innerHTML = 
+                    `<tr><td colspan="7" class="text-center py-4 text-danger">${error.message}</td></tr>`;
+            }
+        }
+        
+        // 渲染图表
+        function renderChart(data) {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            
+            if (historyChart) {
+                historyChart.destroy();
+            }
+            
+            const labels = data.map(d => d.date.slice(5));
+            const rzye = data.map(d => d.rzye / 1e8);
+            const netBuy = data.map(d => d.net_buy / 1e8);
+            const rqyl = data.map(d => d.rqyl / 10000);
+            
+            historyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '融资余额(亿)',
+                            data: rzye,
+                            borderColor: '#f5576c',
+                            backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '融资净买入(亿)',
+                            data: netBuy,
+                            borderColor: '#43e97b',
+                            backgroundColor: 'rgba(67, 233, 123, 0.3)',
+                            fill: true,
+                            tension: 0.4,
+                            type: 'bar',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '融资余额(亿)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '净买入(亿)'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染表格
+        function renderTable(data) {
+            const container = document.getElementById('history-table');
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">暂无数据</td></tr>';
+                return;
+            }
+            
+            // 倒序显示（最新的在前）
+            const reversed = [...data].reverse();
+            
+            container.innerHTML = reversed.slice(0, 30).map(item => {
+                const netClass = item.net_buy >= 0 ? 'value-positive' : 'value-negative';
+                const netSign = item.net_buy >= 0 ? '+' : '';
+                return `
+                    <tr>
+                        <td>${item.date}</td>
+                        <td class="text-end">${formatAmount(item.rzye)}</td>
+                        <td class="text-end">${formatAmount(item.rzmre)}</td>
+                        <td class="text-end">${formatAmount(item.rzche)}</td>
+                        <td class="text-end ${netClass}">${netSign}${formatAmount(item.net_buy)}</td>
+                        <td class="text-end">${formatVolume(item.rqyl)}</td>
+                        <td class="text-end">${formatAmount(item.rqye)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // 加载历史（切换天数）
+        function loadHistory(days) {
+            loadStockData(currentCode, days);
+            
+            // 更新按钮状态
+            document.querySelectorAll('[onclick^="loadHistory"]').forEach(btn => {
+                btn.classList.remove('btn-primary', 'active');
+                btn.classList.add('btn-outline-primary');
+                // 检查按钮对应的天数
+                const btnDays = btn.getAttribute('onclick').match(/loadHistory\((\d+)\)/);
+                if (btnDays && parseInt(btnDays[1]) === days) {
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-primary', 'active');
+                }
+            });
+        }
+        
+        // 搜索股票
+        function searchStock() {
+            const keyword = document.getElementById('stockSearch').value.trim();
+            if (keyword) {
+                window.location.href = `/margin/stock/?code=${encodeURIComponent(keyword)}`;
+            }
+        }
+        
+        // 导出数据
+        function exportData() {
+            if (!historyData || historyData.length === 0) {
+                alert('暂无数据可导出');
+                return;
+            }
+            
+            // 生成CSV
+            const headers = ['日期', '融资余额', '融资买入', '融资偿还', '净买入', '融券余量', '融券余额', '两融余额'];
+            const rows = historyData.map(d => [
+                d.date,
+                d.rzye,
+                d.rzmre,
+                d.rzche,
+                d.net_buy,
+                d.rqyl,
+                d.rqye,
+                d.rzrqye
+            ]);
+            
+            let csv = '\uFEFF' + headers.join(',') + '\n';
+            rows.forEach(row => {
+                csv += row.join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${currentCode}_两融数据.csv`;
+            link.click();
+        }
+        
+        // 回车搜索
+        document.getElementById('stockSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchStock();
+        });
+        
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', function() {
+            const code = getUrlParam('code');
+            if (code) {
+                loadStockData(code, 90);
+            } else {
+                document.getElementById('stock-name').textContent = '请输入股票代码';
+                document.getElementById('history-table').innerHTML = 
+                    '<tr><td colspan="7" class="text-center py-4 text-muted">在搜索框中输入股票代码或名称进行查询</td></tr>';
+            }
+        });
+    </script>
+</body>
+</html>

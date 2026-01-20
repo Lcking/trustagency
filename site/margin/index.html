@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Primary Meta Tags -->
+    <title>两融数据中心 - 融资融券实时数据查询 | 鹰眼查融</title>
+    <meta name="title" content="两融数据中心 - 融资融券实时数据查询 | 鹰眼查融">
+    <meta name="description" content="鹰眼查融两融数据中心提供沪深两市融资融券实时数据、个股两融查询、融资净买入排行榜，帮助投资者洞察市场资金动向。">
+    <meta name="keywords" content="两融数据,融资融券,融资余额,融券余量,融资买入,两融排行,A股两融">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="author" content="鹰眼查融">
+    <meta name="language" content="zh-CN">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.yycr.net/margin/">
+    <meta property="og:title" content="两融数据中心 - 融资融券实时数据查询">
+    <meta property="og:description" content="沪深两市融资融券实时数据、个股两融查询、融资净买入排行榜">
+    <meta property="og:locale" content="zh_CN">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.yycr.net/margin/">
+    <meta property="twitter:title" content="两融数据中心 - 融资融券实时数据查询">
+    <meta property="twitter:description" content="沪深两市融资融券实时数据、个股两融查询、融资净买入排行榜">
+    
+    <!-- Canonical -->
+    <link rel="canonical" href="https://www.yycr.net/margin/">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Main Stylesheet -->
+    <link href="/assets/css/main.css" rel="stylesheet">
+    <link href="/assets/css/utilities.css" rel="stylesheet">
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        "name": "沪深两市融资融券数据",
+        "description": "中国A股市场每日融资融券交易汇总和明细数据，包含融资余额、融券余量、融资买入额等指标",
+        "provider": {
+            "@type": "Organization",
+            "name": "鹰眼查融",
+            "url": "https://www.yycr.net"
+        },
+        "temporalCoverage": "2020-01-01/..",
+        "spatialCoverage": "中国",
+        "keywords": ["融资融券", "两融数据", "A股", "融资余额", "融券余量"]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "首页",
+                "item": "https://www.yycr.net/"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "两融数据",
+                "item": "https://www.yycr.net/margin/"
+            }
+        ]
+    }
+    </script>
+
+    <style>
+        /* 两融数据专用样式 */
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        .stat-card.rzye { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .stat-card.rqye { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .stat-card.rzrqye { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .stat-card.update { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        .stat-change {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+        .stat-change.positive { color: #a8ffc4; }
+        .stat-change.negative { color: #ffcdd2; }
+        
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .ranking-table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .ranking-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            border: none;
+        }
+        .ranking-table td {
+            vertical-align: middle;
+        }
+        .ranking-table .rank-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .rank-badge.rank-1 { background: linear-gradient(135deg, #ffd700, #ffb800); color: #5a4a00; }
+        .rank-badge.rank-2 { background: linear-gradient(135deg, #e8e8e8, #c0c0c0); color: #444; }
+        .rank-badge.rank-3 { background: linear-gradient(135deg, #deb887, #cd7f32); color: #fff; }
+        .rank-badge.rank-default { background: #e9ecef; color: #495057; }
+        
+        .search-box {
+            background: white;
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .search-box input {
+            border: none;
+            outline: none;
+            width: 100%;
+            padding: 0.5rem;
+        }
+        
+        .value-positive { color: #28a745; }
+        .value-negative { color: #dc3545; }
+        
+        .hero-margin {
+            background: linear-gradient(135deg, var(--primary-color, #0d6efd) 0%, #0b5ed7 100%);
+            color: white;
+            padding: 3rem 0;
+        }
+        .hero-margin h1 {
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .hero-margin .lead {
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Header / Navigation -->
+    <header role="banner">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top border-bottom" role="navigation" aria-label="主导航">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="/" aria-label="鹰眼查融首页">
+                    <img src="/assets/images/logo.png" alt="鹰眼查融" class="navbar-logo">
+                    <span>鹰眼</span><span class="d-none d-sm-inline">查融</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="切换导航菜单">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/">首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/margin/">两融</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/platforms/">平台</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/compare/">对比</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/qa/">常见问题</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarResources" role="button" data-bs-toggle="dropdown" aria-expanded="false">资源</a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarResources">
+                                <li><a class="dropdown-item" href="/wiki/">百科</a></li>
+                                <li><a class="dropdown-item" href="/guides/">指南</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/about/">关于</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="d-none d-md-block bg-light border-bottom py-2">
+        <div class="container">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item active" aria-current="page">两融数据</li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main role="main" id="main-content">
+        <!-- Hero Section -->
+        <section class="hero-margin" aria-labelledby="hero-title">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h1 id="hero-title" class="display-5 fw-bold mb-3">📊 两融数据中心</h1>
+                        <p class="lead mb-4" style="color: rgba(255,255,255,0.9);">
+                            实时追踪沪深两市融资融券数据，洞察市场资金动向，把握投资先机
+                        </p>
+                        <!-- 搜索框 -->
+                        <div class="search-box d-flex align-items-center" style="max-width: 500px;">
+                            <span class="text-muted me-2">🔍</span>
+                            <input type="text" id="stockSearch" placeholder="输入股票代码或名称搜索..." class="flex-grow-1">
+                            <button class="btn btn-primary btn-sm rounded-pill px-4" onclick="searchStock()">搜索</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数据统计卡片 -->
+        <section class="py-5" aria-labelledby="stats-title">
+            <div class="container">
+                <h2 id="stats-title" class="visually-hidden">两融数据概览</h2>
+                <div id="stats-container" class="row g-4">
+                    <div class="col-6 col-lg-3">
+                        <div class="stat-card rzye">
+                            <div class="stat-value" id="stat-rzye">--</div>
+                            <div class="stat-label">融资余额</div>
+                            <div class="stat-change" id="stat-rzye-change">--</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="stat-card rqye">
+                            <div class="stat-value" id="stat-rqye">--</div>
+                            <div class="stat-label">融券余额</div>
+                            <div class="stat-change" id="stat-rqye-change">--</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="stat-card rzrqye">
+                            <div class="stat-value" id="stat-rzrqye">--</div>
+                            <div class="stat-label">两融余额</div>
+                            <div class="stat-change" id="stat-rzrqye-change">--</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="stat-card update">
+                            <div class="stat-value" id="stat-date">--</div>
+                            <div class="stat-label">数据日期</div>
+                            <div class="stat-change">每日 17:30 更新</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 趋势图表 -->
+        <section class="py-5 bg-light" aria-labelledby="trend-title">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 id="trend-title" class="mb-0">📈 两融余额趋势</h2>
+                    <div class="btn-group" role="group" aria-label="时间范围">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadTrend(7)">7天</button>
+                        <button type="button" class="btn btn-primary btn-sm active" onclick="loadTrend(30)">30天</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadTrend(90)">90天</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart" height="300"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- 排行榜 -->
+        <section class="py-5" aria-labelledby="ranking-title">
+            <div class="container">
+                <h2 id="ranking-title" class="mb-4">🔥 两融排行榜</h2>
+                <div class="row g-4">
+                    <!-- 融资净买入 TOP10 -->
+                    <div class="col-lg-6">
+                        <div class="card ranking-table">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h3 class="h5 mb-0">💰 融资净买入 TOP10</h3>
+                                <a href="/margin/ranking/?order=net_buy" class="btn btn-sm btn-outline-primary">查看更多</a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 50px;">排名</th>
+                                                <th>股票</th>
+                                                <th class="text-end">净买入</th>
+                                                <th class="text-end">融资余额</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ranking-net-buy">
+                                            <tr><td colspan="4" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> 加载中...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 融券余量 TOP10 -->
+                    <div class="col-lg-6">
+                        <div class="card ranking-table">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h3 class="h5 mb-0">📉 融券余量 TOP10</h3>
+                                <a href="/margin/ranking/?order=rqyl" class="btn btn-sm btn-outline-primary">查看更多</a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 50px;">排名</th>
+                                                <th>股票</th>
+                                                <th class="text-end">融券余量</th>
+                                                <th class="text-end">融券余额</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ranking-rqyl">
+                                            <tr><td colspan="4" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> 加载中...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 两融知识 -->
+        <section class="py-5 bg-light" aria-labelledby="knowledge-title">
+            <div class="container">
+                <h2 id="knowledge-title" class="mb-4">📚 两融知识</h2>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="card-title h6">什么是融资融券？</h3>
+                                <p class="card-text small text-muted">融资融券是指投资者向券商借入资金买入证券（融资）或借入证券卖出（融券）的交易方式。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="card-title h6">融资余额代表什么？</h3>
+                                <p class="card-text small text-muted">融资余额是投资者尚未偿还的融资金额，余额增加通常表示市场看多情绪上升。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="card-title h6">融券余量的意义？</h3>
+                                <p class="card-text small text-muted">融券余量是投资者尚未归还的借入证券数量，余量增加可能表示市场看空情绪增强。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h3 class="card-title h6">如何分析两融数据？</h3>
+                                <p class="card-text small text-muted">结合融资净买入、融券变化、以及个股走势，可以辅助判断市场情绪和资金流向。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5 mt-5" role="contentinfo" aria-label="页脚">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">关于我们</h3>
+                    <p class="small text-muted">
+                        鹰眼查融为投资者提供专业的两融数据和杠杆平台信息服务。
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">快速链接</h3>
+                    <ul class="list-unstyled small">
+                        <li><a href="/margin/" class="text-decoration-none text-muted">两融数据</a></li>
+                        <li><a href="/platforms/" class="text-decoration-none text-muted">平台列表</a></li>
+                        <li><a href="/compare/" class="text-decoration-none text-muted">平台对比</a></li>
+                        <li><a href="/about/" class="text-decoration-none text-muted">关于我们</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6 mb-3">联系我们</h3>
+                    <p class="small text-muted mb-0">
+                        Email: <a href="mailto:support@yycr.net" class="text-decoration-none text-muted">support@yycr.net</a>
+                    </p>
+                </div>
+            </div>
+            <hr class="border-secondary my-4">
+            <div class="text-center small text-muted">
+                <p class="mb-1">© 2025 上海薏雅征信。版权所有。</p>
+                <p class="mb-0">
+                    <a href="/legal/" class="text-decoration-none text-muted">法律声明</a> | 
+                    <a href="/legal/#disclaimer" class="text-decoration-none text-muted">风险声明</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    
+    <!-- API Client -->
+    <script src="/assets/js/api-client.js"></script>
+    
+    <script>
+        // API 基础URL
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8001'
+            : '';
+        
+        // 格式化金额（亿元）
+        function formatAmount(value) {
+            if (!value) return '--';
+            const yi = value / 1e8;
+            if (yi >= 10000) {
+                return (yi / 10000).toFixed(2) + '万亿';
+            }
+            return yi.toFixed(2) + '亿';
+        }
+        
+        // 格式化数量（万股）
+        function formatVolume(value) {
+            if (!value) return '--';
+            const wan = value / 10000;
+            if (wan >= 10000) {
+                return (wan / 10000).toFixed(2) + '亿股';
+            }
+            return wan.toFixed(0) + '万股';
+        }
+        
+        // 获取排名样式
+        function getRankClass(rank) {
+            if (rank === 1) return 'rank-1';
+            if (rank === 2) return 'rank-2';
+            if (rank === 3) return 'rank-3';
+            return 'rank-default';
+        }
+        
+        // 加载概览数据
+        async function loadOverview() {
+            try {
+                const response = await fetch(`${API_BASE}/api/margin/overview`);
+                if (!response.ok) throw new Error('获取数据失败');
+                const data = await response.json();
+                
+                document.getElementById('stat-rzye').textContent = formatAmount(data.total_rzye);
+                document.getElementById('stat-rqye').textContent = formatAmount(data.total_rqye);
+                document.getElementById('stat-rzrqye').textContent = formatAmount(data.total_rzrqye);
+                document.getElementById('stat-date').textContent = data.trade_date;
+                
+                // 变化率
+                const formatChange = (val) => {
+                    const sign = val >= 0 ? '↑' : '↓';
+                    const cls = val >= 0 ? 'positive' : 'negative';
+                    return `<span class="${cls}">${sign} ${Math.abs(val).toFixed(2)}%</span>`;
+                };
+                
+                document.getElementById('stat-rzye-change').innerHTML = formatChange(data.rzye_change);
+                document.getElementById('stat-rqye-change').innerHTML = formatChange(data.rqye_change);
+                document.getElementById('stat-rzrqye-change').innerHTML = formatChange(data.rzrqye_change);
+                
+            } catch (error) {
+                console.error('加载概览失败:', error);
+            }
+        }
+        
+        // 图表实例
+        let trendChart = null;
+        
+        // 加载趋势数据
+        async function loadTrend(days = 30) {
+            try {
+                const response = await fetch(`${API_BASE}/api/margin/trend?days=${days}`);
+                if (!response.ok) throw new Error('获取趋势数据失败');
+                const data = await response.json();
+                
+                const labels = data.data.map(d => d.date.slice(5)); // MM-DD
+                const rzye = data.data.map(d => d.rzye / 1e8);
+                const rqye = data.data.map(d => d.rqye / 1e8);
+                const rzrqye = data.data.map(d => d.rzrqye / 1e8);
+                
+                const ctx = document.getElementById('trendChart').getContext('2d');
+                
+                if (trendChart) {
+                    trendChart.destroy();
+                }
+                
+                trendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '融资余额(亿)',
+                                data: rzye,
+                                borderColor: '#f5576c',
+                                backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: '融券余额(亿)',
+                                data: rqye,
+                                borderColor: '#4facfe',
+                                backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: '两融余额(亿)',
+                                data: rzrqye,
+                                borderColor: '#43e97b',
+                                backgroundColor: 'rgba(67, 233, 123, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toFixed(0) + '亿';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // 更新按钮状态
+                document.querySelectorAll('[onclick^="loadTrend"]').forEach(btn => {
+                    btn.classList.remove('btn-primary', 'active');
+                    btn.classList.add('btn-outline-primary');
+                    // 检查按钮对应的天数
+                    const btnDays = btn.getAttribute('onclick').match(/loadTrend\((\d+)\)/);
+                    if (btnDays && parseInt(btnDays[1]) === days) {
+                        btn.classList.remove('btn-outline-primary');
+                        btn.classList.add('btn-primary', 'active');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('加载趋势失败:', error);
+            }
+        }
+        
+        // 加载排行榜
+        async function loadRanking() {
+            try {
+                // 融资净买入
+                const netBuyRes = await fetch(`${API_BASE}/api/margin/ranking?order_by=net_buy&limit=10`);
+                if (netBuyRes.ok) {
+                    const netBuyData = await netBuyRes.json();
+                    renderRanking('ranking-net-buy', netBuyData.data, 'net_buy');
+                }
+                
+                // 融券余量
+                const rqylRes = await fetch(`${API_BASE}/api/margin/ranking?order_by=rqyl&limit=10`);
+                if (rqylRes.ok) {
+                    const rqylData = await rqylRes.json();
+                    renderRanking('ranking-rqyl', rqylData.data, 'rqyl');
+                }
+            } catch (error) {
+                console.error('加载排行榜失败:', error);
+            }
+        }
+        
+        // 渲染排行榜
+        function renderRanking(containerId, data, type) {
+            const container = document.getElementById(containerId);
+            if (!data || data.length === 0) {
+                container.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">暂无数据</td></tr>';
+                return;
+            }
+            
+            container.innerHTML = data.map((item, index) => {
+                const rank = index + 1;
+                const rankClass = getRankClass(rank);
+                const code = item.ts_code.split('.')[0];
+                
+                if (type === 'net_buy') {
+                    const netBuyClass = item.net_buy >= 0 ? 'value-positive' : 'value-negative';
+                    const netBuySign = item.net_buy >= 0 ? '+' : '';
+                    return `
+                        <tr onclick="window.location.href='/margin/stock/?code=${item.ts_code}'" style="cursor: pointer;">
+                            <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                            <td>
+                                <div class="fw-medium">${item.name || code}</div>
+                                <small class="text-muted">${item.ts_code}</small>
+                            </td>
+                            <td class="text-end ${netBuyClass}">${netBuySign}${formatAmount(item.net_buy)}</td>
+                            <td class="text-end">${formatAmount(item.rzye)}</td>
+                        </tr>
+                    `;
+                } else {
+                    return `
+                        <tr onclick="window.location.href='/margin/stock/?code=${item.ts_code}'" style="cursor: pointer;">
+                            <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                            <td>
+                                <div class="fw-medium">${item.name || code}</div>
+                                <small class="text-muted">${item.ts_code}</small>
+                            </td>
+                            <td class="text-end">${formatVolume(item.rqyl)}</td>
+                            <td class="text-end">${formatAmount(item.rqye)}</td>
+                        </tr>
+                    `;
+                }
+            }).join('');
+        }
+        
+        // 搜索股票
+        function searchStock() {
+            const keyword = document.getElementById('stockSearch').value.trim();
+            if (keyword) {
+                window.location.href = `/margin/stock/?code=${encodeURIComponent(keyword)}`;
+            }
+        }
+        
+        // 回车搜索
+        document.getElementById('stockSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchStock();
+            }
+        });
+        
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOverview();
+            loadTrend(30);
+            loadRanking();
+        });
+    </script>
+</body>
+</html>
