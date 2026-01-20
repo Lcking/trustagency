@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Primary Meta Tags -->
+    <title>两融排行榜 - 融资净买入/融券余量排名 | 鹰眼查融</title>
+    <meta name="title" content="两融排行榜 - 融资净买入/融券余量排名 | 鹰眼查融">
+    <meta name="description" content="A股两融排行榜，实时查看融资净买入TOP50、融券余量TOP50排名，掌握市场资金流向和做空动向。">
+    <meta name="keywords" content="两融排行榜,融资净买入排名,融券余量排名,两融龙虎榜,融资买入TOP">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="鹰眼查融">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.yycr.net/margin/ranking/">
+    <meta property="og:title" content="两融排行榜 - 融资净买入/融券余量排名">
+    <meta property="og:description" content="A股两融排行榜，实时查看融资净买入TOP50、融券余量TOP50排名">
+    <meta property="og:locale" content="zh_CN">
+    
+    <!-- Canonical -->
+    <link rel="canonical" href="https://www.yycr.net/margin/ranking/">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    
+    <!-- Main Stylesheet -->
+    <link href="/assets/css/main.css" rel="stylesheet">
+    <link href="/assets/css/utilities.css" rel="stylesheet">
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "首页", "item": "https://www.yycr.net/"},
+            {"@type": "ListItem", "position": 2, "name": "两融数据", "item": "https://www.yycr.net/margin/"},
+            {"@type": "ListItem", "position": 3, "name": "排行榜", "item": "https://www.yycr.net/margin/ranking/"}
+        ]
+    }
+    </script>
+
+    <style>
+        .ranking-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 0;
+        }
+        .ranking-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .tab-btn:hover, .tab-btn.active {
+            background: white;
+            color: #667eea;
+        }
+        .ranking-table {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .ranking-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+        }
+        .ranking-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+        .ranking-table tr:hover {
+            background: #f8f9ff;
+        }
+        .rank-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .rank-1 { background: linear-gradient(135deg, #ffd700, #ffb800); color: white; }
+        .rank-2 { background: linear-gradient(135deg, #c0c0c0, #a8a8a8); color: white; }
+        .rank-3 { background: linear-gradient(135deg, #cd7f32, #b8722e); color: white; }
+        .rank-other { background: #f0f0f0; color: #666; }
+        
+        .stock-link {
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .stock-link:hover {
+            color: #667eea;
+        }
+        .stock-code {
+            color: #999;
+            font-size: 0.85rem;
+        }
+        .positive { color: #e74c3c; }
+        .negative { color: #27ae60; }
+        
+        .date-info {
+            background: rgba(255,255,255,0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🦅 鹰眼查融</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">首页</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/margin/">两融</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/platforms/">平台</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/compare/">对比</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/qa/">常见问题</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">资源</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/wiki/">百科</a></li>
+                            <li><a class="dropdown-item" href="/guides/">指南</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/about/">关于</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <div class="bg-light py-2">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item"><a href="/">首页</a></li>
+                    <li class="breadcrumb-item"><a href="/margin/">两融数据</a></li>
+                    <li class="breadcrumb-item active">排行榜</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <section class="ranking-header">
+        <div class="container text-center">
+            <h1>🏆 两融排行榜</h1>
+            <p class="lead mb-4">实时追踪市场资金流向，洞察多空力量对比</p>
+            <div class="date-info" id="dataDate">
+                📅 数据日期：加载中...
+            </div>
+        </div>
+    </section>
+
+    <!-- Tab Selection -->
+    <section class="py-4 bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <button class="tab-btn active" data-order="net_buy" onclick="switchTab(event, 'net_buy')">
+                    💰 融资净买入 TOP50
+                </button>
+                <button class="tab-btn" data-order="rqyl" onclick="switchTab(event, 'rqyl')">
+                    📉 融券余量 TOP50
+                </button>
+                <button class="tab-btn" data-order="rzye" onclick="switchTab(event, 'rzye')">
+                    💵 融资余额 TOP50
+                </button>
+                <button class="tab-btn" data-order="rqye" onclick="switchTab(event, 'rqye')">
+                    📊 融券余额 TOP50
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ranking Table -->
+    <section class="py-5">
+        <div class="container">
+            <div class="ranking-table">
+                <table class="table table-hover mb-0" id="rankingTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">排名</th>
+                            <th>股票</th>
+                            <th class="text-end" id="valueHeader">融资净买入</th>
+                            <th class="text-end">融资余额</th>
+                            <th class="text-end d-none d-md-table-cell">融券余量</th>
+                            <th class="text-end d-none d-lg-table-cell">两融余额</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankingBody">
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">加载中...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5>关于我们</h5>
+                    <p class="text-muted">鹰眼查融为投资者提供专业的两融数据和杠杆平台信息服务。</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>快速链接</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/margin/" class="text-muted text-decoration-none">两融数据</a></li>
+                        <li><a href="/platforms/" class="text-muted text-decoration-none">平台列表</a></li>
+                        <li><a href="/about/" class="text-muted text-decoration-none">关于我们</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>联系我们</h5>
+                    <p class="text-muted">Email: support@yycr.net</p>
+                </div>
+            </div>
+            <hr class="border-secondary">
+            <p class="text-center text-muted mb-0">© 2025 上海薏雅征信。版权所有。</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    
+    <script>
+        const API_BASE = (window.API_BASE ?? '') !== '' ? window.API_BASE : '';
+        let currentOrder = 'net_buy';
+
+        // 从 URL 获取排序类型（支持查询参数和路径格式）
+        function getOrderFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryOrder = urlParams.get('order');
+            if (queryOrder && ['net_buy', 'rqyl', 'rzye', 'rqye'].includes(queryOrder)) {
+                return queryOrder;
+            }
+            // SEO友好格式: /margin/ranking/net_buy/
+            const pathMatch = window.location.pathname.match(/\/margin\/ranking\/(net_buy|rqyl|rzye|rqye)\/?$/);
+            if (pathMatch) return pathMatch[1];
+            return 'net_buy';
+        }
+        
+        currentOrder = getOrderFromUrl();
+
+        function formatAmount(value) {
+            if (value === null || value === undefined) return '--';
+            const absValue = Math.abs(value);
+            if (absValue >= 1e12) return (value / 1e12).toFixed(2) + '万亿';
+            if (absValue >= 1e8) return (value / 1e8).toFixed(2) + '亿';
+            if (absValue >= 1e4) return (value / 1e4).toFixed(2) + '万';
+            return value.toLocaleString();
+        }
+
+        function formatVolume(value) {
+            if (value === null || value === undefined) return '--';
+            const absValue = Math.abs(value);
+            if (absValue >= 1e8) return (value / 1e8).toFixed(2) + '亿股';
+            if (absValue >= 1e4) return (value / 1e4).toFixed(2) + '万股';
+            return value.toLocaleString() + '股';
+        }
+
+        function getRankClass(rank) {
+            if (rank === 1) return 'rank-1';
+            if (rank === 2) return 'rank-2';
+            if (rank === 3) return 'rank-3';
+            return 'rank-other';
+        }
+
+        function getValueHeader(order) {
+            const headers = { 'net_buy': '融资净买入', 'rqyl': '融券余量', 'rzye': '融资余额', 'rqye': '融券余额' };
+            return headers[order] || '数值';
+        }
+
+        function getValue(item, order) {
+            switch (order) {
+                case 'net_buy': return item.rzmre - item.rzche;
+                case 'rqyl': return item.rqyl;
+                case 'rzye': return item.rzye;
+                case 'rqye': return item.rqye;
+                default: return 0;
+            }
+        }
+
+        function formatValue(item, order) {
+            const value = getValue(item, order);
+            return order === 'rqyl' ? formatVolume(value) : formatAmount(value);
+        }
+
+        function switchTab(event, order) {
+            currentOrder = order;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('valueHeader').textContent = getValueHeader(order);
+            window.history.replaceState({}, '', `/margin/ranking/${order}/`);
+            loadRanking();
+        }
+
+        async function loadRanking() {
+            const tbody = document.getElementById('rankingBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">加载中...</p></td></tr>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/margin/ranking?order_by=${currentOrder}&limit=50`);
+                if (!response.ok) throw new Error('API request failed');
+                const data = await response.json();
+                
+                if (data.trade_date) {
+                    document.getElementById('dataDate').textContent = `📅 数据日期：${data.trade_date}`;
+                }
+                
+                if (!data.items || data.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">暂无数据</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.items.map((item, index) => {
+                    const rank = index + 1;
+                    const value = getValue(item, currentOrder);
+                    const valueClass = currentOrder === 'net_buy' ? (value >= 0 ? 'positive' : 'negative') : '';
+                    const stockCode = item.ts_code.replace('.SH', '').replace('.SZ', '');
+                    
+                    return `
+                        <tr>
+                            <td><span class="rank-badge ${getRankClass(rank)}">${rank}</span></td>
+                            <td>
+                                <a href="/margin/stock/${item.ts_code}/" class="stock-link">${item.name || stockCode}</a>
+                                <br><span class="stock-code">${item.ts_code}</span>
+                            </td>
+                            <td class="text-end ${valueClass}">${formatValue(item, currentOrder)}</td>
+                            <td class="text-end">${formatAmount(item.rzye)}</td>
+                            <td class="text-end d-none d-md-table-cell">${formatVolume(item.rqyl)}</td>
+                            <td class="text-end d-none d-lg-table-cell">${formatAmount(item.rzrqye)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load ranking:', error);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-danger">加载失败，请稍后重试</td></tr>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.order === currentOrder);
+            });
+            document.getElementById('valueHeader').textContent = getValueHeader(currentOrder);
+            loadRanking();
+        });
+    </script>
+</body>
+</html>

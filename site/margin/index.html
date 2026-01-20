@@ -320,7 +320,7 @@
                         <div class="card ranking-table">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                                 <h3 class="h5 mb-0">💰 融资净买入 TOP10</h3>
-                                <a href="/margin/ranking/?order=net_buy" class="btn btn-sm btn-outline-primary">查看更多</a>
+                                <a href="/margin/ranking/net_buy/" class="btn btn-sm btn-outline-primary">查看更多</a>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -347,7 +347,7 @@
                         <div class="card ranking-table">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                                 <h3 class="h5 mb-0">📉 融券余量 TOP10</h3>
-                                <a href="/margin/ranking/?order=rqyl" class="btn btn-sm btn-outline-primary">查看更多</a>
+                                <a href="/margin/ranking/rqyl/" class="btn btn-sm btn-outline-primary">查看更多</a>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -650,7 +650,7 @@
                     const netBuyClass = item.net_buy >= 0 ? 'value-positive' : 'value-negative';
                     const netBuySign = item.net_buy >= 0 ? '+' : '';
                     return `
-                        <tr onclick="window.location.href='/margin/stock/?code=${item.ts_code}'" style="cursor: pointer;">
+                        <tr onclick="window.location.href='/margin/stock/${item.ts_code}/'" style="cursor: pointer;">
                             <td><span class="rank-badge ${rankClass}">${rank}</span></td>
                             <td>
                                 <div class="fw-medium">${item.name || code}</div>
@@ -662,7 +662,7 @@
                     `;
                 } else {
                     return `
-                        <tr onclick="window.location.href='/margin/stock/?code=${item.ts_code}'" style="cursor: pointer;">
+                        <tr onclick="window.location.href='/margin/stock/${item.ts_code}/'" style="cursor: pointer;">
                             <td><span class="rank-badge ${rankClass}">${rank}</span></td>
                             <td>
                                 <div class="fw-medium">${item.name || code}</div>
@@ -680,7 +680,14 @@
         function searchStock() {
             const keyword = document.getElementById('stockSearch').value.trim();
             if (keyword) {
-                window.location.href = `/margin/stock/?code=${encodeURIComponent(keyword)}`;
+                // 规范化股票代码
+                let code = keyword.toUpperCase().trim();
+                if (!code.includes('.')) {
+                    if (code.startsWith('6')) code += '.SH';
+                    else if (code.startsWith('0') || code.startsWith('3')) code += '.SZ';
+                    else if (code.startsWith('8') || code.startsWith('4')) code += '.BJ';
+                }
+                window.location.href = `/margin/stock/${encodeURIComponent(code)}/`;
             }
         }
         

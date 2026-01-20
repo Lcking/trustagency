@@ -333,8 +333,17 @@
         
         // 获取URL参数
         function getUrlParam(name) {
+            // 首先尝试从查询参数获取
             const params = new URLSearchParams(window.location.search);
-            return params.get(name);
+            const queryValue = params.get(name);
+            if (queryValue) return queryValue;
+            
+            // SEO友好格式: /margin/stock/600519/ 或 /margin/stock/600519.SH/
+            if (name === 'code') {
+                const pathMatch = window.location.pathname.match(/\/margin\/stock\/([0-9]{6}(?:\.[A-Z]{2})?)\/?$/);
+                if (pathMatch) return pathMatch[1];
+            }
+            return null;
         }
         
         // 规范化股票代码
@@ -531,7 +540,8 @@
         function searchStock() {
             const keyword = document.getElementById('stockSearch').value.trim();
             if (keyword) {
-                window.location.href = `/margin/stock/?code=${encodeURIComponent(keyword)}`;
+                const code = normalizeCode(keyword);
+                window.location.href = `/margin/stock/${encodeURIComponent(code)}/`;
             }
         }
         
