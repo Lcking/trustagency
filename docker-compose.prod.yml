@@ -72,6 +72,8 @@ services:
       - BACKEND_DIR=/app
       - PYTHONUNBUFFERED=1
       - CORS_ORIGINS_STR=["http://yycr.net","https://yycr.net","http://www.yycr.net","https://www.yycr.net"]
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN}
+      - HOME=/tmp
     depends_on:
       redis:
         condition: service_healthy
@@ -115,6 +117,8 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - SECRET_KEY=${SECRET_KEY}
       - PYTHONUNBUFFERED=1
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN}
+      - HOME=/tmp
     depends_on:
       - redis
       - backend
@@ -152,6 +156,8 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - SECRET_KEY=${SECRET_KEY}
       - PYTHONUNBUFFERED=1
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN}
+      - HOME=/tmp
     depends_on:
       - redis
       - backend
