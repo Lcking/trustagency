@@ -7,6 +7,7 @@ from typing import Optional, List
 from datetime import datetime, timedelta
 
 from app.database import get_db
+from app.routes.auth import get_current_user
 from app.services.tushare_service import TushareService, MarginDataService
 from app.schemas.margin import (
     MarginSummaryResponse,
@@ -218,10 +219,11 @@ async def search_margin_stocks(
 @router.post("/sync", response_model=SyncResultResponse)
 async def sync_margin_data(
     days: int = Query(30, ge=1, le=365, description="同步天数"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
-    同步两融数据（需要管理员权限，生产环境由定时任务执行）
+    同步两融数据（需要登录用户权限，生产环境由定时任务执行）
     
     Args:
         days: 同步最近多少天的数据
@@ -246,11 +248,13 @@ async def sync_margin_data(
 
 
 @router.get("/realtime/summary")
-async def get_realtime_summary():
+async def get_realtime_summary(
+    current_user = Depends(get_current_user)
+):
     """
     获取实时两融汇总数据（直接从 Tushare 获取，不经过数据库）
     
-    注意：此接口调用 Tushare API，有频率限制
+    注意：此接口调用 Tushare API，有频率限制，需要登录
     """
     try:
         service = TushareService()
@@ -287,12 +291,13 @@ async def get_realtime_summary():
 @router.get("/realtime/stock/{ts_code}")
 async def get_realtime_stock_margin(
     ts_code: str,
-    days: int = Query(30, ge=1, le=90, description="天数")
+    days: int = Query(30, ge=1, le=90, description="天数"),
+    current_user = Depends(get_current_user)
 ):
     """
     获取个股实时两融数据（直接从 Tushare 获取）
     
-    注意：此接口调用 Tushare API，有频率限制
+    注意：此接口调用 Tushare API，有频率限制，需要登录
     """
     # 规范化股票代码
     if '.' not in ts_code:
