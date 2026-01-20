@@ -1,8 +1,6 @@
 """
 应用配置管理
 """
-import os
-import json
 from typing import List
 
 # 兼容 pydantic v1 和 v2

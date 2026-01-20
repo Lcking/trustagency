@@ -1,7 +1,7 @@
 """
 两融数据模型 - 融资融券数据存储
 """
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Index, BigInteger
+from sqlalchemy import Column, Integer, String, Date, DateTime, Index, BigInteger
 from sqlalchemy.sql import func
 from app.database import Base
 

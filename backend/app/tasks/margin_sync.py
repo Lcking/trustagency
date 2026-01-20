@@ -106,8 +106,9 @@ def sync_margin_history(days: int = 90):
     Args:
         days: 同步最近多少天的历史数据
     """
+    import time
     from app.database import SessionLocal
-    from app.services.tushare_service import MarginDataService, TushareService
+    from app.services.tushare_service import MarginDataService
     from app.models.margin import MarginDetail
     
     logger.info(f"开始同步历史两融数据 (最近{days}天)")
@@ -115,7 +116,6 @@ def sync_margin_history(days: int = 90):
     db = SessionLocal()
     try:
         service = MarginDataService(db)
-        tushare = TushareService()
         
         # 同步汇总数据
         summary_count = service.sync_summary_data(days=days)
@@ -139,6 +139,9 @@ def sync_margin_history(days: int = 90):
                 count = service.sync_detail_data(trade_date=trade_date)
                 detail_count += count
                 logger.info(f"同步 {trade_date} 明细: {count} 条")
+                
+                # API 频率限制：每次请求后等待0.5秒
+                time.sleep(0.5)
             except Exception as e:
                 logger.warning(f"同步 {trade_date} 明细失败: {e}")
                 continue

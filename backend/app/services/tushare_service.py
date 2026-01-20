@@ -4,10 +4,10 @@ Tushare Pro 服务 - 获取融资融券数据
 import tushare as ts
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from app.config import settings
-from app.models.margin import MarginSummary, MarginDetail, MarginStock
+from app.models.margin import MarginSummary, MarginDetail
 import logging
 
 logger = logging.getLogger(__name__)
@@ -154,7 +154,15 @@ class MarginDataService:
     
     def __init__(self, db: Session):
         self.db = db
-        self.tushare = TushareService()
+        self._tushare = None  # 延迟初始化
+        self._stock_names_cache: Dict[str, str] = None  # 实例变量而非类变量
+    
+    @property
+    def tushare(self) -> TushareService:
+        """延迟初始化 TushareService，只在需要时创建"""
+        if self._tushare is None:
+            self._tushare = TushareService()
+        return self._tushare
     
     def sync_summary_data(self, days: int = 30) -> int:
         """
@@ -212,10 +220,8 @@ class MarginDataService:
         logger.info(f"Synced {count} margin summary records")
         return count
     
-    _stock_names_cache: Dict[str, str] = None
-    
     def _get_stock_names(self) -> Dict[str, str]:
-        """获取股票名称缓存"""
+        """获取股票名称缓存（实例级别）"""
         if self._stock_names_cache is None:
             self._stock_names_cache = self.tushare.get_all_stock_names()
         return self._stock_names_cache
@@ -277,23 +283,37 @@ class MarginDataService:
         return count
     
     def update_stock_names(self) -> int:
-        """更新数据库中缺失的股票名称"""
+        """更新数据库中缺失的股票名称（分批处理避免内存问题）"""
         stock_names = self._get_stock_names()
         
-        # 找出所有缺失名称的记录
-        missing = self.db.query(MarginDetail).filter(
-            (MarginDetail.name == None) | (MarginDetail.name == '')
-        ).all()
+        # 分批处理避免一次性加载过多数据到内存
+        batch_size = 1000
+        offset = 0
+        total_count = 0
         
-        count = 0
-        for record in missing:
-            if record.ts_code in stock_names:
-                record.name = stock_names[record.ts_code]
-                count += 1
+        base_query = self.db.query(MarginDetail).filter(
+            MarginDetail.name.is_(None) | (MarginDetail.name == '')
+        )
         
-        self.db.commit()
-        logger.info(f"Updated {count} stock names")
-        return count
+        while True:
+            batch = base_query.offset(offset).limit(batch_size).all()
+            if not batch:
+                break
+            
+            updated_in_batch = 0
+            for record in batch:
+                if record.ts_code in stock_names:
+                    record.name = stock_names[record.ts_code]
+                    updated_in_batch += 1
+            
+            if updated_in_batch:
+                self.db.commit()
+                total_count += updated_in_batch
+            
+            offset += batch_size
+        
+        logger.info(f"Updated {total_count} stock names")
+        return total_count
     
     def get_latest_summary(self) -> List[Dict[str, Any]]:
         """获取最新的市场汇总数据"""
