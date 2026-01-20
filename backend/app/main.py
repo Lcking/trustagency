@@ -183,7 +183,7 @@ from app.models import AdminUser, Platform, Section, Category, Article, AIGenera
 from app.database import get_db
 
 # 导入路由
-from app.routes import auth, platforms, articles, tasks, sections, categories, ai_configs, upload, website_settings
+from app.routes import auth, platforms, articles, tasks, sections, categories, ai_configs, upload, website_settings, margin
 from app.admin import setup_admin_routes
 
 # 导入响应模块
@@ -201,6 +201,9 @@ app.include_router(upload.router)
 app.include_router(website_settings.router)
 from app.routes import admin_platforms
 app.include_router(admin_platforms.router)
+
+# 两融数据路由
+app.include_router(margin.router)
 
 # 设置管理后台路由
 setup_admin_routes(app)
