@@ -106,8 +106,9 @@ def sync_margin_history(days: int = 90):
     Args:
         days: 同步最近多少天的历史数据
     """
+    import time
     from app.database import SessionLocal
-    from app.services.tushare_service import MarginDataService, TushareService
+    from app.services.tushare_service import MarginDataService
     from app.models.margin import MarginDetail
     
     logger.info(f"开始同步历史两融数据 (最近{days}天)")
@@ -115,7 +116,6 @@ def sync_margin_history(days: int = 90):
     db = SessionLocal()
     try:
         service = MarginDataService(db)
-        tushare = TushareService()
         
         # 同步汇总数据
         summary_count = service.sync_summary_data(days=days)
@@ -123,6 +123,8 @@ def sync_margin_history(days: int = 90):
         # 同步每天的明细数据（注意 Tushare API 频率限制）
         detail_count = 0
         end_date = datetime.now()
+        max_retries = 3
+        backoff_base = 1.0
         
         for i in range(days):
             trade_date = (end_date - timedelta(days=i)).strftime('%Y%m%d')
@@ -135,13 +137,22 @@ def sync_margin_history(days: int = 90):
             if existing:
                 continue
             
-            try:
-                count = service.sync_detail_data(trade_date=trade_date)
-                detail_count += count
-                logger.info(f"同步 {trade_date} 明细: {count} 条")
-            except Exception as e:
-                logger.warning(f"同步 {trade_date} 明细失败: {e}")
-                continue
+            # 指数退避重试
+            for attempt in range(max_retries):
+                try:
+                    count = service.sync_detail_data(trade_date=trade_date)
+                    detail_count += count
+                    logger.info(f"同步 {trade_date} 明细: {count} 条")
+                    # API 频率限制：成功后等待0.5秒
+                    time.sleep(0.5)
+                    break
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        wait_time = backoff_base * (2 ** attempt)
+                        logger.warning(f"同步 {trade_date} 失败 (重试 {attempt + 1}/{max_retries}): {e}")
+                        time.sleep(wait_time)
+                    else:
+                        logger.warning(f"同步 {trade_date} 明细失败 (已达最大重试): {e}")
         
         logger.info(f"历史数据同步完成: 汇总 {summary_count} 条, 明细 {detail_count} 条")
         return {

@@ -458,26 +458,29 @@
     <script src="/assets/js/api-client.js"></script>
     
     <script>
-        // API 基础URL
-        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:8001'
-            : '';
+        // API 基础URL - 使用 nullish coalescing 确保空字符串也能正确处理
+        const configuredBase = window.API_BASE ?? '';
+        const API_BASE = configuredBase !== ''
+            ? configuredBase
+            : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'http://localhost:8001'
+                : '');
         
-        // 格式化金额（亿元）
+        // 格式化金额（亿元）- 使用显式 null/undefined 检查
         function formatAmount(value) {
-            if (!value) return '--';
+            if (value === null || value === undefined) return '--';
             const yi = value / 1e8;
-            if (yi >= 10000) {
+            if (Math.abs(yi) >= 10000) {
                 return (yi / 10000).toFixed(2) + '万亿';
             }
             return yi.toFixed(2) + '亿';
         }
         
-        // 格式化数量（万股）
+        // 格式化数量（万股）- 使用显式 null/undefined 检查
         function formatVolume(value) {
-            if (!value) return '--';
+            if (value === null || value === undefined) return '--';
             const wan = value / 10000;
-            if (wan >= 10000) {
+            if (Math.abs(wan) >= 10000) {
                 return (wan / 10000).toFixed(2) + '亿股';
             }
             return wan.toFixed(0) + '万股';
