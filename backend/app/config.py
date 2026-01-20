@@ -1,16 +1,16 @@
 """
 应用配置管理
 """
-import os
 import json
-from typing import List
+from typing import List, Any
 
 # 兼容 pydantic v1 和 v2
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
+    from pydantic import field_validator
     PYDANTIC_V2 = True
 except ImportError:
-    from pydantic import BaseSettings
+    from pydantic import BaseSettings, validator
     PYDANTIC_V2 = False
 
 
@@ -51,10 +51,22 @@ class Settings(BaseSettings):
     # Tushare Pro (两融数据)
     TUSHARE_TOKEN: str = ""
     
-    # CORS
+    # CORS - 支持 JSON 字符串或列表
     CORS_ORIGINS: List[str] = ["http://localhost:8000", "http://localhost:8001"]
     
     if PYDANTIC_V2:
+        @field_validator('CORS_ORIGINS', mode='before')
+        @classmethod
+        def parse_cors_origins(cls, v: Any) -> List[str]:
+            """解析 CORS_ORIGINS，支持 JSON 字符串或列表"""
+            if isinstance(v, str):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    # 尝试逗号分隔格式
+                    return [s.strip() for s in v.split(',') if s.strip()]
+            return v
+        
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -62,6 +74,16 @@ class Settings(BaseSettings):
             extra="ignore",
         )
     else:
+        @validator('CORS_ORIGINS', pre=True)
+        def parse_cors_origins_v1(cls, v):
+            """解析 CORS_ORIGINS，支持 JSON 字符串或列表"""
+            if isinstance(v, str):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    return [s.strip() for s in v.split(',') if s.strip()]
+            return v
+        
         class Config:
             case_sensitive = True
             env_file = ".env"
