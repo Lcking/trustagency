@@ -21,10 +21,21 @@ from app.schemas.admin import (
     PaginationResponse,
     StatsResponse,
 )
+from app.schemas.response import (
+    ApiResponse,
+    PaginatedResponse,
+    ResponseMeta,
+    PaginationMeta,
+)
 
 # 向后兼容别名
 AdminResponse = AdminUserResponse
 __all__ = [
+    # 统一响应格式
+    "ApiResponse",
+    "PaginatedResponse",
+    "ResponseMeta",
+    "PaginationMeta",
     # Admin
     "AdminBase",
     "AdminCreate",

@@ -1,267 +1,146 @@
 """
-统一的 API 响应格式
+统一 API 响应格式
 
-提供标准化的响应结构，确保所有 API 端点返回一致的格式。
-
-响应格式类型：
-1. SuccessResponse[T] - 成功响应（单个资源或操作结果）
-2. ListResponse[T] - 列表响应（包含分页信息）
-3. ErrorResponse - 错误响应
-4. BulkResponse[T] - 批量操作响应
-
-使用示例：
-    from app.schemas.response import SuccessResponse, ListResponse
-    from app.models import Article
-    
-    # 单个资源响应
-    article = db.query(Article).filter(Article.id == 1).first()
-    return SuccessResponse[ArticleResponse](data=ArticleResponse.from_orm(article))
-    
-    # 列表响应
-    articles = db.query(Article).all()
-    return ListResponse[ArticleResponse](
-        data=[ArticleResponse.from_orm(a) for a in articles],
-        total=len(articles)
-    )
+提供标准化的 API 响应结构，便于前端统一处理
 """
-
+from typing import TypeVar, Generic, Optional, Any, List
 from pydantic import BaseModel, Field
-from typing import TypeVar, Generic, List, Optional, Any
 from datetime import datetime
 
-# 泛型类型变量
-T = TypeVar("T")
+T = TypeVar('T')
 
 
-class SuccessResponse(BaseModel, Generic[T]):
+class ResponseMeta(BaseModel):
+    """响应元数据"""
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    request_id: Optional[str] = None
+
+
+class PaginationMeta(BaseModel):
+    """分页元数据"""
+    page: int = 1
+    page_size: int = 20
+    total: int = 0
+    total_pages: int = 0
+    
+    @classmethod
+    def from_query(cls, page: int, page_size: int, total: int) -> "PaginationMeta":
+        """从查询参数创建分页元数据"""
+        total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
+        return cls(
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=total_pages
+        )
+
+
+class ApiResponse(BaseModel, Generic[T]):
     """
-    成功响应 - 用于单个资源或操作成功响应
+    统一 API 响应格式
     
-    示例:
-    {
-        "code": 0,
-        "message": "Success",
-        "data": {...},
-        "timestamp": "2025-11-21T10:30:00Z"
-    }
+    Usage:
+        return ApiResponse.success(data=user)
+        return ApiResponse.error(message="Not found", code=404)
     """
-    code: int = Field(0, description="响应代码 (0 = 成功)")
-    message: str = Field("Success", description="响应消息")
-    data: T = Field(..., description="响应数据")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="时间戳")
+    success: bool = True
+    code: int = 200
+    message: str = "OK"
+    data: Optional[T] = None
+    meta: Optional[ResponseMeta] = None
+    
+    @classmethod
+    def success(
+        cls, 
+        data: Any = None, 
+        message: str = "OK",
+        code: int = 200
+    ) -> "ApiResponse":
+        """创建成功响应"""
+        return cls(
+            success=True,
+            code=code,
+            message=message,
+            data=data,
+            meta=ResponseMeta()
+        )
+    
+    @classmethod
+    def error(
+        cls, 
+        message: str = "Error", 
+        code: int = 400,
+        data: Any = None
+    ) -> "ApiResponse":
+        """创建错误响应"""
+        return cls(
+            success=False,
+            code=code,
+            message=message,
+            data=data,
+            meta=ResponseMeta()
+        )
+    
+    @classmethod
+    def not_found(cls, message: str = "Resource not found") -> "ApiResponse":
+        """创建 404 响应"""
+        return cls.error(message=message, code=404)
+    
+    @classmethod
+    def unauthorized(cls, message: str = "Unauthorized") -> "ApiResponse":
+        """创建 401 响应"""
+        return cls.error(message=message, code=401)
+    
+    @classmethod
+    def forbidden(cls, message: str = "Forbidden") -> "ApiResponse":
+        """创建 403 响应"""
+        return cls.error(message=message, code=403)
+    
+    @classmethod
+    def server_error(cls, message: str = "Internal server error") -> "ApiResponse":
+        """创建 500 响应"""
+        return cls.error(message=message, code=500)
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "code": 0,
-                "message": "Success",
-                "data": {"id": 1, "name": "Example"},
-                "timestamp": "2025-11-21T10:30:00Z"
-            }
-        }
 
-
-class ListResponse(BaseModel, Generic[T]):
+class PaginatedResponse(BaseModel, Generic[T]):
     """
-    列表响应 - 用于分页列表响应
+    分页响应格式
     
-    示例:
-    {
-        "code": 0,
-        "message": "Success",
-        "data": [...],
-        "pagination": {
-            "total": 100,
-            "page": 1,
-            "page_size": 10,
-            "total_pages": 10
-        },
-        "timestamp": "2025-11-21T10:30:00Z"
-    }
+    Usage:
+        return PaginatedResponse.create(
+            data=items,
+            page=1,
+            page_size=20,
+            total=100
+        )
     """
-    code: int = Field(0, description="响应代码")
-    message: str = Field("Success", description="响应消息")
-    data: List[T] = Field(default_factory=list, description="数据列表")
+    success: bool = True
+    code: int = 200
+    message: str = "OK"
+    data: List[T] = []
+    pagination: PaginationMeta
+    meta: Optional[ResponseMeta] = None
     
-    # 兼容旧格式的字段
-    total: int = Field(0, description="总记录数")
-    skip: int = Field(0, description="跳过的记录数")
-    limit: int = Field(10, description="每页记录数")
-    
-    # 新格式的分页信息
-    pagination: Optional[dict] = Field(None, description="分页信息")
-    
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="时间戳")
-
-    def __init__(self, **data):
-        """初始化时自动计算分页信息"""
-        super().__init__(**data)
-        if self.pagination is None and self.total > 0:
-            # 自动计算分页信息
-            page = self.skip // max(self.limit, 1) + 1 if self.skip > 0 else 1
-            total_pages = (self.total + self.limit - 1) // self.limit
-            self.pagination = {
-                "total": self.total,
-                "page": page,
-                "page_size": self.limit,
-                "total_pages": total_pages,
-                "has_next": page < total_pages,
-                "has_prev": page > 1,
-            }
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "code": 0,
-                "message": "Success",
-                "data": [{"id": 1, "name": "Item 1"}],
-                "total": 100,
-                "skip": 0,
-                "limit": 10,
-                "pagination": {
-                    "total": 100,
-                    "page": 1,
-                    "page_size": 10,
-                    "total_pages": 10,
-                    "has_next": True,
-                    "has_prev": False
-                },
-                "timestamp": "2025-11-21T10:30:00Z"
-            }
-        }
+    @classmethod
+    def create(
+        cls,
+        data: List[Any],
+        page: int = 1,
+        page_size: int = 20,
+        total: int = 0,
+        message: str = "OK"
+    ) -> "PaginatedResponse":
+        """创建分页响应"""
+        return cls(
+            success=True,
+            code=200,
+            message=message,
+            data=data,
+            pagination=PaginationMeta.from_query(page, page_size, total),
+            meta=ResponseMeta()
+        )
 
 
-class ErrorResponse(BaseModel):
-    """
-    错误响应 - 用于所有错误情况
-    
-    示例:
-    {
-        "code": 404,
-        "message": "Resource not found",
-        "error_code": "RESOURCE_NOT_FOUND",
-        "details": {},
-        "timestamp": "2025-11-21T10:30:00Z"
-    }
-    """
-    code: int = Field(..., description="HTTP 状态码")
-    message: str = Field(..., description="错误消息")
-    error_code: str = Field(..., description="错误代码（用于前端定位）")
-    details: dict = Field(default_factory=dict, description="错误详情")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="时间戳")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "code": 404,
-                "message": "User with ID 123 not found",
-                "error_code": "RESOURCE_NOT_FOUND",
-                "details": {
-                    "resource_type": "User",
-                    "resource_id": 123
-                },
-                "timestamp": "2025-11-21T10:30:00Z"
-            }
-        }
-
-
-class BulkResponse(BaseModel, Generic[T]):
-    """
-    批量操作响应 - 用于批量创建、更新、删除等操作
-    
-    示例:
-    {
-        "code": 0,
-        "message": "Bulk operation completed",
-        "data": {
-            "succeeded": [...],
-            "failed": [...],
-            "total": 100,
-            "success_count": 95,
-            "failed_count": 5
-        },
-        "timestamp": "2025-11-21T10:30:00Z"
-    }
-    """
-    code: int = Field(0, description="响应代码")
-    message: str = Field("Bulk operation completed", description="响应消息")
-    succeeded: List[T] = Field(default_factory=list, description="成功的项目")
-    failed: List[dict] = Field(default_factory=list, description="失败的项目及原因")
-    
-    success_count: int = Field(0, description="成功数")
-    failed_count: int = Field(0, description="失败数")
-    total: int = Field(0, description="总数")
-    
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="时间戳")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "code": 0,
-                "message": "Bulk operation completed",
-                "succeeded": [{"id": 1}, {"id": 2}],
-                "failed": [{"id": 3, "error": "Invalid data"}],
-                "success_count": 2,
-                "failed_count": 1,
-                "total": 3,
-                "timestamp": "2025-11-21T10:30:00Z"
-            }
-        }
-
-
-class PaginationInfo(BaseModel):
-    """分页信息"""
-    total: int = Field(..., description="总记录数")
-    page: int = Field(..., description="当前页")
-    page_size: int = Field(..., description="每页记录数")
-    total_pages: int = Field(..., description="总页数")
-    has_next: bool = Field(..., description="是否有下一页")
-    has_prev: bool = Field(..., description="是否有上一页")
-
-
-# ==================== 便捷函数 ====================
-
-def success_response(
-    data: Any = None,
-    message: str = "Success",
-    code: int = 0,
-) -> SuccessResponse:
-    """创建成功响应"""
-    return SuccessResponse(
-        code=code,
-        message=message,
-        data=data,
-    )
-
-
-def list_response(
-    data: List[Any],
-    total: int,
-    skip: int = 0,
-    limit: int = 10,
-    message: str = "Success",
-) -> ListResponse:
-    """创建列表响应"""
-    return ListResponse(
-        code=0,
-        message=message,
-        data=data,
-        total=total,
-        skip=skip,
-        limit=limit,
-    )
-
-
-def error_response(
-    code: int,
-    message: str,
-    error_code: str,
-    details: Optional[dict] = None,
-) -> ErrorResponse:
-    """创建错误响应"""
-    return ErrorResponse(
-        code=code,
-        message=message,
-        error_code=error_code,
-        details=details or {},
-    )
+# 常用响应类型别名
+SuccessResponse = ApiResponse[None]
+ErrorResponse = ApiResponse[None]

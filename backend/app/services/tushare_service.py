@@ -6,24 +6,36 @@ Tushare Pro 服务 - 获取融资融券数据
 import tushare as ts
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.margin import MarginSummary, MarginDetail
+from app.utils import retry, RetryError
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
+# API 请求间隔（秒），避免触发频率限制
+API_REQUEST_INTERVAL = 0.5
+
 
 class TushareService:
-    """Tushare Pro API 服务（延迟初始化）"""
+    """
+    Tushare Pro API 服务
+    
+    特性：
+    - 延迟初始化：首次使用时才创建 API 客户端
+    - 自动重试：网络错误时自动重试
+    - 频率控制：自动添加请求间隔避免触发限制
+    """
     
     def __init__(self, token: str = None):
         self.token = token or settings.TUSHARE_TOKEN
         if not self.token:
             raise ValueError("Tushare token is required. Set TUSHARE_TOKEN in .env")
-        # 延迟初始化：在首次使用时才设置 token 和创建 API 客户端
         self._pro = None
+        self._last_request_time = 0.0
     
     @property
     def pro(self):
@@ -32,6 +44,25 @@ class TushareService:
             ts.set_token(self.token)
             self._pro = ts.pro_api()
         return self._pro
+    
+    def _rate_limit(self):
+        """API 频率控制，确保请求间隔"""
+        elapsed = time.time() - self._last_request_time
+        if elapsed < API_REQUEST_INTERVAL:
+            time.sleep(API_REQUEST_INTERVAL - elapsed)
+        self._last_request_time = time.time()
+    
+    @retry(max_attempts=3, delay=1.0, backoff=2.0, exceptions=(Exception,))
+    def _fetch_margin_summary(self, **kwargs) -> pd.DataFrame:
+        """带重试的 API 调用"""
+        self._rate_limit()
+        return self.pro.margin(**kwargs)
+    
+    @retry(max_attempts=3, delay=1.0, backoff=2.0, exceptions=(Exception,))
+    def _fetch_margin_detail(self, **kwargs) -> pd.DataFrame:
+        """带重试的 API 调用"""
+        self._rate_limit()
+        return self.pro.margin_detail(**kwargs)
     
     def get_margin_summary(
         self, 
@@ -52,19 +83,22 @@ class TushareService:
         """
         try:
             if trade_date:
-                df = self.pro.margin(trade_date=trade_date)
+                df = self._fetch_margin_summary(trade_date=trade_date)
             else:
                 if not start_date:
                     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y%m%d')
                 if not end_date:
                     end_date = datetime.now().strftime('%Y%m%d')
-                df = self.pro.margin(start_date=start_date, end_date=end_date)
+                df = self._fetch_margin_summary(start_date=start_date, end_date=end_date)
             
             if df is None or df.empty:
                 logger.warning("No margin summary data returned from Tushare")
                 return pd.DataFrame()
             
             return df
+        except RetryError as e:
+            logger.error(f"Failed to fetch margin summary after retries: {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to fetch margin summary: {e}")
             raise
@@ -94,14 +128,14 @@ class TushareService:
                     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y%m%d')
                 if not end_date:
                     end_date = datetime.now().strftime('%Y%m%d')
-                df = self.pro.margin_detail(ts_code=ts_code, start_date=start_date, end_date=end_date)
+                df = self._fetch_margin_detail(ts_code=ts_code, start_date=start_date, end_date=end_date)
             elif trade_date:
-                df = self.pro.margin_detail(trade_date=trade_date)
+                df = self._fetch_margin_detail(trade_date=trade_date)
             else:
                 # 默认获取最近一个交易日的数据
                 end_date = datetime.now().strftime('%Y%m%d')
                 start_date = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
-                df = self.pro.margin_detail(start_date=start_date, end_date=end_date)
+                df = self._fetch_margin_detail(start_date=start_date, end_date=end_date)
             
             if df is None or df.empty:
                 logger.warning("No margin detail data returned from Tushare")
@@ -111,18 +145,30 @@ class TushareService:
             df = df.fillna(0)
             
             return df
+        except RetryError as e:
+            logger.error(f"Failed to fetch margin detail after retries: {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to fetch margin detail: {e}")
             raise
     
+    @retry(max_attempts=3, delay=1.0, backoff=2.0, exceptions=(Exception,))
+    def _fetch_margin_target(self, **kwargs) -> pd.DataFrame:
+        """带重试的 API 调用"""
+        self._rate_limit()
+        return self.pro.margin_target(**kwargs)
+    
     def get_margin_stocks(self) -> pd.DataFrame:
         """获取两融标的列表"""
         try:
-            df = self.pro.margin_target(is_new='Y')
+            df = self._fetch_margin_target(is_new='Y')
             if df is None or df.empty:
                 logger.warning("No margin stocks data returned from Tushare")
                 return pd.DataFrame()
             return df
+        except RetryError as e:
+            logger.error(f"Failed to fetch margin stocks after retries: {e}")
+            raise
         except Exception as e:
             logger.error(f"Failed to fetch margin stocks: {e}")
             raise
@@ -130,6 +176,7 @@ class TushareService:
     def get_stock_basic(self, ts_code: str) -> Dict[str, Any]:
         """获取股票基本信息"""
         try:
+            self._rate_limit()
             df = self.pro.stock_basic(ts_code=ts_code)
             if df is not None and not df.empty:
                 return df.iloc[0].to_dict()
@@ -143,11 +190,13 @@ class TushareService:
         stock_names = {}
         try:
             # 获取股票
+            self._rate_limit()
             df_stock = self.pro.stock_basic(exchange='', list_status='L', fields='ts_code,name')
             if df_stock is not None and not df_stock.empty:
                 stock_names.update(dict(zip(df_stock['ts_code'], df_stock['name'])))
             
             # 获取ETF
+            self._rate_limit()
             df_fund = self.pro.fund_basic(market='E', status='L', fields='ts_code,name')
             if df_fund is not None and not df_fund.empty:
                 stock_names.update(dict(zip(df_fund['ts_code'], df_fund['name'])))

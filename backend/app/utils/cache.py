@@ -1,194 +1,139 @@
 """
-API响应缓存工具
-提供内存缓存和基于时间的失效机制
+简单的内存缓存工具
+
+用于缓存频繁访问的数据，减少数据库压力
 """
-from __future__ import annotations
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, Callable
-from functools import wraps
+import time
 import hashlib
 import json
+from typing import Any, Optional, Callable
+from functools import wraps
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class CacheManager:
-    """内存缓存管理器"""
+class SimpleCache:
+    """简单的内存缓存，支持 TTL"""
     
     def __init__(self):
-        self._cache: Dict[str, Dict[str, Any]] = {}
-    
-    def _generate_key(self, prefix: str, *args, **kwargs) -> str:
-        """
-        生成缓存键
-        
-        Args:
-            prefix: 键前缀
-            *args, **kwargs: 用于生成键的参数
-        
-        Returns:
-            缓存键
-        """
-        # 将参数转换为字符串并哈希
-        key_parts = [prefix]
-        
-        if args:
-            key_parts.append(str(args))
-        
-        if kwargs:
-            # 排序kwargs以确保一致性
-            sorted_kwargs = sorted(kwargs.items())
-            key_parts.append(str(sorted_kwargs))
-        
-        key_string = ":".join(key_parts)
-        
-        # 使用SHA256哈希生成固定长度的键
-        return hashlib.sha256(key_string.encode()).hexdigest()[:16]
+        self._cache: dict = {}
+        self._timestamps: dict = {}
     
     def get(self, key: str) -> Optional[Any]:
-        """
-        获取缓存值
-        
-        Args:
-            key: 缓存键
-        
-        Returns:
-            缓存值或None(如果不存在或已过期)
-        """
+        """获取缓存值，如果过期则返回 None"""
         if key not in self._cache:
             return None
         
-        cache_entry = self._cache[key]
-        
-        # 检查是否过期
-        if cache_entry["expires_at"] < datetime.now():
-            # 过期,删除缓存
-            del self._cache[key]
-            logger.debug(f"缓存过期并删除: {key}")
+        timestamp, ttl = self._timestamps.get(key, (0, 0))
+        if ttl > 0 and time.time() - timestamp > ttl:
+            # 缓存过期
+            self.delete(key)
             return None
         
-        logger.debug(f"缓存命中: {key}")
-        return cache_entry["value"]
+        return self._cache[key]
     
-    def set(self, key: str, value: Any, ttl: int = 300):
-        """
-        设置缓存值
-        
-        Args:
-            key: 缓存键
-            value: 缓存值
-            ttl: 过期时间(秒),默认5分钟
-        """
-        expires_at = datetime.now() + timedelta(seconds=ttl)
-        
-        self._cache[key] = {
-            "value": value,
-            "expires_at": expires_at,
-            "created_at": datetime.now()
-        }
-        
-        logger.debug(f"缓存设置: {key} (TTL: {ttl}s)")
+    def set(self, key: str, value: Any, ttl: int = 300) -> None:
+        """设置缓存值，默认 5 分钟过期"""
+        self._cache[key] = value
+        self._timestamps[key] = (time.time(), ttl)
     
-    def delete(self, key: str):
+    def delete(self, key: str) -> None:
         """删除缓存"""
-        if key in self._cache:
-            del self._cache[key]
-            logger.debug(f"缓存删除: {key}")
+        self._cache.pop(key, None)
+        self._timestamps.pop(key, None)
     
-    def clear(self):
+    def clear(self) -> None:
         """清空所有缓存"""
-        count = len(self._cache)
         self._cache.clear()
-        logger.info(f"清空所有缓存: {count} 个条目")
+        self._timestamps.clear()
     
-    def cleanup_expired(self):
-        """清理过期缓存"""
-        now = datetime.now()
-        expired_keys = [
-            key for key, entry in self._cache.items()
-            if entry["expires_at"] < now
-        ]
+    def clear_expired(self) -> int:
+        """清理过期缓存，返回清理数量"""
+        now = time.time()
+        expired_keys = []
+        
+        for key, (timestamp, ttl) in self._timestamps.items():
+            if ttl > 0 and now - timestamp > ttl:
+                expired_keys.append(key)
         
         for key in expired_keys:
-            del self._cache[key]
-        
-        if expired_keys:
-            logger.info(f"清理过期缓存: {len(expired_keys)} 个条目")
+            self.delete(key)
         
         return len(expired_keys)
-    
-    def get_stats(self) -> Dict[str, Any]:
-        """获取缓存统计信息"""
-        now = datetime.now()
-        active_count = sum(
-            1 for entry in self._cache.values()
-            if entry["expires_at"] >= now
-        )
-        expired_count = len(self._cache) - active_count
-        
-        return {
-            "total_entries": len(self._cache),
-            "active_entries": active_count,
-            "expired_entries": expired_count
-        }
 
 
 # 全局缓存实例
-cache_manager = CacheManager()
+cache = SimpleCache()
 
 
-def cached(prefix: str = "api", ttl: int = 300):
+def make_cache_key(*args, **kwargs) -> str:
+    """生成缓存键"""
+    key_data = json.dumps({"args": args, "kwargs": kwargs}, sort_keys=True, default=str)
+    return hashlib.md5(key_data.encode()).hexdigest()
+
+
+def cached(ttl: int = 300, prefix: str = ""):
     """
     缓存装饰器
     
     Args:
+        ttl: 缓存过期时间（秒），默认 5 分钟
         prefix: 缓存键前缀
-        ttl: 过期时间(秒)
     
-    Example:
-        @cached(prefix="articles", ttl=600)
-        def get_articles():
-            return fetch_articles_from_db()
+    Usage:
+        @cached(ttl=60, prefix="margin_overview")
+        def get_margin_overview():
+            ...
     """
-    def decorator(func: Callable):
+    def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def async_wrapper(*args, **kwargs):
-            # 生成缓存键
-            cache_key = cache_manager._generate_key(prefix, *args, **kwargs)
+        def wrapper(*args, **kwargs):
+            # 生成缓存键（排除 db 等不可序列化参数）
+            cache_args = []
+            cache_kwargs = {}
+            
+            for arg in args:
+                if not hasattr(arg, '__dict__'):  # 排除对象
+                    cache_args.append(arg)
+            
+            for k, v in kwargs.items():
+                if k not in ('db', 'session', 'request') and not hasattr(v, '__dict__'):
+                    cache_kwargs[k] = v
+            
+            key = f"{prefix}:{make_cache_key(*cache_args, **cache_kwargs)}"
             
             # 尝试从缓存获取
-            cached_value = cache_manager.get(cache_key)
+            cached_value = cache.get(key)
             if cached_value is not None:
-                return cached_value
-            
-            # 执行函数并缓存结果
-            result = await func(*args, **kwargs)
-            cache_manager.set(cache_key, result, ttl)
-            
-            return result
-        
-        @wraps(func)
-        def sync_wrapper(*args, **kwargs):
-            # 生成缓存键
-            cache_key = cache_manager._generate_key(prefix, *args, **kwargs)
-            
-            # 尝试从缓存获取
-            cached_value = cache_manager.get(cache_key)
-            if cached_value is not None:
+                logger.debug(f"Cache hit: {key}")
                 return cached_value
             
             # 执行函数并缓存结果
             result = func(*args, **kwargs)
-            cache_manager.set(cache_key, result, ttl)
+            cache.set(key, result, ttl)
+            logger.debug(f"Cache set: {key}")
             
             return result
         
-        # 根据函数类型返回合适的包装器
-        import asyncio
-        if asyncio.iscoroutinefunction(func):
-            return async_wrapper
-        else:
-            return sync_wrapper
-    
+        return wrapper
     return decorator
+
+
+def invalidate_cache(prefix: str = "") -> int:
+    """
+    使指定前缀的缓存失效
+    
+    Returns:
+        清理的缓存数量
+    """
+    if not prefix:
+        count = len(cache._cache)
+        cache.clear()
+        return count
+    
+    keys_to_delete = [k for k in cache._cache.keys() if k.startswith(prefix)]
+    for key in keys_to_delete:
+        cache.delete(key)
+    
+    return len(keys_to_delete)

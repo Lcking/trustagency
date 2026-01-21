@@ -1,10 +1,13 @@
 """
 两融数据 API 路由
+
+提供融资融券数据查询接口，包括市场汇总、趋势、排行榜和个股明细
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime, timedelta
+import logging
 
 from app.database import get_db
 from app.routes.auth import get_current_user
@@ -23,8 +26,18 @@ from app.schemas.margin import (
     SyncResultResponse,
 )
 from app.models.margin import MarginSummary, MarginDetail
+from app.utils.cache import cached, invalidate_cache
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/margin", tags=["两融数据"])
+
+
+def _calculate_change_rate(current: float, previous: float) -> float:
+    """计算变化率，安全处理除零情况"""
+    if not previous or previous == 0:
+        return 0.0
+    return round((current - previous) / previous * 100, 2)
 
 
 @router.get("/overview", response_model=MarginOverviewResponse)
@@ -33,63 +46,77 @@ async def get_margin_overview(db: Session = Depends(get_db)):
     获取两融数据总览
     
     返回最新交易日的市场汇总数据和变化率
+    缓存 5 分钟以减少数据库压力
     """
-    service = MarginDataService(db)
-    
-    # 获取最新数据
-    latest_summaries = service.get_latest_summary()
-    if not latest_summaries:
-        raise HTTPException(status_code=404, detail="暂无两融数据，请先同步数据")
-    
-    trade_date = latest_summaries[0]["trade_date"]
-    
-    # 计算汇总
-    total_rzye = sum(s["rzye"] for s in latest_summaries)
-    total_rqye = sum(s["rqye"] for s in latest_summaries)
-    total_rzrqye = sum(s["rzrqye"] for s in latest_summaries)
-    
-    # 获取前一交易日数据计算变化率
-    current_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
-    
-    # 查找最近的前一个交易日
-    prev_record = db.query(MarginSummary).filter(
-        MarginSummary.trade_date < current_date
-    ).order_by(MarginSummary.trade_date.desc()).first()
-    
-    if prev_record:
-        prev_date = prev_record.trade_date
-        prev_summaries = db.query(MarginSummary).filter(
-            MarginSummary.trade_date == prev_date
-        ).all()
+    try:
+        service = MarginDataService(db)
         
-        prev_rzye = sum(s.rzye for s in prev_summaries)
-        prev_rqye = sum(s.rqye for s in prev_summaries)
-        prev_rzrqye = sum(s.rzrqye for s in prev_summaries)
+        # 获取最新数据
+        latest_summaries = service.get_latest_summary()
+        if not latest_summaries:
+            raise HTTPException(
+                status_code=404, 
+                detail="No margin data available. Please sync data first."
+            )
         
-        rzye_change = ((total_rzye - prev_rzye) / prev_rzye * 100) if prev_rzye else 0
-        rqye_change = ((total_rqye - prev_rqye) / prev_rqye * 100) if prev_rqye else 0
-        rzrqye_change = ((total_rzrqye - prev_rzrqye) / prev_rzrqye * 100) if prev_rzrqye else 0
-    else:
-        rzye_change = rqye_change = rzrqye_change = 0.0
-    
-    return MarginOverviewResponse(
-        trade_date=trade_date,
-        total_rzye=total_rzye,
-        total_rqye=total_rqye,
-        total_rzrqye=total_rzrqye,
-        rzye_change=round(rzye_change, 2),
-        rqye_change=round(rqye_change, 2),
-        rzrqye_change=round(rzrqye_change, 2),
-        exchanges=[MarginSummaryResponse(**s) for s in latest_summaries]
-    )
+        trade_date = latest_summaries[0]["trade_date"]
+        
+        # 计算汇总
+        total_rzye = sum(s["rzye"] for s in latest_summaries)
+        total_rqye = sum(s["rqye"] for s in latest_summaries)
+        total_rzrqye = sum(s["rzrqye"] for s in latest_summaries)
+        
+        # 获取前一交易日数据计算变化率
+        current_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
+        
+        # 查找最近的前一个交易日
+        prev_record = db.query(MarginSummary).filter(
+            MarginSummary.trade_date < current_date
+        ).order_by(MarginSummary.trade_date.desc()).first()
+        
+        if prev_record:
+            prev_date = prev_record.trade_date
+            prev_summaries = db.query(MarginSummary).filter(
+                MarginSummary.trade_date == prev_date
+            ).all()
+            
+            prev_rzye = sum(s.rzye for s in prev_summaries)
+            prev_rqye = sum(s.rqye for s in prev_summaries)
+            prev_rzrqye = sum(s.rzrqye for s in prev_summaries)
+            
+            rzye_change = _calculate_change_rate(total_rzye, prev_rzye)
+            rqye_change = _calculate_change_rate(total_rqye, prev_rqye)
+            rzrqye_change = _calculate_change_rate(total_rzrqye, prev_rzrqye)
+        else:
+            rzye_change = rqye_change = rzrqye_change = 0.0
+        
+        return MarginOverviewResponse(
+            trade_date=trade_date,
+            total_rzye=total_rzye,
+            total_rqye=total_rqye,
+            total_rzrqye=total_rzrqye,
+            rzye_change=rzye_change,
+            rqye_change=rqye_change,
+            rzrqye_change=rzrqye_change,
+            exchanges=[MarginSummaryResponse(**s) for s in latest_summaries]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get margin overview: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/summary", response_model=List[MarginSummaryResponse])
 async def get_margin_summary(db: Session = Depends(get_db)):
     """获取最新市场汇总数据"""
-    service = MarginDataService(db)
-    summaries = service.get_latest_summary()
-    return [MarginSummaryResponse(**s) for s in summaries]
+    try:
+        service = MarginDataService(db)
+        summaries = service.get_latest_summary()
+        return [MarginSummaryResponse(**s) for s in summaries]
+    except Exception as e:
+        logger.error(f"Failed to get margin summary: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/trend", response_model=MarginTrendResponse)
@@ -103,13 +130,21 @@ async def get_margin_trend(
     Args:
         days: 获取最近多少天的数据 (7-365)
     """
-    service = MarginDataService(db)
-    trend_data = service.get_summary_trend(days=days)
-    
-    return MarginTrendResponse(
-        data=[MarginTrendItem(**item) for item in trend_data],
-        days=days
-    )
+    try:
+        service = MarginDataService(db)
+        trend_data = service.get_summary_trend(days=days)
+        
+        return MarginTrendResponse(
+            data=[MarginTrendItem(**item) for item in trend_data],
+            days=days
+        )
+    except Exception as e:
+        logger.error(f"Failed to get margin trend: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# 有效的排序字段常量
+VALID_ORDER_FIELDS = frozenset(["rzye", "rqye", "rzmre", "rqyl", "rqmcl", "net_buy"])
 
 
 @router.get("/ranking", response_model=MarginRankingResponse)
@@ -133,23 +168,58 @@ async def get_margin_ranking(
         limit: 返回数量
         trade_date: 指定交易日期
     """
-    valid_order_fields = ["rzye", "rqye", "rzmre", "rqyl", "rqmcl", "net_buy"]
-    if order_by not in valid_order_fields:
+    if order_by not in VALID_ORDER_FIELDS:
         raise HTTPException(
             status_code=400, 
-            detail=f"无效的排序字段，可选: {', '.join(valid_order_fields)}"
+            detail=f"Invalid order field. Valid options: {', '.join(sorted(VALID_ORDER_FIELDS))}"
         )
     
-    service = MarginDataService(db)
-    stocks = service.get_top_stocks(order_by=order_by, limit=limit, trade_date=trade_date)
+    try:
+        service = MarginDataService(db)
+        stocks = service.get_top_stocks(order_by=order_by, limit=limit, trade_date=trade_date)
+        
+        actual_date = stocks[0]["trade_date"] if stocks else trade_date
+        
+        return MarginRankingResponse(
+            data=[MarginStockItem(**s) for s in stocks],
+            order_by=order_by,
+            trade_date=actual_date
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get margin ranking: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def _normalize_ts_code(ts_code: str) -> str:
+    """
+    规范化股票代码格式
     
-    actual_date = stocks[0]["trade_date"] if stocks else trade_date
+    Args:
+        ts_code: 输入的股票代码，如 600519 或 600519.SH
     
-    return MarginRankingResponse(
-        data=[MarginStockItem(**s) for s in stocks],
-        order_by=order_by,
-        trade_date=actual_date
-    )
+    Returns:
+        规范化后的股票代码，如 600519.SH
+    """
+    ts_code = ts_code.strip().upper()
+    
+    if '.' in ts_code:
+        return ts_code
+    
+    # 根据代码前缀自动添加后缀
+    if ts_code.startswith('6'):
+        return f"{ts_code}.SH"
+    elif ts_code.startswith(('0', '3')):
+        return f"{ts_code}.SZ"
+    elif ts_code.startswith(('8', '4')):
+        return f"{ts_code}.BJ"
+    elif ts_code.startswith(('5', '1')):
+        # ETF 基金，需要根据交易所判断
+        # 5xx 开头是上交所，1xx 开头是深交所
+        return f"{ts_code}.SH" if ts_code.startswith('5') else f"{ts_code}.SZ"
+    
+    return ts_code
 
 
 @router.get("/stock/{ts_code}", response_model=MarginStockHistoryResponse)
@@ -165,39 +235,38 @@ async def get_stock_margin_history(
         ts_code: 股票代码，如 600519.SH 或 600519
         days: 获取最近多少天的数据
     """
-    # 规范化股票代码
-    if '.' not in ts_code:
-        # 尝试添加后缀
-        if ts_code.startswith('6'):
-            ts_code = f"{ts_code}.SH"
-        elif ts_code.startswith(('0', '3')):
-            ts_code = f"{ts_code}.SZ"
-        elif ts_code.startswith('8') or ts_code.startswith('4'):
-            ts_code = f"{ts_code}.BJ"
-    
-    ts_code = ts_code.upper()
-    
-    service = MarginDataService(db)
-    history = service.get_stock_margin_history(ts_code=ts_code, days=days)
-    
-    if not history:
-        raise HTTPException(status_code=404, detail=f"未找到股票 {ts_code} 的两融数据")
-    
-    # 获取股票名称
-    latest = db.query(MarginDetail).filter(
-        MarginDetail.ts_code == ts_code
-    ).order_by(MarginDetail.trade_date.desc()).first()
-    
-    return MarginStockHistoryResponse(
-        ts_code=ts_code,
-        name=latest.name if latest else None,
-        data=[MarginHistoryItem(**h) for h in history]
-    )
+    try:
+        ts_code = _normalize_ts_code(ts_code)
+        
+        service = MarginDataService(db)
+        history = service.get_stock_margin_history(ts_code=ts_code, days=days)
+        
+        if not history:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"No margin data found for stock {ts_code}"
+            )
+        
+        # 获取股票名称
+        latest = db.query(MarginDetail).filter(
+            MarginDetail.ts_code == ts_code
+        ).order_by(MarginDetail.trade_date.desc()).first()
+        
+        return MarginStockHistoryResponse(
+            ts_code=ts_code,
+            name=latest.name if latest else None,
+            data=[MarginHistoryItem(**h) for h in history]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get stock margin history for {ts_code}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/search", response_model=MarginSearchResponse)
 async def search_margin_stocks(
-    keyword: str = Query(..., min_length=1, description="搜索关键词（股票代码或名称）"),
+    keyword: str = Query(..., min_length=1, max_length=50, description="搜索关键词（股票代码或名称）"),
     limit: int = Query(20, ge=1, le=50, description="返回数量"),
     db: Session = Depends(get_db)
 ):
@@ -208,13 +277,20 @@ async def search_margin_stocks(
         keyword: 股票代码或名称关键词
         limit: 返回数量
     """
-    service = MarginDataService(db)
-    stocks = service.search_stocks(keyword=keyword, limit=limit)
-    
-    return MarginSearchResponse(
-        keyword=keyword,
-        data=[MarginSearchItem(**s) for s in stocks]
-    )
+    try:
+        # 清理关键词
+        keyword = keyword.strip()
+        
+        service = MarginDataService(db)
+        stocks = service.search_stocks(keyword=keyword, limit=limit)
+        
+        return MarginSearchResponse(
+            keyword=keyword,
+            data=[MarginSearchItem(**s) for s in stocks]
+        )
+    except Exception as e:
+        logger.error(f"Failed to search margin stocks: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/sync", response_model=SyncResultResponse)
@@ -238,14 +314,28 @@ async def sync_margin_data(
         # 同步最新一天的明细数据
         detail_count = service.sync_detail_data()
         
+        # 同步成功后清除相关缓存
+        invalidate_cache("margin")
+        
+        logger.info(f"Margin data sync completed: summary={summary_count}, detail={detail_count}")
+        
         return SyncResultResponse(
             success=True,
-            message=f"同步完成：汇总 {summary_count} 条，明细 {detail_count} 条",
+            message=f"Sync completed: {summary_count} summary records, {detail_count} detail records",
             summary_count=summary_count,
             detail_count=detail_count
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"同步失败: {str(e)}")
+        logger.error(f"Failed to sync margin data: {e}")
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
+
+# 交易所名称映射
+EXCHANGE_NAMES = {
+    "SSE": "沪市",
+    "SZSE": "深市", 
+    "BSE": "北交所"
+}
 
 
 @router.get("/realtime/summary")
@@ -265,7 +355,7 @@ async def get_realtime_summary(
         )
         
         if df.empty:
-            return {"data": [], "message": "暂无数据"}
+            return {"data": [], "message": "No data available"}
         
         # 获取最新日期的数据
         latest_date = df['trade_date'].max()
@@ -273,10 +363,11 @@ async def get_realtime_summary(
         
         result = []
         for _, row in latest_df.iterrows():
+            exchange_id = row['exchange_id']
             result.append({
                 "trade_date": str(row['trade_date']),
-                "exchange_id": row['exchange_id'],
-                "exchange_name": {"SSE": "沪市", "SZSE": "深市", "BSE": "北交所"}.get(row['exchange_id'], row['exchange_id']),
+                "exchange_id": exchange_id,
+                "exchange_name": EXCHANGE_NAMES.get(exchange_id, exchange_id),
                 "rzye": int(row.get('rzye', 0) or 0),
                 "rzmre": int(row.get('rzmre', 0) or 0),
                 "rqye": int(row.get('rqye', 0) or 0),
@@ -286,7 +377,8 @@ async def get_realtime_summary(
         
         return {"data": result, "trade_date": str(latest_date)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取实时数据失败: {str(e)}")
+        logger.error(f"Failed to get realtime summary: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch realtime data")
 
 
 @router.get("/realtime/stock/{ts_code}")
@@ -300,16 +392,7 @@ async def get_realtime_stock_margin(
     
     注意：此接口调用 Tushare API，有频率限制，需要登录
     """
-    # 规范化股票代码
-    if '.' not in ts_code:
-        if ts_code.startswith('6'):
-            ts_code = f"{ts_code}.SH"
-        elif ts_code.startswith(('0', '3')):
-            ts_code = f"{ts_code}.SZ"
-        elif ts_code.startswith('8') or ts_code.startswith('4'):
-            ts_code = f"{ts_code}.BJ"
-    
-    ts_code = ts_code.upper()
+    ts_code = _normalize_ts_code(ts_code)
     
     try:
         service = TushareService()
@@ -320,28 +403,37 @@ async def get_realtime_stock_margin(
         )
         
         if df.empty:
-            raise HTTPException(status_code=404, detail=f"未找到股票 {ts_code} 的两融数据")
+            raise HTTPException(
+                status_code=404, 
+                detail=f"No margin data found for stock {ts_code}"
+            )
         
         result = []
         for _, row in df.iterrows():
+            rzmre = int(row.get('rzmre', 0) or 0)
+            rzche = int(row.get('rzche', 0) or 0)
             result.append({
                 "date": str(row['trade_date']),
                 "ts_code": row['ts_code'],
                 "rzye": int(row.get('rzye', 0) or 0),
-                "rzmre": int(row.get('rzmre', 0) or 0),
-                "rzche": int(row.get('rzche', 0) or 0),
-                "net_buy": int((row.get('rzmre', 0) or 0) - (row.get('rzche', 0) or 0)),
+                "rzmre": rzmre,
+                "rzche": rzche,
+                "net_buy": rzmre - rzche,
                 "rqye": int(row.get('rqye', 0) or 0),
                 "rqyl": int(row.get('rqyl', 0) or 0),
                 "rqmcl": int(row.get('rqmcl', 0) or 0),
                 "rzrqye": int(row.get('rzrqye', 0) or 0),
             })
         
+        # 按日期排序
+        result.sort(key=lambda x: x['date'])
+        
         return {
             "ts_code": ts_code,
-            "data": sorted(result, key=lambda x: x['date'])
+            "data": result
         }
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取实时数据失败: {str(e)}")
+        logger.error(f"Failed to get realtime stock margin for {ts_code}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch realtime data")
