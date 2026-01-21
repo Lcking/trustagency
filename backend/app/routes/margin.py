@@ -132,7 +132,7 @@ async def get_margin_ranking(
         limit: 返回数量
         trade_date: 指定交易日期
     """
-    valid_order_fields = ["rzye", "rzmre", "rqyl", "rqmcl", "net_buy"]
+    valid_order_fields = ["rzye", "rqye", "rzmre", "rqyl", "rqmcl", "net_buy"]
     if order_by not in valid_order_fields:
         raise HTTPException(
             status_code=400, 

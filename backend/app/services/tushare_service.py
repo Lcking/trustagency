@@ -433,6 +433,8 @@ class MarginDataService:
             query = query.order_by(desc(MarginDetail.rzmre - MarginDetail.rzche))
         elif order_by == "rzye":
             query = query.order_by(MarginDetail.rzye.desc())
+        elif order_by == "rqye":
+            query = query.order_by(MarginDetail.rqye.desc())
         elif order_by == "rzmre":
             query = query.order_by(MarginDetail.rzmre.desc())
         elif order_by == "rqyl":
