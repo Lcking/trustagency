@@ -224,10 +224,8 @@
             <div class="container">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2 class="h4 mb-0">📈 两融趋势</h2>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadHistory(30)">30天</button>
-                        <button type="button" class="btn btn-primary btn-sm active" onclick="loadHistory(90)">90天</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadHistory(180)">180天</button>
+                    <div class="btn-group" role="group" id="period-buttons">
+                        <button type="button" class="btn btn-primary btn-sm active" data-days="30" onclick="loadHistory(30)">30天</button>
                     </div>
                 </div>
                 <div class="chart-container">
@@ -398,6 +396,9 @@
                     netBox.classList.add(netBuy >= 0 ? 'positive' : 'negative');
                 }
                 
+                // 更新日期范围按钮（根据实际数据量）
+                updatePeriodButtons(historyData.length);
+                
                 // 渲染图表
                 renderChart(historyData);
                 
@@ -519,17 +520,40 @@
             }).join('');
         }
         
+        // 根据实际数据量更新日期范围按钮
+        function updatePeriodButtons(dataCount) {
+            const container = document.getElementById('period-buttons');
+            const buttons = [];
+            
+            // 总是显示30天按钮
+            buttons.push({ days: 30, label: '30天' });
+            
+            // 如果数据超过60天，显示90天选项
+            if (dataCount > 60) {
+                buttons.push({ days: 90, label: '90天' });
+            }
+            
+            // 如果数据超过120天，显示180天选项
+            if (dataCount > 120) {
+                buttons.push({ days: 180, label: '180天' });
+            }
+            
+            container.innerHTML = buttons.map((btn, idx) => {
+                const isActive = idx === buttons.length - 1; // 最大范围默认激活
+                const cls = isActive ? 'btn btn-primary btn-sm active' : 'btn btn-outline-primary btn-sm';
+                return `<button type="button" class="${cls}" data-days="${btn.days}" onclick="loadHistory(${btn.days})">${btn.label}</button>`;
+            }).join('');
+        }
+        
         // 加载历史（切换天数）
         function loadHistory(days) {
             loadStockData(currentCode, days);
             
             // 更新按钮状态
-            document.querySelectorAll('[onclick^="loadHistory"]').forEach(btn => {
+            document.querySelectorAll('#period-buttons button').forEach(btn => {
                 btn.classList.remove('btn-primary', 'active');
                 btn.classList.add('btn-outline-primary');
-                // 检查按钮对应的天数
-                const btnDays = btn.getAttribute('onclick').match(/loadHistory\((\d+)\)/);
-                if (btnDays && parseInt(btnDays[1]) === days) {
+                if (parseInt(btn.dataset.days) === days) {
                     btn.classList.remove('btn-outline-primary');
                     btn.classList.add('btn-primary', 'active');
                 }
@@ -587,7 +611,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             const code = getUrlParam('code');
             if (code) {
-                loadStockData(code, 90);
+                // 先请求180天数据，根据返回量动态显示按钮
+                loadStockData(code, 180);
             } else {
                 document.getElementById('stock-name').textContent = '请输入股票代码';
                 document.getElementById('history-table').innerHTML = 
