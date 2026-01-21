@@ -66,6 +66,9 @@ class SimpleCache:
 # 全局缓存实例
 cache = SimpleCache()
 
+# 向后兼容别名 (tasks.py 等模块使用)
+cache_manager = cache
+
 
 def make_cache_key(*args, **kwargs) -> str:
     """生成缓存键"""
