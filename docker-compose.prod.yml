@@ -80,6 +80,7 @@ services:
     volumes:
       - ./backend/logs:/app/logs:rw
       - sqlite_data:/app/data:rw
+      - ./site:/site:ro  # 前端模板目录，用于 SSR
     restart: always
     networks:
       - trustagency-net
