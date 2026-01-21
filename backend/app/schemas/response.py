@@ -144,3 +144,61 @@ class PaginatedResponse(BaseModel, Generic[T]):
 # 常用响应类型别名
 SuccessResponse = ApiResponse[None]
 ErrorResponse = ApiResponse[None]
+
+
+# ============= 向后兼容的函数和类型 =============
+# 这些是 platforms.py 等模块使用的旧版 API
+
+class ListResponse(BaseModel, Generic[T]):
+    """列表响应格式（向后兼容）"""
+    items: List[T] = []
+    total: int = 0
+    page: int = 1
+    page_size: int = 20
+    
+    class Config:
+        from_attributes = True
+
+
+def success_response(data: Any = None, message: str = "Success") -> dict:
+    """
+    创建成功响应（向后兼容函数）
+    
+    Args:
+        data: 响应数据
+        message: 成功消息
+    
+    Returns:
+        dict: 响应字典
+    """
+    return {
+        "success": True,
+        "message": message,
+        "data": data
+    }
+
+
+def list_response(
+    items: List[Any],
+    total: int,
+    page: int = 1,
+    page_size: int = 20
+) -> dict:
+    """
+    创建列表响应（向后兼容函数）
+    
+    Args:
+        items: 项目列表
+        total: 总数
+        page: 当前页
+        page_size: 每页大小
+    
+    Returns:
+        dict: 响应字典
+    """
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
