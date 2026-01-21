@@ -21,10 +21,21 @@ from app.schemas.admin import (
     PaginationResponse,
     StatsResponse,
 )
+from app.schemas.response import (
+    ListResponse,
+    SuccessResponse,
+    success_response,
+    list_response,
+)
 
 # 向后兼容别名
 AdminResponse = AdminUserResponse
 __all__ = [
+    # 统一响应格式
+    "ListResponse",
+    "SuccessResponse",
+    "success_response",
+    "list_response",
     # Admin
     "AdminBase",
     "AdminCreate",
