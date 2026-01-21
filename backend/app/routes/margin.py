@@ -114,7 +114,7 @@ async def get_margin_trend(
 
 @router.get("/ranking", response_model=MarginRankingResponse)
 async def get_margin_ranking(
-    order_by: str = Query("rzye", description="排序字段: rzye, rzmre, rqyl, rqmcl, net_buy"),
+    order_by: str = Query("rzye", description="排序字段: rzye, rqye, rzmre, rqyl, rqmcl, net_buy"),
     limit: int = Query(20, ge=1, le=100, description="返回数量"),
     trade_date: Optional[str] = Query(None, description="交易日期 YYYY-MM-DD"),
     db: Session = Depends(get_db)
@@ -125,6 +125,7 @@ async def get_margin_ranking(
     Args:
         order_by: 排序字段
             - rzye: 融资余额
+            - rqye: 融券余额
             - rzmre: 融资买入额
             - rqyl: 融券余量
             - rqmcl: 融券卖出量

@@ -31,7 +31,7 @@ from app.schemas.response import (
 # 向后兼容别名
 AdminResponse = AdminUserResponse
 __all__ = [
-    # 响应格式
+    # 统一响应格式
     "ListResponse",
     "SuccessResponse",
     "success_response",
