@@ -767,7 +767,7 @@ if site_assets_dir.exists():
 
 # 挂载其他主站点的目录
 # 注意：platforms 不在此列表中，因为平台详情页由 SSR 路由 /platforms/{slug} 处理
-for subdir in ["guides", "wiki", "qa", "compare", "about", "legal"]:
+for subdir in ["guides", "wiki", "qa", "compare", "about", "legal", "margin"]:
     subdir_path = SITE_DIR / subdir
     if subdir_path.exists():
         app.mount(f"/{subdir}", StaticFiles(directory=str(subdir_path), html=True), name=f"site_{subdir}")
