@@ -26,9 +26,9 @@ app.conf.update(
     accept_content=['json'],
     result_serializer='json',
     
-    # 时区设置
-    timezone='UTC',
-    enable_utc=True,
+    # 时区设置 - 使用中国时区确保定时任务在正确时间执行
+    timezone='Asia/Shanghai',
+    enable_utc=False,
     
     # 任务执行配置
     task_track_started=True,           # 跟踪任务开始状态
