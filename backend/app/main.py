@@ -774,15 +774,105 @@ for subdir in ["guides", "wiki", "qa", "compare", "about", "legal"]:
 
 # ===== 两融页面路由（SEO 友好 URL）=====
 
-# 两融个股详情页: /margin/stock/600519.SH/
+# 两融个股详情页: /margin/stock/600519.SH/ (SSR)
 @app.get("/margin/stock/{ts_code}/", include_in_schema=False)
 @app.get("/margin/stock/{ts_code}", include_in_schema=False)
-async def margin_stock_detail(ts_code: str):
-    """返回两融个股详情页"""
+async def margin_stock_detail(request: Request, ts_code: str, db: Session = Depends(get_db)):
+    """返回两融个股详情页（SSR 预渲染 SEO 标签）"""
+    from bs4 import BeautifulSoup
+    from app.models.margin import MarginDetail
+    import json
+    
     stock_index_path = SITE_DIR / "margin" / "stock" / "index.html"
-    if stock_index_path.exists():
-        return FileResponse(str(stock_index_path), media_type="text/html; charset=utf-8")
-    raise HTTPException(status_code=404, detail="页面不存在")
+    if not stock_index_path.exists():
+        raise HTTPException(status_code=404, detail="页面不存在")
+    
+    # 规范化股票代码
+    ts_code = ts_code.upper()
+    if '.' not in ts_code:
+        if ts_code.startswith('6'):
+            ts_code = f"{ts_code}.SH"
+        elif ts_code.startswith(('0', '3')):
+            ts_code = f"{ts_code}.SZ"
+        elif ts_code.startswith(('8', '4')):
+            ts_code = f"{ts_code}.BJ"
+    
+    # 获取股票最新数据
+    latest = db.query(MarginDetail).filter(
+        MarginDetail.ts_code == ts_code
+    ).order_by(MarginDetail.trade_date.desc()).first()
+    
+    # 读取模板
+    html_content = stock_index_path.read_text(encoding="utf-8")
+    
+    # 如果没有数据，返回默认页面
+    if not latest:
+        return HTMLResponse(content=html_content, status_code=200)
+    
+    # 构建 SEO 数据
+    stock_name = latest.name or ts_code.split('.')[0]
+    public_site_url = get_public_site_url(request)
+    page_url = f"{public_site_url}/margin/stock/{ts_code}/"
+    page_title = f"{stock_name}({ts_code})两融数据 | {SITE_NAME}"
+    page_desc = f"{stock_name}({ts_code})融资融券数据查询，包含融资余额、融券余量、融资净买入等历史趋势分析。"
+    page_keywords = f"{stock_name},{ts_code},两融数据,融资融券,融资余额,融券余量"
+    
+    # 构建 Schema.org 结构化数据
+    schema_data = {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        "name": f"{stock_name}两融数据",
+        "description": page_desc,
+        "url": page_url,
+        "keywords": page_keywords.split(','),
+        "creator": {"@type": "Organization", "name": SITE_NAME},
+        "dateModified": latest.trade_date.isoformat() if latest.trade_date else None,
+        "temporalCoverage": f"../{latest.trade_date.isoformat()}" if latest.trade_date else None,
+    }
+    schema_data = {k: v for k, v in schema_data.items() if v is not None}
+    schema_json = json.dumps(schema_data, ensure_ascii=False, indent=2).replace("</", "<\\/")
+    
+    # 使用 BeautifulSoup 修改 HTML
+    page_soup = BeautifulSoup(html_content, "html.parser")
+    
+    # 更新 title
+    if page_soup.title:
+        page_soup.title.string = page_title
+    
+    # 更新 meta 标签
+    meta_updates = {
+        "seo-description": page_desc,
+        "seo-keywords": page_keywords,
+        "og-title": page_title,
+        "og-description": page_desc,
+        "og-url": page_url,
+        "twitter-title": page_title,
+        "twitter-description": page_desc,
+    }
+    for tag_id, content in meta_updates.items():
+        tag = page_soup.find(id=tag_id)
+        if tag:
+            tag["content"] = content
+    
+    # 更新 canonical
+    canonical_tag = page_soup.find(id="canonical")
+    if canonical_tag:
+        canonical_tag["href"] = page_url
+    
+    # 更新面包屑
+    breadcrumb_tag = page_soup.find(id="breadcrumb-stock")
+    if breadcrumb_tag:
+        breadcrumb_tag.string = f"{stock_name}({ts_code.split('.')[0]})"
+    
+    # 注入 Schema.org 结构化数据
+    head_tag = page_soup.find("head")
+    if head_tag:
+        schema_tag = page_soup.new_tag("script", type="application/ld+json")
+        schema_tag.string = schema_json
+        head_tag.append(schema_tag)
+    
+    final_html = "<!DOCTYPE html>\n" + str(page_soup)
+    return HTMLResponse(content=final_html, status_code=200)
 
 # 两融排行榜页: /margin/ranking/net_buy/
 @app.get("/margin/ranking/{order}/", include_in_schema=False)
