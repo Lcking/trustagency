@@ -766,11 +766,43 @@ if site_assets_dir.exists():
     app.mount("/assets", StaticFiles(directory=str(site_assets_dir)), name="site_assets")
 
 # 挂载其他主站点的目录
-# 注意：platforms 不在此列表中，因为平台详情页由 SSR 路由 /platforms/{slug} 处理
-for subdir in ["guides", "wiki", "qa", "compare", "about", "legal", "margin"]:
+# 注意：platforms 和 margin 不在此列表中，因为有特殊路由需要处理
+for subdir in ["guides", "wiki", "qa", "compare", "about", "legal"]:
     subdir_path = SITE_DIR / subdir
     if subdir_path.exists():
         app.mount(f"/{subdir}", StaticFiles(directory=str(subdir_path), html=True), name=f"site_{subdir}")
+
+# ===== 两融页面路由（SEO 友好 URL）=====
+
+# 两融个股详情页: /margin/stock/600519.SH/
+@app.get("/margin/stock/{ts_code}/", include_in_schema=False)
+@app.get("/margin/stock/{ts_code}", include_in_schema=False)
+async def margin_stock_detail(ts_code: str):
+    """返回两融个股详情页"""
+    stock_index_path = SITE_DIR / "margin" / "stock" / "index.html"
+    if stock_index_path.exists():
+        return FileResponse(str(stock_index_path), media_type="text/html; charset=utf-8")
+    raise HTTPException(status_code=404, detail="页面不存在")
+
+# 两融排行榜页: /margin/ranking/net_buy/
+@app.get("/margin/ranking/{order}/", include_in_schema=False)
+@app.get("/margin/ranking/{order}", include_in_schema=False)
+async def margin_ranking_page(order: str):
+    """返回两融排行榜页"""
+    ranking_index_path = SITE_DIR / "margin" / "ranking" / "index.html"
+    if ranking_index_path.exists():
+        return FileResponse(str(ranking_index_path), media_type="text/html; charset=utf-8")
+    raise HTTPException(status_code=404, detail="页面不存在")
+
+# 两融主页: /margin/
+@app.get("/margin/", include_in_schema=False)
+@app.get("/margin", include_in_schema=False)
+async def margin_index():
+    """返回两融主页"""
+    margin_index_path = SITE_DIR / "margin" / "index.html"
+    if margin_index_path.exists():
+        return FileResponse(str(margin_index_path), media_type="text/html; charset=utf-8")
+    raise HTTPException(status_code=404, detail="页面不存在")
 
 # 平台列表页单独处理（只提供 /platforms/ 的 index.html）
 @app.get("/platforms/", include_in_schema=False)
