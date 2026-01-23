@@ -56,10 +56,16 @@ app.conf.update(
     
     # 定时任务 (Celery Beat)
     beat_schedule={
-        # 每天 17:30 同步两融数据（收盘后）
-        'sync-margin-data-daily': {
+        # 每天 17:30 同步两融数据（收盘后第一次尝试）
+        'sync-margin-data-daily-1730': {
             'task': 'tasks.sync_margin_all',
             'schedule': __import__('celery.schedules', fromlist=['crontab']).crontab(hour=17, minute=30),
+            'options': {'queue': 'celery'},
+        },
+        # 每天 18:30 备用同步（确保数据更新，防止 Tushare 延迟发布）
+        'sync-margin-data-daily-1830': {
+            'task': 'tasks.sync_margin_all',
+            'schedule': __import__('celery.schedules', fromlist=['crontab']).crontab(hour=18, minute=30),
             'options': {'queue': 'celery'},
         },
     },
