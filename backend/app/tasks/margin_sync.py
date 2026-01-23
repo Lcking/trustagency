@@ -68,10 +68,11 @@ def sync_margin_all():
     """
     完整同步两融数据（汇总 + 明细）
     
-    建议每日收盘后运行（如 17:00）
+    建议每日收盘后运行（如 17:30）
     """
     from app.database import SessionLocal
     from app.services.tushare_service import MarginDataService
+    import time
     
     logger.info("开始完整同步两融数据")
     
@@ -82,8 +83,19 @@ def sync_margin_all():
         # 同步最近7天的汇总数据
         summary_count = service.sync_summary_data(days=7)
         
-        # 同步今天的明细数据
-        detail_count = service.sync_detail_data()
+        # 同步最近3天的明细数据（避免当天数据未发布的问题）
+        detail_count = 0
+        for i in range(3):
+            trade_date = (datetime.now() - timedelta(days=i)).strftime('%Y%m%d')
+            try:
+                count = service.sync_detail_data(trade_date=trade_date)
+                detail_count += count
+                if count > 0:
+                    logger.info(f"同步 {trade_date} 明细: {count} 条")
+                # API 频率限制
+                time.sleep(0.3)
+            except Exception as e:
+                logger.warning(f"同步 {trade_date} 明细失败: {e}")
         
         logger.info(f"两融数据同步完成: 汇总 {summary_count} 条, 明细 {detail_count} 条")
         return {
