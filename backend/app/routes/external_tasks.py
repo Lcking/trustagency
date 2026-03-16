@@ -280,3 +280,298 @@ async def ping():
         "status": "pong",
         "timestamp": datetime.now().isoformat()
     }
+
+
+# ============= 内容管理 API =============
+
+@router.get("/content/sections")
+async def get_sections(
+    api_key: str = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    """
+    获取所有栏目列表
+    
+    返回栏目 ID、名称、slug 等信息。
+    """
+    from app.models import Section
+    
+    sections = db.query(Section).filter(Section.is_active == True).all()
+    
+    return {
+        "sections": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "slug": s.slug,
+                "description": s.description,
+                "requires_platform": s.requires_platform
+            }
+            for s in sections
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@router.get("/content/categories")
+async def get_categories(
+    section_id: Optional[int] = None,
+    api_key: str = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    """
+    获取分类列表
+    
+    - **section_id**: 可选，筛选指定栏目的分类
+    """
+    from app.models import Category
+    
+    query = db.query(Category).filter(Category.is_active == True)
+    if section_id:
+        query = query.filter(Category.section_id == section_id)
+    
+    categories = query.all()
+    
+    return {
+        "categories": [
+            {
+                "id": c.id,
+                "name": c.name,
+                "slug": c.slug,
+                "section_id": c.section_id,
+                "description": c.description
+            }
+            for c in categories
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@router.get("/content/platforms")
+async def get_platforms(
+    api_key: str = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    """
+    获取平台列表
+    
+    用于 Review 栏目关联平台。
+    """
+    from app.models import Platform
+    
+    platforms = db.query(Platform).filter(Platform.is_active == True).all()
+    
+    return {
+        "platforms": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "slug": p.slug
+            }
+            for p in platforms
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@router.get("/content/ai-configs")
+async def get_ai_configs(
+    api_key: str = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    """
+    获取 AI 配置列表
+    
+    用于选择文章生成使用的 AI 模型配置。
+    """
+    from app.models import AIConfig
+    
+    configs = db.query(AIConfig).filter(AIConfig.is_active == True).all()
+    
+    return {
+        "ai_configs": [
+            {
+                "id": c.id,
+                "name": c.name,
+                "model": c.model,
+                "is_default": c.is_default
+            }
+            for c in configs
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+# ============= AI 文章生成 API =============
+
+class ArticleGenerationRequest(BaseModel):
+    """文章生成请求"""
+    titles: list = Field(..., description="文章标题列表")
+    section_id: int = Field(..., description="栏目ID")
+    category_id: int = Field(..., description="分类ID")
+    platform_id: Optional[int] = Field(None, description="平台ID（Review 栏目需要）")
+    ai_config_id: Optional[int] = Field(None, description="AI配置ID")
+    batch_name: Optional[str] = Field(None, description="批次名称")
+    auto_publish: bool = Field(False, description="生成后是否直接发布")
+
+
+@router.post("/tasks/generate-articles")
+async def generate_articles(
+    request: ArticleGenerationRequest,
+    api_key: str = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    """
+    提交 AI 文章生成任务
+    
+    - **titles**: 文章标题列表（最多 100 个）
+    - **section_id**: 目标栏目 ID
+    - **category_id**: 目标分类 ID
+    - **platform_id**: 平台 ID（Review 栏目必须）
+    - **ai_config_id**: AI 配置 ID（可选，使用默认）
+    - **auto_publish**: 是否自动发布（默认 false）
+    
+    返回:
+    - **task_id**: 任务 ID，用于查询状态
+    - **celery_task_id**: Celery 任务 ID
+    """
+    from app.models import Section, Platform, AdminUser, AIGenerationTask
+    from app.tasks.ai_generation import generate_article_batch
+    
+    # 验证标题
+    if not request.titles:
+        raise HTTPException(status_code=400, detail="标题列表不能为空")
+    if len(request.titles) > 100:
+        raise HTTPException(status_code=400, detail="单次最多提交 100 个标题")
+    
+    # 验证栏目
+    section = db.query(Section).filter(Section.id == request.section_id).first()
+    if not section:
+        raise HTTPException(status_code=400, detail=f"栏目ID {request.section_id} 不存在")
+    
+    # 验证平台（如果栏目需要）
+    if section.requires_platform:
+        if not request.platform_id:
+            raise HTTPException(status_code=400, detail="该栏目需要关联平台")
+        platform = db.query(Platform).filter(Platform.id == request.platform_id).first()
+        if not platform:
+            raise HTTPException(status_code=400, detail=f"平台ID {request.platform_id} 不存在")
+    
+    # 使用系统管理员作为创建者（外部 API 调用）
+    admin = db.query(AdminUser).filter(AdminUser.is_superadmin == True).first()
+    if not admin:
+        raise HTTPException(status_code=500, detail="未找到管理员账户")
+    
+    try:
+        # 创建任务记录
+        batch_id = f"batch_{datetime.utcnow().timestamp()}_{hash(str(request.titles)) % 10000}"
+        task = AIGenerationTask(
+            batch_id=batch_id,
+            batch_name=request.batch_name or f"OpenClaw Batch {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            titles=request.titles,
+            total_count=len(request.titles),
+            status="pending",
+            creator_id=admin.id,
+            ai_config_id=request.ai_config_id,
+            section_id=request.section_id,
+            category_id=request.category_id,
+            platform_id=request.platform_id
+        )
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+        
+        # 提交 Celery 任务
+        celery_task = generate_article_batch.apply_async(
+            args=(
+                task.batch_id,
+                request.titles,
+                request.section_id,
+                request.category_id,
+                request.platform_id,
+                admin.id,
+                request.auto_publish
+            ),
+            queue='ai_generation'
+        )
+        
+        # 保存 Celery 任务 ID
+        task.celery_task_id = celery_task.id
+        task.celery_status = 'PENDING'
+        db.commit()
+        
+        return {
+            "success": True,
+            "task_id": task.batch_id,
+            "celery_task_id": celery_task.id,
+            "status": "pending",
+            "message": f"已提交 {len(request.titles)} 篇文章生成任务",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"提交任务失败: {str(e)}")
+
+
+@router.get("/tasks/{task_id}/status")
+async def get_task_status(
+    task_id: str,
+    api_key: str = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    """
+    查询任务状态
+    
+    - **task_id**: 任务 ID（从 generate-articles 返回）
+    
+    返回任务进度和状态。
+    """
+    from app.models import AIGenerationTask
+    
+    task = db.query(AIGenerationTask).filter(
+        AIGenerationTask.batch_id == task_id
+    ).first()
+    
+    if not task:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+    
+    return {
+        "task_id": task.batch_id,
+        "batch_name": task.batch_name,
+        "status": task.status.value if hasattr(task.status, 'value') else task.status,
+        "progress": task.progress,
+        "total_count": task.total_count,
+        "completed_count": task.completed_count,
+        "failed_count": task.failed_count,
+        "celery_status": task.celery_status,
+        "error_message": task.error_message,
+        "created_at": task.created_at.isoformat() if task.created_at else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@router.get("/content/stats")
+async def get_content_stats(
+    api_key: str = Depends(verify_api_key),
+    db: Session = Depends(get_db)
+):
+    """
+    获取内容统计
+    
+    返回文章、平台等数量统计。
+    """
+    from app.models import Article, Platform, Section, Category
+    
+    return {
+        "stats": {
+            "articles_total": db.query(Article).count(),
+            "articles_published": db.query(Article).filter(Article.is_published == True).count(),
+            "articles_draft": db.query(Article).filter(Article.is_published == False).count(),
+            "platforms": db.query(Platform).filter(Platform.is_active == True).count(),
+            "sections": db.query(Section).filter(Section.is_active == True).count(),
+            "categories": db.query(Category).filter(Category.is_active == True).count()
+        },
+        "timestamp": datetime.now().isoformat()
+    }
