@@ -74,6 +74,7 @@ services:
       - PYTHONUNBUFFERED=1
       - CORS_ORIGINS_STR=["http://yycr.net","https://yycr.net","http://www.yycr.net","https://www.yycr.net"]
       - TUSHARE_TOKEN=${TUSHARE_TOKEN}
+      - EXTERNAL_API_KEY=${EXTERNAL_API_KEY}
       - HOME=/tmp
     depends_on:
       redis:
