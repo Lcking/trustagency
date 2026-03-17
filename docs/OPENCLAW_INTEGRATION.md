@@ -96,11 +96,16 @@ curl -X POST "https://www.yycr.net/api/external/tasks/sync-margin" \
 ```json
 {
   "success": true,
+  "result": "updated",
+  "message": "同步成功，已有新数据写入",
   "summary_count": 1,
   "detail_count": 4311,
   "synced_dates": ["20260123", "20260122"],
   "skipped_dates": ["20260124"],
+  "requested_dates": ["20260124", "20260123", "20260122"],
   "errors": [],
+  "latest_summary_date": "2026-01-23",
+  "latest_detail_date": "2026-01-23",
   "duration_ms": 5200,
   "timestamp": "2026-01-23T18:30:00.123456"
 }
@@ -110,14 +115,25 @@ curl -X POST "https://www.yycr.net/api/external/tasks/sync-margin" \
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| success | bool | 是否完全成功（无错误） |
+| success | bool | 接口执行是否无错误 |
+| result | string | `updated` / `no_new_data` / `partial_success` / `failed` |
+| message | string | 便于 OpenClaw 直接读取的结果说明 |
 | summary_count | int | 同步的汇总数据条数 |
 | detail_count | int | 同步的明细数据条数 |
 | synced_dates | array | 成功同步的日期列表 (YYYYMMDD) |
 | skipped_dates | array | 跳过的日期（已有数据或无数据） |
+| requested_dates | array | 本次尝试同步的日期列表 (YYYYMMDD) |
 | errors | array | 错误信息列表 |
+| latest_summary_date | string/null | 当前库内最新汇总数据日期 |
+| latest_detail_date | string/null | 当前库内最新明细数据日期 |
 | duration_ms | int | 执行耗时（毫秒） |
 | timestamp | string | 执行时间 (ISO 8601) |
+
+#### 结果语义
+
+- `success=true` 且 `result=updated`: 本次执行成功，且有新数据写入
+- `success=true` 且 `result=no_new_data`: 本次执行成功，但当前日期范围内没有新数据，这是正常情况
+- `success=false` 或 `result=partial_success/failed`: 执行中出现异常，需要查看 `errors`
 
 ---
 
@@ -237,6 +253,7 @@ timeout: 120  # 秒
 success_condition:
   - response.status_code == 200
   - response.body.success == true
+  - response.body.result in ["updated", "no_new_data"]
 ```
 
 ---
