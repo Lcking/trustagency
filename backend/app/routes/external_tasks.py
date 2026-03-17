@@ -55,11 +55,16 @@ class SyncMarginRequest(BaseModel):
 class SyncMarginResponse(BaseModel):
     """两融数据同步响应"""
     success: bool
+    result: str = Field(description="执行结果：updated/no_new_data/partial_success/failed")
+    message: str = Field(description="给自动化系统读取的简短说明")
     summary_count: int = Field(description="同步的汇总数据条数")
     detail_count: int = Field(description="同步的明细数据条数")
-    synced_dates: list = Field(description="成功同步的日期列表")
-    skipped_dates: list = Field(description="跳过的日期列表（已有数据或无数据）")
-    errors: list = Field(description="错误信息列表")
+    synced_dates: list[str] = Field(description="成功同步的日期列表")
+    skipped_dates: list[str] = Field(description="跳过的日期列表（已有数据或无数据）")
+    requested_dates: list[str] = Field(description="本次尝试同步的日期列表")
+    errors: list[str] = Field(description="错误信息列表")
+    latest_summary_date: Optional[str] = Field(default=None, description="当前库内最新汇总数据日期")
+    latest_detail_date: Optional[str] = Field(default=None, description="当前库内最新明细数据日期")
     duration_ms: int = Field(description="执行耗时（毫秒）")
     timestamp: str = Field(description="执行时间")
 
@@ -111,6 +116,7 @@ async def sync_margin_data(
     
     try:
         from app.services.tushare_service import MarginDataService
+        from app.models.margin import MarginSummary, MarginDetail
         
         service = MarginDataService(db)
         
@@ -118,6 +124,7 @@ async def sync_margin_data(
         detail_count = 0
         synced_dates = []
         skipped_dates = []
+        requested_dates = []
         errors = []
         
         # 同步汇总数据
@@ -129,6 +136,7 @@ async def sync_margin_data(
         # 同步明细数据（最近 N 天）
         for i in range(request.days):
             trade_date = (datetime.now() - timedelta(days=i)).strftime('%Y%m%d')
+            requested_dates.append(trade_date)
             try:
                 count = service.sync_detail_data(trade_date=trade_date)
                 if count > 0:
@@ -142,14 +150,31 @@ async def sync_margin_data(
                 errors.append(f"{trade_date} 同步失败: {str(e)}")
         
         duration_ms = int((time.time() - start_time) * 1000)
+        latest_summary = db.query(MarginSummary).order_by(MarginSummary.trade_date.desc()).first()
+        latest_detail = db.query(MarginDetail).order_by(MarginDetail.trade_date.desc()).first()
+
+        if errors:
+            result = "partial_success" if (summary_count > 0 or detail_count > 0 or synced_dates) else "failed"
+            message = "部分同步失败，请检查 errors" if result == "partial_success" else "同步失败，请检查 errors"
+        elif summary_count > 0 or detail_count > 0 or synced_dates:
+            result = "updated"
+            message = "同步成功，已有新数据写入"
+        else:
+            result = "no_new_data"
+            message = "接口执行成功，但本次未发现可写入的新数据"
         
         return SyncMarginResponse(
             success=len(errors) == 0,
+            result=result,
+            message=message,
             summary_count=summary_count,
             detail_count=detail_count,
             synced_dates=synced_dates,
             skipped_dates=skipped_dates,
+            requested_dates=requested_dates,
             errors=errors,
+            latest_summary_date=latest_summary.trade_date.strftime('%Y-%m-%d') if latest_summary else None,
+            latest_detail_date=latest_detail.trade_date.strftime('%Y-%m-%d') if latest_detail else None,
             duration_ms=duration_ms,
             timestamp=datetime.now().isoformat()
         )
@@ -158,11 +183,16 @@ async def sync_margin_data(
         duration_ms = int((time.time() - start_time) * 1000)
         return SyncMarginResponse(
             success=False,
+            result="failed",
+            message="同步失败，请检查 errors",
             summary_count=0,
             detail_count=0,
             synced_dates=[],
             skipped_dates=[],
+            requested_dates=[],
             errors=[str(e)],
+            latest_summary_date=None,
+            latest_detail_date=None,
             duration_ms=duration_ms,
             timestamp=datetime.now().isoformat()
         )
