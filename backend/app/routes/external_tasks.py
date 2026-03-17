@@ -110,9 +110,9 @@ async def sync_margin_data(
     start_time = time.time()
     
     try:
-        from app.services.tushare_service import TushareService
+        from app.services.tushare_service import MarginDataService
         
-        service = TushareService(db)
+        service = MarginDataService(db)
         
         summary_count = 0
         detail_count = 0
@@ -122,7 +122,7 @@ async def sync_margin_data(
         
         # 同步汇总数据
         try:
-            summary_count = service.sync_summary_data()
+            summary_count = service.sync_summary_data(days=request.days)
         except Exception as e:
             errors.append(f"汇总数据同步失败: {str(e)}")
         
