@@ -205,6 +205,23 @@
             </div>
         </section>
 
+        <!-- Latest Articles -->
+        <section class="py-5 border-top" aria-labelledby="latest-articles-title">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <h2 id="latest-articles-title" class="mb-0">最新文章</h2>
+                    <span class="text-muted small">展示最近发布的内容，方便快速浏览站内更新</span>
+                </div>
+                <div id="latest-articles" class="row g-4">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- FAQ Preview -->
         <section class="py-5 bg-light" aria-labelledby="faq-preview-title">
             <div class="container">
@@ -415,6 +432,28 @@
             color: #212529;
             margin-left: 0.3rem;
         }
+        .latest-article-card {
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            border: 1px solid rgba(13, 110, 253, 0.08);
+        }
+        .latest-article-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .latest-article-summary {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 4.5rem;
+        }
+        .article-meta-badge {
+            font-size: 0.75rem;
+            background: #eef5ff;
+            color: #0d6efd;
+            border-radius: 999px;
+            padding: 0.2rem 0.6rem;
+        }
     </style>
     
     <!-- Load Recommended Platforms -->
@@ -549,6 +588,66 @@
                 }
             }
         }
+
+        async function loadLatestArticles() {
+            try {
+                const container = document.getElementById('latest-articles');
+                if (!container) return;
+
+                const response = await fetch('/api/articles?is_published=true&limit=3&sort_by=published_at&sort_order=desc');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const payload = await response.json();
+                const articles = payload.data || [];
+
+                if (!Array.isArray(articles) || articles.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-center text-muted">暂无最新文章</div>';
+                    return;
+                }
+
+                container.innerHTML = articles.map((article) => {
+                    const publishDate = new Date(article.published_at || article.created_at);
+                    const displayDate = Number.isNaN(publishDate.getTime())
+                        ? '未知时间'
+                        : publishDate.toLocaleDateString('zh-CN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                        });
+                    const summary = article.summary || '查看最新发布内容，了解站内新增文章与重点信息。';
+                    const sectionName = article.section_name || article.section?.name || '文章';
+                    const categoryName = article.category_name || '未分类';
+
+                    return `
+                        <div class="col-md-6 col-lg-4">
+                            <article class="card h-100 shadow-sm latest-article-card">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        <span class="article-meta-badge">${escapeHtml(sectionName)}</span>
+                                        <span class="article-meta-badge">${escapeHtml(categoryName)}</span>
+                                    </div>
+                                    <h3 class="h5 card-title mb-3">
+                                        <a href="/article/${escapeHtml(article.slug)}" class="text-decoration-none stretched-link text-dark">
+                                            ${escapeHtml(article.title)}
+                                        </a>
+                                    </h3>
+                                    <p class="text-muted small latest-article-summary mb-4">${escapeHtml(summary)}</p>
+                                    <div class="mt-auto text-muted small">发布时间：${displayDate}</div>
+                                </div>
+                            </article>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load latest articles:', error);
+                const container = document.getElementById('latest-articles');
+                if (container) {
+                    container.innerHTML = '<div class="col-12 text-center text-danger">加载最新文章失败</div>';
+                }
+            }
+        }
         
         function escapeHtml(text) {
             if (!text) return '';
@@ -558,7 +657,10 @@
         }
         
         // 页面加载完毕后加载推荐平台
-        document.addEventListener('DOMContentLoaded', loadRecommendedPlatforms);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRecommendedPlatforms();
+            loadLatestArticles();
+        });
     </script>
     
     <!-- Main Script -->

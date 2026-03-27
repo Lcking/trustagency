@@ -78,7 +78,7 @@ async def list_articles(
     author_id: Optional[int] = Query(None, description="作者 ID 过滤"),
     is_published: Optional[bool] = Query(None, description="发布状态：true/false/null(全部)"),
     is_featured: Optional[bool] = Query(None, description="精选状态：true/false/null(全部)"),
-    sort_by: str = Query("created_at", description="排序字段：created_at, updated_at, title, view_count, like_count"),
+    sort_by: str = Query("created_at", description="排序字段：created_at, updated_at, published_at, title, view_count, like_count"),
     sort_order: str = Query("desc", description="排序顺序：asc(升序) 或 desc(降序)"),
     db: Session = Depends(get_db),
 ):

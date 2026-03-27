@@ -7,12 +7,17 @@ from sqlalchemy import or_, and_
 from app.models import Article, AdminUser, Platform
 from app.schemas.article import ArticleCreate, ArticleUpdate, ArticleResponse
 from typing import List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from slugify import slugify
 
 
 class ArticleService:
     """文章管理服务类"""
+
+    @staticmethod
+    def _get_cst_now() -> datetime:
+        """获取中国时区的当前时间，并以无时区形式存库。"""
+        return datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
 
     @staticmethod
     def create_article(
@@ -170,19 +175,33 @@ class ArticleService:
         total = query.count()
 
         # 应用排序
-        sort_columns = {
-            "title": Article.title,
-            "created_at": Article.created_at,
-            "updated_at": Article.updated_at,
-            "view_count": Article.view_count,
-            "like_count": Article.like_count,
-        }
-
-        sort_column = sort_columns.get(sort_by, Article.created_at)
-        if sort_order.lower() == "desc":
-            query = query.order_by(sort_column.desc())
+        if sort_by == "published_at":
+            if sort_order.lower() == "desc":
+                query = query.order_by(
+                    Article.published_at.is_(None),
+                    Article.published_at.desc(),
+                    Article.created_at.desc(),
+                )
+            else:
+                query = query.order_by(
+                    Article.published_at.is_(None),
+                    Article.published_at.asc(),
+                    Article.created_at.asc(),
+                )
         else:
-            query = query.order_by(sort_column.asc())
+            sort_columns = {
+                "title": Article.title,
+                "created_at": Article.created_at,
+                "updated_at": Article.updated_at,
+                "view_count": Article.view_count,
+                "like_count": Article.like_count,
+            }
+
+            sort_column = sort_columns.get(sort_by, Article.created_at)
+            if sort_order.lower() == "desc":
+                query = query.order_by(sort_column.desc())
+            else:
+                query = query.order_by(sort_column.asc())
 
         # 应用分页
         articles = query.offset(skip).limit(limit).all()
@@ -268,7 +287,7 @@ class ArticleService:
             return None
 
         article.is_published = True
-        article.published_at = datetime.utcnow()
+        article.published_at = ArticleService._get_cst_now()
         db.add(article)
         db.commit()
         db.refresh(article)
