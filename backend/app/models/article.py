@@ -2,7 +2,7 @@
 文章模型
 """
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -40,8 +40,8 @@ class Article(Base):
     view_count = Column(Integer, default=0)
     like_count = Column(Integer, default=0)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None))
     published_at = Column(DateTime, nullable=True)
 
     # 关系
