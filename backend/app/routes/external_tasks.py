@@ -337,7 +337,6 @@ async def get_categories(
             {
                 "id": c.id,
                 "name": c.name,
-                "slug": c.slug,
                 "section_id": c.section_id,
                 "description": c.description
             }
@@ -393,7 +392,8 @@ async def get_ai_configs(
             {
                 "id": c.id,
                 "name": c.name,
-                "model": c.model,
+                "model": c.model_name,
+                "provider": c.provider,
                 "is_default": c.is_default
             }
             for c in configs
