@@ -2,7 +2,8 @@
 FastAPI 应用主文件
 """
 import os
-from fastapi import FastAPI, Depends, HTTPException, Request
+from datetime import datetime
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -257,6 +258,112 @@ async def init_endpoint():
         return {"status": "success", "message": "Database initialized"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
+    """动态生成 sitemap.xml，自动包含最新文章与动态页面。"""
+    from app.models.margin import MarginDetail
+
+    public_site_url = get_public_site_url(request)
+
+    def fmt_date(value) -> str:
+        if not value:
+            return datetime.now().date().isoformat()
+        if hasattr(value, "date"):
+            try:
+                return value.date().isoformat()
+            except Exception:
+                pass
+        return value.isoformat()
+
+    entries: list[dict[str, str]] = []
+
+    def add_url(loc: str, lastmod: str, changefreq: str, priority: str):
+        entries.append(
+            {
+                "loc": loc,
+                "lastmod": lastmod,
+                "changefreq": changefreq,
+                "priority": priority,
+            }
+        )
+
+    today = datetime.now().date().isoformat()
+
+    static_pages = [
+        ("/", today, "daily", "1.0"),
+        ("/platforms/", today, "daily", "0.9"),
+        ("/compare/", today, "weekly", "0.85"),
+        ("/qa/", today, "weekly", "0.8"),
+        ("/wiki/", today, "weekly", "0.8"),
+        ("/guides/", today, "weekly", "0.8"),
+        ("/margin/", today, "daily", "0.9"),
+        ("/margin/ranking/net_buy/", today, "daily", "0.8"),
+        ("/margin/ranking/rzye/", today, "daily", "0.8"),
+        ("/margin/ranking/rqye/", today, "daily", "0.8"),
+        ("/margin/ranking/rqyl/", today, "daily", "0.8"),
+        ("/about/", today, "monthly", "0.7"),
+        ("/legal/", today, "yearly", "0.6"),
+    ]
+
+    for path, lastmod, changefreq, priority in static_pages:
+        add_url(f"{public_site_url}{path}", lastmod, changefreq, priority)
+
+    platforms = db.query(Platform).filter(Platform.is_active == True).all()
+    for platform in platforms:
+        add_url(
+            f"{public_site_url}/platforms/{platform.slug}/",
+            fmt_date(platform.updated_at or platform.created_at),
+            "weekly",
+            "0.85",
+        )
+
+    articles = db.query(Article).filter(Article.is_published == True).all()
+    for article in articles:
+        add_url(
+            f"{public_site_url}/article/{article.slug}",
+            fmt_date(article.published_at or article.updated_at or article.created_at),
+            "weekly",
+            "0.8",
+        )
+
+    margin_codes = [row[0] for row in db.query(MarginDetail.ts_code).distinct().all() if row[0]]
+    latest_margin = db.query(MarginDetail).order_by(MarginDetail.trade_date.desc()).first()
+    latest_margin_date = fmt_date(latest_margin.trade_date) if latest_margin else today
+    for ts_code in margin_codes:
+        add_url(
+            f"{public_site_url}/margin/stock/{ts_code}/",
+            latest_margin_date,
+            "daily",
+            "0.7",
+        )
+
+    xml_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+
+    for entry in entries:
+        xml_lines.extend(
+            [
+                "  <url>",
+                f"    <loc>{html.escape(entry['loc'])}</loc>",
+                f"    <lastmod>{entry['lastmod']}</lastmod>",
+                f"    <changefreq>{entry['changefreq']}</changefreq>",
+                f"    <priority>{entry['priority']}</priority>",
+                "  </url>",
+            ]
+        )
+
+    xml_lines.append("</urlset>")
+    xml_content = "\n".join(xml_lines)
+
+    return Response(
+        content=xml_content,
+        media_type="application/xml",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
 
 # 调试端点 - 检查管理员用户
 @app.get("/api/debug/admin-users", include_in_schema=False)
