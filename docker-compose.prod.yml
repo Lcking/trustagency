@@ -57,8 +57,8 @@ services:
       dockerfile: Dockerfile
       args:
         - ENVIRONMENT=production
-        - APT_MIRROR=mirrors.aliyun.com
-        - PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
+        - APT_MIRROR=${APT_MIRROR:-deb.debian.org}
+        - PIP_INDEX_URL=${PIP_INDEX_URL:-https://pypi.org/simple}
     container_name: trustagency-backend-prod
     image: trustagency-backend:latest
     ports:
@@ -110,8 +110,8 @@ services:
       dockerfile: Dockerfile
       args:
         - ENVIRONMENT=production
-        - APT_MIRROR=mirrors.aliyun.com
-        - PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
+        - APT_MIRROR=${APT_MIRROR:-deb.debian.org}
+        - PIP_INDEX_URL=${PIP_INDEX_URL:-https://pypi.org/simple}
     container_name: trustagency-celery-worker-prod
     image: trustagency-backend:latest
     command: celery -A app.celery_app worker --loglevel=info --concurrency=2 -Q celery,ai_generation
@@ -152,8 +152,8 @@ services:
       dockerfile: Dockerfile
       args:
         - ENVIRONMENT=production
-        - APT_MIRROR=mirrors.aliyun.com
-        - PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
+        - APT_MIRROR=${APT_MIRROR:-deb.debian.org}
+        - PIP_INDEX_URL=${PIP_INDEX_URL:-https://pypi.org/simple}
     container_name: trustagency-celery-beat-prod
     image: trustagency-backend:latest
     command: celery -A app.celery_app beat --loglevel=info
