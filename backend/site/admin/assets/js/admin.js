@@ -1526,6 +1526,7 @@ function populateFormFields(data) {
         'founded_year': 'founded_year',
         'safety_rating': 'safety_rating',
         'platform_type': 'platform_type',
+        'platform_source': 'platform_source',
         'is_active': 'is_active',
         'is_recommended': 'is_recommended',
         'is_regulated': 'is_regulated',
@@ -1562,14 +1563,15 @@ function populateFormFields(data) {
             const value = data[dataKey];
             
             if (element.type === 'checkbox') {
-                element.checked = value || false;
+                element.checked = !!value;
             } else if (element.classList && element.classList.contains('json-editor')) {
                 // JSON 字段
                 element.value = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
             } else if (element.type === 'number') {
-                element.value = value || '';
+                // 0 是合法数值，不能用 || 判断，否则会把 0 当成空并在保存时写成 null
+                element.value = (value === null || value === undefined) ? '' : value;
             } else {
-                element.value = value || '';
+                element.value = (value === null || value === undefined) ? '' : value;
             }
             
             // 特殊处理：Logo 预览
@@ -1716,7 +1718,10 @@ async function savePlatform(e) {
                     platformData[fieldName] = null;
                 }
             } else if (input.type === 'number') {
-                platformData[fieldName] = input.value ? parseFloat(input.value) : null;
+                // 空数字字段不提交，避免把 NOT NULL 列（如 commission_rate=0）误写成 null
+                if (input.value !== '' && input.value !== null && input.value !== undefined) {
+                    platformData[fieldName] = parseFloat(input.value);
+                }
             } else {
                 platformData[fieldName] = input.value;
             }
